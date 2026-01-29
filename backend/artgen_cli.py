@@ -40,29 +40,54 @@ def cli():
               help="Show detailed output")
 @click.option("--dry-run", is_flag=True,
               help="Show what would be executed without running")
-def run(pipeline: str, input_file: str | None, auto_approve: bool, verbose: bool, dry_run: bool):
+@click.option("--parallel", "-p", default=3, type=int,
+              help="Max parallel assets per step (default: 3)")
+@click.option("--skip-validation", is_flag=True,
+              help="Skip pre-run validation")
+def run(
+    pipeline: str,
+    input_file: str | None,
+    auto_approve: bool,
+    verbose: bool,
+    dry_run: bool,
+    parallel: int,
+    skip_validation: bool,
+):
     """Run an ArtGen pipeline."""
     
     pipeline_path = Path(pipeline)
+    
+    # Add backend to path
+    backend_path = Path(__file__).parent
+    if str(backend_path) not in sys.path:
+        sys.path.insert(0, str(backend_path))
     
     if dry_run:
         # Just show the plan
         show_pipeline_plan(pipeline_path)
         return
     
+    # Run validation first
+    if not skip_validation:
+        from pipeline.validation import validate_all, print_validation_result
+        
+        result, spec = validate_all(pipeline_path, check_env=True)
+        
+        if not result.valid:
+            print_validation_result(result, verbose=verbose)
+            sys.exit(1)
+        elif result.warnings and verbose:
+            print_validation_result(result, verbose=True)
+    
     console.print()
     console.print(Panel(
         f"[bold]ArtGen Pipeline Runner[/bold]\n\n"
         f"Pipeline: {pipeline_path.name}\n"
-        f"Auto-approve: {'Yes' if auto_approve else 'No'}",
+        f"Auto-approve: {'Yes' if auto_approve else 'No'}\n"
+        f"Parallelism: {parallel}",
         border_style="blue"
     ))
     console.print()
-    
-    # Add backend to path
-    backend_path = Path(__file__).parent
-    if str(backend_path) not in sys.path:
-        sys.path.insert(0, str(backend_path))
     
     from pipeline.executor import run_pipeline
     
@@ -71,6 +96,7 @@ def run(pipeline: str, input_file: str | None, auto_approve: bool, verbose: bool
         input_override=input_file,
         auto_approve=auto_approve,
         verbose=verbose,
+        asset_parallelism=parallel,
     ))
     
     if not result.success:
@@ -82,7 +108,9 @@ def run(pipeline: str, input_file: str | None, auto_approve: bool, verbose: bool
 
 @cli.command()
 @click.argument("pipeline", type=click.Path(exists=True))
-def validate(pipeline: str):
+@click.option("--verbose", "-v", is_flag=True, help="Show all warnings")
+@click.option("--skip-env", is_flag=True, help="Skip environment variable checks")
+def validate(pipeline: str, verbose: bool, skip_env: bool):
     """Validate a pipeline file without running it."""
     
     pipeline_path = Path(pipeline)
@@ -92,12 +120,16 @@ def validate(pipeline: str):
     if str(backend_path) not in sys.path:
         sys.path.insert(0, str(backend_path))
     
-    from pipeline.spec_parser import load_pipeline, ParseError, ValidationError
+    from pipeline.validation import validate_all, print_validation_result
     
-    try:
-        spec = load_pipeline(pipeline_path)
-        
-        console.print(f"[green]✓[/green] Pipeline '{spec.name}' is valid")
+    result, spec = validate_all(pipeline_path, check_env=not skip_env)
+    
+    print_validation_result(result, verbose=verbose)
+    
+    if not result.valid:
+        sys.exit(1)
+    
+    if spec:
         console.print()
         
         # Show summary
@@ -119,10 +151,6 @@ def validate(pipeline: str):
                 table.add_row("Assets", f"{spec.assets.count} (generated)")
         
         console.print(table)
-        
-    except (ParseError, ValidationError) as e:
-        console.print(f"[red]✗[/red] Validation failed: {e}")
-        sys.exit(1)
 
 
 @cli.command()

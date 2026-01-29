@@ -8,6 +8,9 @@ Provides:
   - Asset loading from various sources
   - Step executors for different step types
   - Caching and checkpointing
+  - Rich context building for LLM prompts
+  - Retry and rate limiting
+  - Input validation
   - Main pipeline execution engine
 """
 
@@ -52,6 +55,31 @@ from .cache import (
     should_skip_step,
 )
 
+from .context import (
+    RichContext,
+    build_rich_context,
+    get_asset_aware_step_outputs,
+)
+
+from .retry import (
+    RetryConfig,
+    RateLimiter,
+    retry_async,
+    with_retry,
+    rate_limited_call,
+    get_rate_limiter,
+    API_RETRY_CONFIG,
+)
+
+from .validation import (
+    ValidationResult,
+    validate_all,
+    validate_environment,
+    validate_pipeline_file,
+    validate_assets,
+    print_validation_result,
+)
+
 from .executor import (
     PipelineExecutor,
     ExecutionResult,
@@ -94,6 +122,28 @@ __all__ = [
     # Caching
     "CacheManager",
     "should_skip_step",
+    
+    # Context
+    "RichContext",
+    "build_rich_context",
+    "get_asset_aware_step_outputs",
+    
+    # Retry and rate limiting
+    "RetryConfig",
+    "RateLimiter",
+    "retry_async",
+    "with_retry",
+    "rate_limited_call",
+    "get_rate_limiter",
+    "API_RETRY_CONFIG",
+    
+    # Validation
+    "ValidationResult",
+    "validate_all",
+    "validate_environment",
+    "validate_pipeline_file",
+    "validate_assets",
+    "print_validation_result",
     
     # Execution
     "PipelineExecutor",

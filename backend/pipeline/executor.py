@@ -5,23 +5,41 @@ Main execution engine that orchestrates:
   - Loading and validating pipeline specs
   - Loading assets from various sources
   - Executing steps in dependency order
-  - Handling parallelism for per-asset steps
+  - Parallel execution within tiers and for assets
   - Managing caching and checkpoints
   - CLI-blocking human interactions
+  - Retry logic and rate limiting
 """
 
 import asyncio
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
-from contextlib import contextmanager
-
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 from rich.panel import Panel
+from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 from rich.table import Table
+
+from .asset_loader import load_assets
+from .cache import CacheManager, should_skip_step
+from .context import build_rich_context, get_asset_aware_step_outputs
+from .executors import ExecutorContext, StepExecutor, StepResult, get_executor
+from .expressions import evaluate_condition
+from .retry import API_RETRY_CONFIG, retry_async
+from .spec_parser import PipelineSpec, StepSpec, StepType, get_execution_order, load_pipeline
+from .templates import substitute_all
+
+# Import all executors to register them
+from .executors import assess, image, text, user
+
+console = Console()
+
+# Default parallelism settings
+DEFAULT_ASSET_PARALLELISM = 3  # Max concurrent assets
+DEFAULT_TIER_PARALLELISM = 4   # Max concurrent steps in same tier
 
 
 @contextmanager
@@ -48,18 +66,6 @@ def pause_progress(progress: Progress):
     finally:
         # Restart the live display
         progress.start()
-
-from .spec_parser import PipelineSpec, StepSpec, StepType, load_pipeline, get_execution_order
-from .asset_loader import load_assets
-from .cache import CacheManager, should_skip_step
-from .expressions import ExpressionEvaluator, evaluate_condition
-from .templates import substitute_all
-from .executors import get_executor, ExecutorContext, StepResult, StepExecutor
-
-# Import all executors to register them
-from .executors import text, image, user, assess
-
-console = Console()
 
 
 @dataclass
@@ -88,6 +94,8 @@ class PipelineExecutor:
         input_override: Path | str | None = None,
         auto_approve: bool = False,
         verbose: bool = False,
+        asset_parallelism: int = DEFAULT_ASSET_PARALLELISM,
+        tier_parallelism: int = DEFAULT_TIER_PARALLELISM,
     ):
         """
         Initialize the executor.
@@ -97,11 +105,15 @@ class PipelineExecutor:
             input_override: Optional override for asset input file
             auto_approve: Skip human approval steps
             verbose: Show detailed output
+            asset_parallelism: Max concurrent assets per step (default 3)
+            tier_parallelism: Max concurrent steps in same tier (default 4)
         """
         self.pipeline_path = Path(pipeline_path)
         self.input_override = Path(input_override) if input_override else None
         self.auto_approve = auto_approve
         self.verbose = verbose
+        self.asset_parallelism = asset_parallelism
+        self.tier_parallelism = tier_parallelism
         
         # Will be set during run()
         self.spec: PipelineSpec | None = None
@@ -165,13 +177,13 @@ class PipelineExecutor:
             # Get execution order
             tiers = get_execution_order(self.spec)
             
-            # Execute each tier
+            # Execute each tier (tiers must run sequentially, steps within can be parallel)
             for tier_idx, tier in enumerate(tiers):
-                console.print(f"\n[bold]Tier {tier_idx}[/bold]")
+                console.print(f"\n[bold]Tier {tier_idx}[/bold] ({len(tier)} step{'s' if len(tier) > 1 else ''})")
                 
-                for step_id in tier:
-                    step = self.spec.step_index[step_id]
-                    
+                if len(tier) == 1:
+                    # Single step - execute directly
+                    step = self.spec.step_index[tier[0]]
                     result = await self._execute_step(step, base_path, state_dir)
                     
                     if result.cached:
@@ -179,7 +191,33 @@ class PipelineExecutor:
                     elif result.success:
                         steps_completed += 1
                     else:
-                        errors.append(f"Step '{step_id}' failed: {result.error}")
+                        errors.append(f"Step '{tier[0]}' failed: {result.error}")
+                else:
+                    # Multiple steps in tier - execute in parallel
+                    semaphore = asyncio.Semaphore(self.tier_parallelism)
+                    
+                    async def run_step_with_semaphore(step_id: str) -> tuple[str, StepResult]:
+                        async with semaphore:
+                            step = self.spec.step_index[step_id]
+                            result = await self._execute_step(step, base_path, state_dir)
+                            return step_id, result
+                    
+                    results = await asyncio.gather(
+                        *[run_step_with_semaphore(step_id) for step_id in tier],
+                        return_exceptions=True,
+                    )
+                    
+                    for item in results:
+                        if isinstance(item, Exception):
+                            errors.append(f"Step execution error: {item}")
+                        else:
+                            step_id, result = item
+                            if result.cached:
+                                steps_skipped += 1
+                            elif result.success:
+                                steps_completed += 1
+                            else:
+                                errors.append(f"Step '{step_id}' failed: {result.error}")
             
             duration_ms = int((time.time() - start_time) * 1000)
             
@@ -329,7 +367,7 @@ class PipelineExecutor:
         state_dir: Path,
         cache_setting: bool | str,
     ) -> StepResult:
-        """Execute a per-asset step."""
+        """Execute a per-asset step with parallel processing."""
         
         console.print(f"  [cyan]{step.id}[/cyan] ({step.type.value}) - {len(self.assets)} assets")
         
@@ -358,23 +396,40 @@ class PipelineExecutor:
             console.print(f"    [red]No executor for step type: {step.type.value}[/red]")
             return StepResult(success=False, error=f"No executor for {step.type.value}")
         
-        # Process each asset
-        results = []
+        # Check if this step needs user interaction (cannot parallelize if so)
+        needs_user_interaction = (
+            (step.until == "approved" and not self.auto_approve) or
+            (step.select == "user" and not self.auto_approve) or
+            (step.variations and step.variations > 1 and not self.auto_approve)
+        )
         
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TaskProgressColumn(),
-            console=console,
-        ) as progress:
-            task = progress.add_task(f"    Processing", total=len(pending_assets))
-            
-            for idx, (asset_idx, asset) in enumerate(pending_assets):
+        # Use parallelism only for non-interactive steps
+        parallelism = 1 if needs_user_interaction else self.asset_parallelism
+        semaphore = asyncio.Semaphore(parallelism)
+        
+        # Results tracking (thread-safe with lock)
+        results: list[StepResult] = []
+        results_lock = asyncio.Lock()
+        
+        async def process_asset(
+            asset_idx: int,
+            asset: dict[str, Any],
+            progress: Progress,
+            task: Any,
+        ) -> None:
+            """Process a single asset."""
+            async with semaphore:
                 asset_id = asset.get("id", f"asset-{asset_idx}")
                 asset_name = asset.get("name", asset_id)
                 
                 progress.update(task, description=f"    {asset_name}")
+                
+                # Get asset-aware step outputs for template substitution
+                asset_aware_outputs = get_asset_aware_step_outputs(
+                    self.step_outputs,
+                    self.spec.step_index,
+                    asset,
+                )
                 
                 # Build context
                 ctx = ExecutorContext(
@@ -382,32 +437,25 @@ class PipelineExecutor:
                     base_path=base_path,
                     state_dir=state_dir,
                     context=self.context,
-                    step_outputs=self.step_outputs,
+                    step_outputs=asset_aware_outputs,  # Use asset-aware outputs
                     asset=asset,
                     asset_index=asset_idx,
                     total_assets=len(self.assets),
                     providers=self.providers,
                 )
                 
-                # Substitute templates in config
+                # Substitute templates in config (using asset-aware outputs)
                 config = substitute_all(
                     step.config,
                     self.context,
                     asset,
-                    self.step_outputs,
+                    asset_aware_outputs,
                 )
                 config["_step_id"] = step.id
                 
                 # Handle variations at step level
                 if step.variations:
                     config["variations"] = step.variations
-                
-                # Check if this step needs user interaction
-                needs_user_interaction = (
-                    (step.until == "approved" and not self.auto_approve) or
-                    (step.select == "user" and not self.auto_approve) or
-                    (step.variations and step.variations > 1 and not self.auto_approve)
-                )
                 
                 # Handle until: approved loop
                 if step.until == "approved":
@@ -421,8 +469,16 @@ class PipelineExecutor:
                             step, executor, config, ctx, asset_name
                         )
                 else:
-                    # Normal execution
-                    result = await executor.execute(config, ctx)
+                    # Normal execution with retry
+                    try:
+                        result = await retry_async(
+                            executor.execute,
+                            config,
+                            ctx,
+                            config=API_RETRY_CONFIG,
+                        )
+                    except Exception as e:
+                        result = StepResult(success=False, error=str(e))
                     
                     if result.success:
                         # Handle variations and selection (select: user or multiple variations)
@@ -445,13 +501,35 @@ class PipelineExecutor:
                         output_paths=result.output_paths,
                     )
                     
-                    # Store per-asset output
-                    if step.id not in self.step_outputs:
-                        self.step_outputs[step.id] = {"assets": {}}
-                    self.step_outputs[step.id]["assets"][asset_id] = result.output
+                    # Store per-asset output (with lock for thread safety)
+                    async with results_lock:
+                        if step.id not in self.step_outputs:
+                            self.step_outputs[step.id] = {"assets": {}}
+                        self.step_outputs[step.id]["assets"][asset_id] = result.output
                 
-                results.append(result)
+                async with results_lock:
+                    results.append(result)
+                
                 progress.update(task, advance=1)
+        
+        # Process assets
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            console=console,
+        ) as progress:
+            task = progress.add_task(f"    Processing", total=len(pending_assets))
+            
+            # Create all tasks
+            tasks = [
+                process_asset(asset_idx, asset, progress, task)
+                for asset_idx, asset in pending_assets
+            ]
+            
+            # Run with parallelism controlled by semaphore
+            await asyncio.gather(*tasks, return_exceptions=True)
         
         # Check if all succeeded
         failed = [r for r in results if not r.success]
@@ -461,7 +539,8 @@ class PipelineExecutor:
                 error=f"{len(failed)} assets failed",
             )
         
-        console.print(f"    [green]✓[/green] Completed {len(pending_assets)} assets")
+        parallel_note = f" (parallel={parallelism})" if parallelism > 1 else ""
+        console.print(f"    [green]✓[/green] Completed {len(pending_assets)} assets{parallel_note}")
         return StepResult(success=True)
     
     async def _execute_until_approved(
@@ -623,6 +702,8 @@ async def run_pipeline(
     input_override: Path | str | None = None,
     auto_approve: bool = False,
     verbose: bool = False,
+    asset_parallelism: int = DEFAULT_ASSET_PARALLELISM,
+    tier_parallelism: int = DEFAULT_TIER_PARALLELISM,
 ) -> ExecutionResult:
     """
     Convenience function to run a pipeline.
@@ -632,6 +713,8 @@ async def run_pipeline(
         input_override: Optional override for asset input file
         auto_approve: Skip human approval steps
         verbose: Show detailed output
+        asset_parallelism: Max concurrent assets per step (default 3)
+        tier_parallelism: Max concurrent steps in same tier (default 4)
         
     Returns:
         ExecutionResult
@@ -641,5 +724,7 @@ async def run_pipeline(
         input_override=input_override,
         auto_approve=auto_approve,
         verbose=verbose,
+        asset_parallelism=asset_parallelism,
+        tier_parallelism=tier_parallelism,
     )
     return await executor.run()

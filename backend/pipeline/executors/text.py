@@ -6,6 +6,11 @@ Handles text-based steps:
   - generate_text: General text generation
   - generate_name: Name generation
   - generate_prompt: Image prompt generation
+
+All text executors automatically include rich context from:
+  - Global/gather step outputs
+  - Previous per-asset step outputs for the current asset
+  - Pipeline context variables
 """
 
 from typing import Any
@@ -13,6 +18,73 @@ from typing import Any
 from .base import ExecutorContext, StepExecutor, StepResult
 from .registry import register_executor
 from ..templates import substitute_template
+
+
+def _build_context_section(ctx: ExecutorContext) -> str:
+    """
+    Build a context section to include in LLM prompts.
+    
+    Includes:
+      - Pipeline context variables (style, etc.)
+      - Outputs from previous steps for this asset
+    """
+    parts = []
+    
+    # Include pipeline context
+    if ctx.context:
+        context_items = []
+        for key, value in ctx.context.items():
+            if isinstance(value, (str, int, float, bool)):
+                context_items.append(f"- {key}: {value}")
+        if context_items:
+            parts.append("Project Context:")
+            parts.extend(context_items)
+            parts.append("")
+    
+    # Include asset info
+    if ctx.asset:
+        asset_items = []
+        for key, value in ctx.asset.items():
+            if key != "id" and isinstance(value, (str, int, float, bool)):
+                asset_items.append(f"- {key}: {value}")
+        if asset_items:
+            parts.append("Current Asset:")
+            parts.extend(asset_items)
+            parts.append("")
+    
+    # Include relevant step outputs
+    if ctx.step_outputs:
+        for step_id, output in ctx.step_outputs.items():
+            # Skip internal keys
+            if step_id.startswith("_"):
+                continue
+            
+            content = _extract_content(output)
+            if content:
+                parts.append(f"Previous Step '{step_id}':")
+                # Truncate long content
+                if len(content) > 500:
+                    content = content[:500] + "..."
+                parts.append(content)
+                parts.append("")
+    
+    return "\n".join(parts)
+
+
+def _extract_content(output: Any) -> str | None:
+    """Extract displayable content from a step output."""
+    if isinstance(output, str):
+        return output
+    
+    if isinstance(output, dict):
+        # Try common content keys
+        for key in ["content", "text", "result", "output", "prompt"]:
+            if key in output and output[key]:
+                val = output[key]
+                if isinstance(val, str):
+                    return val
+    
+    return None
 
 
 @register_executor("research")
@@ -47,9 +119,14 @@ class ResearchExecutor(StepExecutor):
         # Get text provider
         provider = ctx.providers.get_text_provider("litellm")
         
+        # Build context section
+        context_section = _build_context_section(ctx)
+        
         prompt = f"""Research the following topic and provide useful background information:
 
 {query}
+
+{context_section}
 
 Provide:
 1. A brief summary of the key points
@@ -92,12 +169,14 @@ class GenerateTextExecutor(StepExecutor):
             prompt: The generation prompt
             max_length: Maximum output length
             variations: Number of variations to generate
+            include_context: Whether to include rich context (default: True)
         """
         import time
         start = time.time()
         
         prompt = config.get("prompt", "")
         variations = config.get("variations", 1)
+        include_context = config.get("include_context", True)
         
         # Substitute template variables
         prompt = substitute_template(
@@ -107,31 +186,37 @@ class GenerateTextExecutor(StepExecutor):
             ctx.step_outputs,
         )
         
+        # Build full prompt with context
+        if include_context:
+            context_section = _build_context_section(ctx)
+            if context_section:
+                full_prompt = f"""Background Context:
+{context_section}
+
+Task:
+{prompt}"""
+            else:
+                full_prompt = prompt
+        else:
+            full_prompt = prompt
+        
         # Get text provider
         provider = ctx.providers.get_text_provider("litellm")
         
         try:
             results = []
             for i in range(variations):
-                result = await provider.generate(prompt)
+                result = await provider.generate(full_prompt)
                 results.append(result)
             
             duration = int((time.time() - start) * 1000)
             
-            if len(results) == 1:
-                return StepResult(
-                    success=True,
-                    output={"content": results[0]},
-                    variations=results,
-                    duration_ms=duration,
-                )
-            else:
-                return StepResult(
-                    success=True,
-                    output={"content": results[0]},
-                    variations=results,
-                    duration_ms=duration,
-                )
+            return StepResult(
+                success=True,
+                output={"content": results[0]},
+                variations=results,
+                duration_ms=duration,
+            )
         except Exception as e:
             return StepResult(
                 success=False,

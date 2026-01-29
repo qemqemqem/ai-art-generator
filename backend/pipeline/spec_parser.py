@@ -157,6 +157,12 @@ class StepSpec:
     save_to: str | None = None  # Path pattern for saving output
     cache: bool | str | None = None   # True, False, "skip_existing", or None for smart defaults
     
+    # Human-in-the-loop iteration
+    until: str | None = None  # "approved" - iterate until user approves
+    max_attempts: int = 5  # Maximum iterations for until loops
+    variations: int | None = None  # Generate K variations for user selection
+    select: str | None = None  # "user" - user selects from variations
+    
     # For loop steps
     steps: list["StepSpec"] | None = None
 
@@ -246,6 +252,10 @@ def parse_step(data: dict[str, Any], path: str = "") -> StepSpec:
         output=data.get("output"),
         save_to=data.get("save_to"),
         cache=data.get("cache"),  # None enables smart defaults
+        until=data.get("until"),
+        max_attempts=data.get("max_attempts", 5),
+        variations=data.get("variations"),
+        select=data.get("select"),
         steps=nested_steps,
     )
 

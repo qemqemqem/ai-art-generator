@@ -1,0 +1,8 @@
+{
+  "step_id": "mechanics",
+  "asset_id": "card-001",
+  "timestamp": "2026-01-29T22:15:43.922360",
+  "data": {
+    "content": "COST: {1}{U}{B}\nTYPE: Creature \u2014 Ooze\nTEXT: Whenever you cast a noncreature spell, put a study counter on Bureaucratic Ooze.\n"
+  }
+}

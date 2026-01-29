@@ -26,10 +26,10 @@ from .asset_loader import load_assets
 from .cache import CacheManager, should_skip_step
 from .expressions import ExpressionEvaluator, evaluate_condition
 from .templates import substitute_all
-from .executors import get_executor, ExecutorContext, StepResult
+from .executors import get_executor, ExecutorContext, StepResult, StepExecutor
 
 # Import all executors to register them
-from .executors import text, image, user
+from .executors import text, image, user, assess
 
 console = Console()
 
@@ -370,16 +370,31 @@ class PipelineExecutor:
                 )
                 config["_step_id"] = step.id
                 
-                # Execute
-                result = await executor.execute(config, ctx)
+                # Handle variations at step level
+                if step.variations:
+                    config["variations"] = step.variations
+                
+                # Handle until: approved loop
+                if step.until == "approved":
+                    result = await self._execute_until_approved(
+                        step, executor, config, ctx, asset_name
+                    )
+                else:
+                    # Normal execution
+                    result = await executor.execute(config, ctx)
+                    
+                    if result.success:
+                        # Handle variations and selection (select: user or multiple variations)
+                        needs_selection = (
+                            (step.select == "user" and result.variations) or
+                            (result.variations and len(result.variations) > 1)
+                        )
+                        if needs_selection and not self.auto_approve:
+                            result = await self._handle_variations(
+                                step, result, ctx, asset_name, executor, config
+                            )
                 
                 if result.success:
-                    # Handle variations and selection
-                    if result.variations and len(result.variations) > 1:
-                        result = await self._handle_variations(
-                            step, result, ctx, asset_name
-                        )
-                    
                     # Cache the output
                     self.cache.cache_step_output(
                         step.id,
@@ -407,12 +422,79 @@ class PipelineExecutor:
         console.print(f"    [green]✓[/green] Completed {len(pending_assets)} assets")
         return StepResult(success=True)
     
+    async def _execute_until_approved(
+        self,
+        step: StepSpec,
+        executor: StepExecutor,
+        config: dict[str, Any],
+        ctx: ExecutorContext,
+        asset_name: str,
+    ) -> StepResult:
+        """Execute a step in an approval loop until user approves or max attempts."""
+        
+        max_attempts = step.max_attempts
+        approve_executor = get_executor("user_approve")
+        
+        for attempt in range(1, max_attempts + 1):
+            console.print(f"    [dim]Attempt {attempt}/{max_attempts}[/dim]")
+            
+            # Generate
+            result = await executor.execute(config, ctx)
+            
+            if not result.success:
+                return result
+            
+            # Auto-approve mode
+            if self.auto_approve:
+                return result
+            
+            # Show to user for approval
+            approve_ctx = ExecutorContext(
+                pipeline_name=ctx.pipeline_name,
+                base_path=ctx.base_path,
+                state_dir=ctx.state_dir,
+                context=ctx.context,
+                step_outputs={step.id: result.output},
+                asset=ctx.asset,
+                asset_index=ctx.asset_index,
+                total_assets=ctx.total_assets,
+                providers=ctx.providers,
+            )
+            
+            approve_result = await approve_executor.execute(
+                {"prompt": f"Approve result for {asset_name}?"},
+                approve_ctx,
+            )
+            
+            if approve_result.success and approve_result.output:
+                if approve_result.output.get("approved", False):
+                    # User approved!
+                    if result.output:
+                        result.output["approved_attempt"] = attempt
+                    return result
+                else:
+                    # Rejected - will regenerate
+                    console.print(f"    [yellow]Regenerating...[/yellow]")
+                    continue
+            else:
+                # Approval step failed - treat as approved to avoid infinite loop
+                return result
+        
+        # Hit max attempts
+        console.print(f"    [yellow]Max attempts ({max_attempts}) reached[/yellow]")
+        if result.output:
+            result.output["max_attempts_reached"] = True
+        return result
+    
     async def _handle_variations(
         self,
         step: StepSpec,
         result: StepResult,
         ctx: ExecutorContext,
         asset_name: str,
+        executor: StepExecutor,
+        config: dict[str, Any],
+        max_regenerations: int = 3,
     ) -> StepResult:
         """Handle variation selection for a step result."""
         
@@ -425,42 +507,71 @@ class PipelineExecutor:
                     result.output["selected_path"] = result.variations[0]
             return result
         
-        # Use user_select executor for CLI selection
-        select_executor = get_executor("user_select")
+        regeneration_count = 0
         
-        # Build selection context
-        select_ctx = ExecutorContext(
-            pipeline_name=ctx.pipeline_name,
-            base_path=ctx.base_path,
-            state_dir=ctx.state_dir,
-            context=ctx.context,
-            step_outputs={step.id: result.output},
-            asset=ctx.asset,
-            asset_index=ctx.asset_index,
-            total_assets=ctx.total_assets,
-            providers=ctx.providers,
-        )
-        
-        select_result = await select_executor.execute(
-            {
-                "prompt": f"Select best for {asset_name}",
-                "options_from": step.id,
-            },
-            select_ctx,
-        )
-        
-        if select_result.success and select_result.output:
-            action = select_result.output.get("action")
+        while regeneration_count < max_regenerations:
+            # Use user_select executor for CLI selection
+            select_executor = get_executor("user_select")
             
-            if action == "regenerate":
-                # TODO: Handle regeneration
-                console.print("[yellow]Regeneration not yet implemented - using first option[/yellow]")
-                result.selected_index = 0
+            # Build selection context
+            select_ctx = ExecutorContext(
+                pipeline_name=ctx.pipeline_name,
+                base_path=ctx.base_path,
+                state_dir=ctx.state_dir,
+                context=ctx.context,
+                step_outputs={step.id: result.output},
+                asset=ctx.asset,
+                asset_index=ctx.asset_index,
+                total_assets=ctx.total_assets,
+                providers=ctx.providers,
+            )
+            
+            select_result = await select_executor.execute(
+                {
+                    "prompt": f"Select best for {asset_name}",
+                    "options_from": step.id,
+                },
+                select_ctx,
+            )
+            
+            if select_result.success and select_result.output:
+                action = select_result.output.get("action")
+                
+                if action == "regenerate":
+                    regeneration_count += 1
+                    console.print(f"[cyan]Regenerating... (attempt {regeneration_count}/{max_regenerations})[/cyan]")
+                    
+                    # Re-run the generation step
+                    result = await executor.execute(config, ctx)
+                    
+                    if not result.success:
+                        console.print(f"[red]Regeneration failed: {result.error}[/red]")
+                        return result
+                    
+                    # If no variations in new result, just return it
+                    if not result.variations or len(result.variations) <= 1:
+                        return result
+                    
+                    # Loop back to selection
+                    continue
+                else:
+                    # User made a selection
+                    result.selected_index = select_result.output.get("selected_index", 0)
+                    if result.output:
+                        result.output["selected_index"] = result.selected_index
+                        result.output["selected_path"] = select_result.output.get("selected_path")
+                    return result
             else:
-                result.selected_index = select_result.output.get("selected_index", 0)
-                if result.output:
-                    result.output["selected_index"] = result.selected_index
-                    result.output["selected_path"] = select_result.output.get("selected_path")
+                # Selection failed
+                return result
+        
+        # Hit max regenerations - use first option
+        console.print(f"[yellow]Max regenerations ({max_regenerations}) reached - using first option[/yellow]")
+        result.selected_index = 0
+        if result.output:
+            result.output["selected_index"] = 0
+            if result.variations:
+                result.output["selected_path"] = result.variations[0]
         
         return result
 

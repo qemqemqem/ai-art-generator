@@ -1,0 +1,8 @@
+{
+  "step_id": "mechanics",
+  "asset_id": "card-003",
+  "timestamp": "2026-01-29T22:15:54.710731",
+  "data": {
+    "content": "COST: {2}{B}{B}\nTYPE: Creature \u2014 Horror Cleric\nTEXT:\nWhenever a creature dies, its controller loses 1 life and you gain 1 life"
+  }
+}

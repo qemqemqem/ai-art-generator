@@ -1,0 +1,32 @@
+# Test 05: Approval Loop
+# Tests: until:approved pattern
+
+name: test-05-approval-loop
+version: "1.0"
+description: "Test approval loop - regenerate until approved"
+
+state:
+  directory: .artgen
+
+context:
+  style: "pixel art"
+
+assets:
+  items:
+    - id: item-001
+      name: "Magic Wand"
+      description: "A sparkling wizard's wand"
+
+steps:
+  # Generate until user approves (max 3 attempts)
+  - id: generate_with_approval
+    type: generate_image
+    for_each: asset
+    until: approved
+    max_attempts: 3
+    config:
+      prompt: |
+        {asset.name}: {asset.description}
+        Style: {context.style}
+        Game item sprite, clean edges
+      size: 512

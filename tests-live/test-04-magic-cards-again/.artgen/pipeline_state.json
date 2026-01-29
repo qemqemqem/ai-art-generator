@@ -1,130 +1,130 @@
 {
   "pipeline_hash": "f8d7f06f7c4bba38",
-  "updated_at": "2026-01-29T22:11:24.381443",
+  "updated_at": "2026-01-29T22:17:13.681114",
   "steps": {
     "research:card-001": {
       "completed": true,
-      "completed_at": "2026-01-29T22:08:59.761097",
+      "completed_at": "2026-01-29T22:14:44.687304",
       "output_path": "research/card-001/output.json",
       "output_files": []
     },
     "research:card-002": {
       "completed": true,
-      "completed_at": "2026-01-29T22:09:05.987691",
+      "completed_at": "2026-01-29T22:14:50.644557",
       "output_path": "research/card-002/output.json",
       "output_files": []
     },
     "research:card-003": {
       "completed": true,
-      "completed_at": "2026-01-29T22:09:12.380445",
+      "completed_at": "2026-01-29T22:14:56.762618",
       "output_path": "research/card-003/output.json",
       "output_files": []
     },
     "research:card-004": {
       "completed": true,
-      "completed_at": "2026-01-29T22:09:18.253787",
+      "completed_at": "2026-01-29T22:15:02.820670",
       "output_path": "research/card-004/output.json",
       "output_files": []
     },
     "research:card-005": {
       "completed": true,
-      "completed_at": "2026-01-29T22:09:24.254174",
+      "completed_at": "2026-01-29T22:15:09.272795",
       "output_path": "research/card-005/output.json",
       "output_files": []
     },
     "design:card-001": {
       "completed": true,
-      "completed_at": "2026-01-29T22:09:29.890443",
+      "completed_at": "2026-01-29T22:15:15.164034",
       "output_path": "design/card-001/output.json",
       "output_files": []
     },
     "design:card-002": {
       "completed": true,
-      "completed_at": "2026-01-29T22:09:33.769986",
+      "completed_at": "2026-01-29T22:15:20.895353",
       "output_path": "design/card-002/output.json",
       "output_files": []
     },
     "design:card-003": {
       "completed": true,
-      "completed_at": "2026-01-29T22:09:39.575062",
+      "completed_at": "2026-01-29T22:15:25.563536",
       "output_path": "design/card-003/output.json",
       "output_files": []
     },
     "design:card-004": {
       "completed": true,
-      "completed_at": "2026-01-29T22:09:45.373758",
+      "completed_at": "2026-01-29T22:15:31.500978",
       "output_path": "design/card-004/output.json",
       "output_files": []
     },
     "design:card-005": {
       "completed": true,
-      "completed_at": "2026-01-29T22:09:50.952584",
+      "completed_at": "2026-01-29T22:15:37.796189",
       "output_path": "design/card-005/output.json",
-      "output_files": []
-    },
-    "flavor:card-001": {
-      "completed": true,
-      "completed_at": "2026-01-29T22:09:56.907734",
-      "output_path": "flavor/card-001/output.json",
-      "output_files": []
-    },
-    "flavor:card-002": {
-      "completed": true,
-      "completed_at": "2026-01-29T22:10:02.441957",
-      "output_path": "flavor/card-002/output.json",
-      "output_files": []
-    },
-    "flavor:card-003": {
-      "completed": true,
-      "completed_at": "2026-01-29T22:10:05.994824",
-      "output_path": "flavor/card-003/output.json",
-      "output_files": []
-    },
-    "flavor:card-004": {
-      "completed": true,
-      "completed_at": "2026-01-29T22:10:10.566520",
-      "output_path": "flavor/card-004/output.json",
-      "output_files": []
-    },
-    "flavor:card-005": {
-      "completed": true,
-      "completed_at": "2026-01-29T22:10:15.799521",
-      "output_path": "flavor/card-005/output.json",
       "output_files": []
     },
     "mechanics:card-001": {
       "completed": true,
-      "completed_at": "2026-01-29T22:10:21.462795",
+      "completed_at": "2026-01-29T22:15:43.922504",
       "output_path": "mechanics/card-001/output.json",
       "output_files": []
     },
     "mechanics:card-002": {
       "completed": true,
-      "completed_at": "2026-01-29T22:10:26.907034",
+      "completed_at": "2026-01-29T22:15:49.087676",
       "output_path": "mechanics/card-002/output.json",
       "output_files": []
     },
     "mechanics:card-003": {
       "completed": true,
-      "completed_at": "2026-01-29T22:10:32.581891",
+      "completed_at": "2026-01-29T22:15:54.710962",
       "output_path": "mechanics/card-003/output.json",
       "output_files": []
     },
     "mechanics:card-004": {
       "completed": true,
-      "completed_at": "2026-01-29T22:10:38.018987",
+      "completed_at": "2026-01-29T22:15:59.835152",
       "output_path": "mechanics/card-004/output.json",
       "output_files": []
     },
     "mechanics:card-005": {
       "completed": true,
-      "completed_at": "2026-01-29T22:10:43.507815",
+      "completed_at": "2026-01-29T22:16:05.780760",
       "output_path": "mechanics/card-005/output.json",
+      "output_files": []
+    },
+    "flavor:card-001": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:16:11.741548",
+      "output_path": "flavor/card-001/output.json",
+      "output_files": []
+    },
+    "flavor:card-002": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:16:17.961696",
+      "output_path": "flavor/card-002/output.json",
+      "output_files": []
+    },
+    "flavor:card-003": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:16:23.380860",
+      "output_path": "flavor/card-003/output.json",
+      "output_files": []
+    },
+    "flavor:card-004": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:16:28.202908",
+      "output_path": "flavor/card-004/output.json",
+      "output_files": []
+    },
+    "flavor:card-005": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:16:33.817673",
+      "output_path": "flavor/card-005/output.json",
       "output_files": []
     },
     "art:card-001": {
       "completed": true,
-      "completed_at": "2026-01-29T22:10:52.559201",
+      "completed_at": "2026-01-29T22:16:42.492300",
       "output_path": "art/card-001/output.json",
       "output_files": [
         ".artgen/generate_image/card-001/v1.png"
@@ -132,7 +132,7 @@
     },
     "art:card-002": {
       "completed": true,
-      "completed_at": "2026-01-29T22:11:00.941473",
+      "completed_at": "2026-01-29T22:16:50.114801",
       "output_path": "art/card-002/output.json",
       "output_files": [
         ".artgen/generate_image/card-002/v1.png"
@@ -140,7 +140,7 @@
     },
     "art:card-003": {
       "completed": true,
-      "completed_at": "2026-01-29T22:11:07.674800",
+      "completed_at": "2026-01-29T22:16:57.319082",
       "output_path": "art/card-003/output.json",
       "output_files": [
         ".artgen/generate_image/card-003/v1.png"
@@ -148,7 +148,7 @@
     },
     "art:card-004": {
       "completed": true,
-      "completed_at": "2026-01-29T22:11:15.764725",
+      "completed_at": "2026-01-29T22:17:05.587907",
       "output_path": "art/card-004/output.json",
       "output_files": [
         ".artgen/generate_image/card-004/v1.png"
@@ -156,7 +156,7 @@
     },
     "art:card-005": {
       "completed": true,
-      "completed_at": "2026-01-29T22:11:24.381436",
+      "completed_at": "2026-01-29T22:17:13.681098",
       "output_path": "art/card-005/output.json",
       "output_files": [
         ".artgen/generate_image/card-005/v1.png"

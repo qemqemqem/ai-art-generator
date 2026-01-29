@@ -1,0 +1,8 @@
+{
+  "step_id": "mechanics",
+  "asset_id": "card-002",
+  "timestamp": "2026-01-29T22:15:49.087509",
+  "data": {
+    "content": "COST: {2}{B}{B}\nTYPE: Creature - Nightmare Knight\nTEXT: Menace\nWhenever an opponent casts a spell, they lose 1 life.\nP/T:"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "step_id": "mechanics",
+  "asset_id": "card-004",
+  "timestamp": "2026-01-29T22:15:59.834939",
+  "data": {
+    "content": "COST: {1}{R}{R}\nTYPE: Creature - Phoenix\nTEXT: Flying\nWhen Procrastinating Phoenix dies, return it to its owner's hand at the beginning of the next"
+  }
+}

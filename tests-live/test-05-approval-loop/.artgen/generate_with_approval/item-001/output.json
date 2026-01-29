@@ -1,0 +1,11 @@
+{
+  "step_id": "generate_with_approval",
+  "asset_id": "item-001",
+  "timestamp": "2026-01-29T22:24:42.194976",
+  "data": {
+    "prompt": "Magic Wand: A sparkling wizard's wand\nStyle: pixel art\nGame item sprite, clean edges\n",
+    "paths": [
+      "../tests-live/test-05-approval-loop/.artgen/generate_image/item-001/v1.png"
+    ]
+  }
+}

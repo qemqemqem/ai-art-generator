@@ -1,0 +1,45 @@
+# Test 04: Interactive Selection
+# Tests: variations with user selection, assessment, until:approved
+
+name: test-04-iterative
+version: "1.0"
+description: "Test human-in-the-loop features"
+
+state:
+  directory: .artgen
+
+context:
+  style: "colorful cartoon"
+
+assets:
+  items:
+    - id: character
+      name: "Happy Cat"
+      description: "A cheerful cartoon cat"
+
+steps:
+  # Generate 3 variations, user selects best
+  - id: generate_with_variations
+    type: generate_image
+    for_each: asset
+    variations: 3
+    select: user
+    config:
+      prompt: |
+        {asset.name}: {asset.description}
+        Style: {context.style}
+        Cute, expressive, high quality
+      size: 512
+
+  # Assess the selected image
+  - id: assess_result
+    type: assess
+    for_each: asset
+    requires:
+      - generate_with_variations
+    config:
+      criteria: |
+        - Is this clearly a cat?
+        - Does it look cheerful/happy?
+        - Is the style cartoony?
+      threshold: 6

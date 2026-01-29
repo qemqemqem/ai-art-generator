@@ -1,0 +1,11 @@
+{
+  "step_id": "art",
+  "asset_id": "card-005",
+  "timestamp": "2026-01-29T22:17:13.680915",
+  "data": {
+    "prompt": "Magic: The Gathering card art for \"Passive-Aggressive Enchantment\"\n\nA spell that helps you but makes you feel bad about needing help\n\nStyle: dark fantasy illustration, dramatic lighting, detailed, painterly\n\nFantasy card game illustration, centered composition,\nsuitable for a trading card frame. No text or borders.\n",
+    "paths": [
+      ".artgen/generate_image/card-005/v1.png"
+    ]
+  }
+}

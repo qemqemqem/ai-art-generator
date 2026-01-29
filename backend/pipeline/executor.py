@@ -16,10 +16,38 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
+from contextlib import contextmanager
+
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 from rich.panel import Panel
 from rich.table import Table
+
+
+@contextmanager
+def pause_progress(progress: Progress):
+    """
+    Context manager to pause Rich Progress for user input.
+    
+    Rich's Progress uses Live display which conflicts with stdin.
+    This pauses the display, clears progress lines, allows input,
+    then restarts the display.
+    """
+    # Stop the live display
+    progress.stop()
+    
+    # Clear the progress lines from terminal
+    # Move cursor up and clear each task line
+    UP = "\x1b[1A"
+    CLEAR = "\x1b[2K"
+    for _ in progress.tasks:
+        print(UP + CLEAR + UP, end="")
+    
+    try:
+        yield
+    finally:
+        # Restart the live display
+        progress.start()
 
 from .spec_parser import PipelineSpec, StepSpec, StepType, load_pipeline, get_execution_order
 from .asset_loader import load_assets
@@ -374,11 +402,24 @@ class PipelineExecutor:
                 if step.variations:
                     config["variations"] = step.variations
                 
+                # Check if this step needs user interaction
+                needs_user_interaction = (
+                    (step.until == "approved" and not self.auto_approve) or
+                    (step.select == "user" and not self.auto_approve) or
+                    (step.variations and step.variations > 1 and not self.auto_approve)
+                )
+                
                 # Handle until: approved loop
                 if step.until == "approved":
-                    result = await self._execute_until_approved(
-                        step, executor, config, ctx, asset_name
-                    )
+                    if needs_user_interaction:
+                        with pause_progress(progress):
+                            result = await self._execute_until_approved(
+                                step, executor, config, ctx, asset_name
+                            )
+                    else:
+                        result = await self._execute_until_approved(
+                            step, executor, config, ctx, asset_name
+                        )
                 else:
                     # Normal execution
                     result = await executor.execute(config, ctx)
@@ -390,9 +431,10 @@ class PipelineExecutor:
                             (result.variations and len(result.variations) > 1)
                         )
                         if needs_selection and not self.auto_approve:
-                            result = await self._handle_variations(
-                                step, result, ctx, asset_name, executor, config
-                            )
+                            with pause_progress(progress):
+                                result = await self._handle_variations(
+                                    step, result, ctx, asset_name, executor, config
+                                )
                 
                 if result.success:
                     # Cache the output

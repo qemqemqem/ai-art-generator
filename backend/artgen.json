@@ -1,0 +1,15 @@
+{
+  "name": "backend",
+  "description": "",
+  "style": {
+    "global_prompt_prefix": "",
+    "global_prompt_suffix": "",
+    "negative_prompt": "",
+    "aspect_ratio": "1:1",
+    "image_size": "1K"
+  },
+  "pipeline": [],
+  "default_image_provider": "gemini",
+  "default_text_provider": "gemini",
+  "settings": {}
+}

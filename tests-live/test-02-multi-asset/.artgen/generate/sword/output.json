@@ -1,0 +1,11 @@
+{
+  "step_id": "generate",
+  "asset_id": "sword",
+  "timestamp": "2026-01-29T22:04:06.892352",
+  "data": {
+    "prompt": "Iron Sword: A basic iron sword for beginners\n\nStyle: fantasy pixel art\n\nGame item sprite on transparent background.\nCentered, single object, pixel art style.\n",
+    "paths": [
+      ".artgen/generate_image/sword/v1.png"
+    ]
+  }
+}

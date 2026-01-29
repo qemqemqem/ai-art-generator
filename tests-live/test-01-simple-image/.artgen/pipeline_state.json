@@ -1,0 +1,14 @@
+{
+  "pipeline_hash": "a69a8a559deb8d08",
+  "updated_at": "2026-01-29T22:02:03.681781",
+  "steps": {
+    "generate:item-001": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:02:03.681772",
+      "output_path": "generate/item-001/output.json",
+      "output_files": [
+        ".artgen/generate_image/item-001/v1.png"
+      ]
+    }
+  }
+}

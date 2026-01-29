@@ -1,0 +1,124 @@
+# Incremental sprite generation with external input
+# Demonstrates: external file input, research caching, incremental runs
+
+name: "Incremental Game Sprites"
+version: "1.0"
+description: |
+  Generate sprites with a researched style guide.
+  
+  Workflow:
+  1. First run: Research style, generate initial batch
+  2. Later runs: Reuse cached style, add new sprites
+  
+  Usage:
+    artgen run incremental-sprites.yaml                    # First run
+    artgen run incremental-sprites.yaml --input batch2.csv # Add more
+
+# =============================================================================
+# Types
+# =============================================================================
+
+types:
+  GameSprite:
+    name: text
+    unit_type: infantry | cavalry | ranged | magic | siege
+    description: text
+    sprite: image?
+
+# =============================================================================
+# State
+# =============================================================================
+
+state:
+  directory: .artgen/
+
+# =============================================================================
+# Assets - loaded from external CSV
+# =============================================================================
+
+assets:
+  type: GameSprite
+  from_file: ./units.csv        # Load from CSV file
+
+# =============================================================================
+# Context
+# =============================================================================
+
+context:
+  game_genre: "Fantasy tactical RPG"
+  target_resolution: 64
+
+# =============================================================================
+# Steps
+# =============================================================================
+
+steps:
+  # --- Global Research (cached - only runs once) ---
+  
+  - id: research_style
+    type: research
+    save_to: research/pixel_art_styles.json
+    cache: true                 # Load from file if exists
+    config:
+      query: |
+        Pixel art sprite styles for {context.game_genre}:
+        - Color palette recommendations
+        - Common techniques for {context.target_resolution}px sprites
+        - Silhouette and readability best practices
+
+  - id: define_style_guide
+    type: generate_text
+    requires: [research_style]
+    save_to: research/style_guide.md
+    cache: true                 # Also cached
+    config:
+      prompt: |
+        Based on this research: {research_style.output}
+        
+        Create a style guide for our game sprites:
+        1. Color palette (max 16 colors, hex codes)
+        2. Outline style (hard/soft/none)
+        3. Shading approach
+        4. Animation-ready requirements
+        
+        Be specific and actionable.
+
+  # --- Per-Asset Generation (incremental) ---
+
+  - id: generate_sprite
+    type: generate_sprite
+    for_each: asset
+    requires: [define_style_guide]
+    save_to: sprites/{asset.id}/
+    cache: skip_existing        # Only generate new assets
+    config:
+      prompt: |
+        Style: {define_style_guide.output}
+        
+        Create a {context.target_resolution}px sprite for:
+        Name: {asset.name}
+        Type: {asset.unit_type}
+        Description: {asset.description}
+        
+        Game sprite, clean edges, transparent background
+      variations: 3
+      size: 512
+
+  - id: select_best
+    type: user_select
+    for_each: asset
+    requires: [generate_sprite]
+    save_to: sprites/{asset.id}/selection.json
+    cache: skip_existing
+    config:
+      prompt: "Select the best sprite for {asset.name}"
+
+  - id: export_sizes
+    type: resize
+    for_each: asset
+    requires: [select_best]
+    save_to: sprites/{asset.id}/final/
+    cache: skip_existing
+    config:
+      sizes: [32, 64, 128, 256]
+      format: png

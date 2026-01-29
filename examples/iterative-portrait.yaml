@@ -1,0 +1,180 @@
+# Iterative Portrait Refinement
+# Demonstrates the loop/refinement pattern
+
+name: "Hero Portrait"
+version: "1.0"
+description: |
+  Generate a single high-quality character portrait.
+  Uses iterative refinement with AI assessment and human approval.
+  
+  This demonstrates:
+  - Loop steps that iterate until quality threshold
+  - AI assessment with specific criteria
+  - Human-in-the-loop selection
+  - Prompt refinement based on feedback
+
+context:
+  character:
+    name: "Elara Nightwhisper"
+    description: "A battle-scarred elven ranger who lost her family to orcs"
+    traits:
+      - "Silver hair with a single black streak"
+      - "Pale green eyes, one scarred"
+      - "Leather armor with leaf motifs"
+      - "Carries a recurve bow"
+  style: "Digital painting, detailed, dramatic forest lighting"
+  max_iterations: 5
+
+assets:
+  type: image
+  count: 1
+
+steps:
+  # Research character portrait styles
+  - id: research
+    type: research
+    config:
+      query: |
+        Fantasy character portrait art:
+        - Elven character design
+        - Battle-scarred warrior aesthetics
+        - Forest ranger clothing and gear
+        - Digital painting techniques
+
+  # Create initial prompt
+  - id: initial_prompt
+    type: generate_prompt
+    requires: [research]
+    config:
+      prompt: |
+        Create a detailed art prompt for:
+        Character: {context.character.name}
+        Description: {context.character.description}
+        Traits: {context.character.traits}
+        Style: {context.style}
+        Research: {research.output}
+        
+        The prompt should specify:
+        - Exact pose and framing (half-body portrait)
+        - Lighting setup
+        - Background elements
+        - Key character features to emphasize
+      output: current_prompt
+
+  # Main refinement loop
+  - id: refinement_loop
+    type: loop
+    requires: [initial_prompt]
+    config:
+      max_iterations: 5
+      until: "user_satisfied == true"
+      
+      steps:
+        # Generate variations
+        - id: generate
+          type: generate_image
+          config:
+            prompt: "{current_prompt}"
+            variations: 3
+            size: 1024
+            quality: high
+
+        # AI assessment
+        - id: assess
+          type: assess
+          requires: [generate]
+          config:
+            criteria:
+              - "Face is clear, detailed, and expressive"
+              - "Elven features present (pointed ears, elegant bone structure)"
+              - "Battle scar visible on face"
+              - "Silver hair with black streak visible"
+              - "Forest lighting matches description"
+              - "Armor/gear matches ranger concept"
+              - "No anatomical errors"
+              - "Professional quality, no artifacts"
+            weights:
+              face_quality: 2.0  # Face matters most
+              character_accuracy: 1.5
+              technical_quality: 1.0
+            threshold: 0.8
+            output: assessment
+
+        # Human selection
+        - id: select
+          type: user_select
+          requires: [assess]
+          config:
+            prompt: |
+              Select the best portrait, or reject all.
+              
+              Assessment: {assess.assessment}
+              Iteration: {loop.iteration} of {context.max_iterations}
+            options:
+              - label: "Option 1"
+                value: "accept_1"
+              - label: "Option 2"
+                value: "accept_2"
+              - label: "Option 3"
+                value: "accept_3"
+              - label: "None - refine further"
+                value: "reject"
+            output: selection
+
+        # Branch based on selection
+        - id: check_satisfied
+          type: branch
+          requires: [select]
+          config:
+            on: "selection"
+            paths:
+              accept_1:
+                - set: { user_satisfied: true, chosen: 1 }
+              accept_2:
+                - set: { user_satisfied: true, chosen: 2 }
+              accept_3:
+                - set: { user_satisfied: true, chosen: 3 }
+              reject:
+                - set: { user_satisfied: false }
+
+        # Refine prompt if rejected (only runs if not satisfied)
+        - id: refine
+          type: generate_text
+          requires: [check_satisfied]
+          condition: "user_satisfied == false"
+          config:
+            prompt: |
+              The current portrait prompt didn't meet expectations.
+              
+              Current prompt: {current_prompt}
+              Assessment feedback: {assess.assessment}
+              Iteration: {loop.iteration}
+              
+              Improve the prompt to address the issues.
+              Be more specific about problem areas.
+              Keep what's working, fix what's not.
+            output: current_prompt  # Update for next iteration
+
+  # Final export (after loop completes)
+  - id: export
+    type: resize
+    requires: [refinement_loop]
+    config:
+      input: "chosen_image"
+      sizes: [512, 1024, 2048]
+      formats: [png, jpg]
+      
+  # Generate additional poses
+  - id: additional_poses
+    type: generate_image
+    requires: [refinement_loop]
+    config:
+      prompt: |
+        Same character as approved portrait: {context.character.name}
+        Using refined prompt style: {current_prompt}
+        
+        Generate additional poses:
+        1. Action pose (drawing bow)
+        2. Three-quarter view
+      variations: 2
+      size: 1024

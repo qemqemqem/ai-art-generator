@@ -1,0 +1,26 @@
+{
+  "name": "Science Fantasy Strategy Sprites",
+  "description": "Unit sprites for a science fantasy strategy game",
+  "style": {
+    "global_prompt_prefix": "pixel art game sprite, 16-bit style, strategy game unit, top-down 3/4 view, clean edges",
+    "global_prompt_suffix": "transparent background, single character, centered composition, game asset",
+    "negative_prompt": "",
+    "aspect_ratio": "1:1",
+    "image_size": "1K"
+  },
+  "pipeline": [
+    {
+      "id": "generate_sprite",
+      "type": "generate_sprite",
+      "provider": null,
+      "prompt_template": null,
+      "requires_approval": false,
+      "variations": 4,
+      "parallel_with": null,
+      "config": {}
+    }
+  ],
+  "default_image_provider": "gemini",
+  "default_text_provider": "gemini",
+  "settings": {}
+}

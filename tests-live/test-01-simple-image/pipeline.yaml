@@ -1,0 +1,35 @@
+# Test 01: Simple Image Generation
+# Minimal test - one asset, one generation step
+
+name: test-01-simple-image
+version: "1.0"
+description: "Minimal test - generate a single image"
+
+# State/cache directory
+state:
+  directory: .artgen
+
+# Context for the pipeline
+context:
+  style: "colorful cartoon style"
+
+# One asset to generate
+assets:
+  items:
+    - id: item-001
+      name: "Happy Robot"
+      description: "A friendly smiling robot"
+
+# One step: generate the image
+steps:
+  - id: generate
+    type: generate_image
+    for_each: asset
+    config:
+      prompt: |
+        A {asset.name}: {asset.description}
+        Style: {context.style}
+        High quality digital art, clean lines, vibrant colors.
+      size: 512
+    writes_to: asset.art
+    save_to: outputs/{asset.id}/

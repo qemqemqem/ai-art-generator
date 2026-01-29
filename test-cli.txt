@@ -1,0 +1,3 @@
+# Test file for artgen CLI
+A blue jay perched on a branch
+A red cardinal in snow

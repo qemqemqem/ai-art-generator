@@ -1,0 +1,7 @@
+id,name,unit_type,description
+archer,Forest Archer,ranged,Elven archer with longbow and leaf-green cloak
+knight,Iron Knight,infantry,Heavy armored knight with tower shield and longsword
+mage,Fire Mage,magic,Robed wizard with flame staff and glowing runes
+healer,Battle Cleric,magic,Armored priest with healing staff and holy symbol
+cavalry,Lancer,cavalry,Mounted knight with lance and flowing banner
+siege,Catapult,siege,Wooden siege engine with crew of two

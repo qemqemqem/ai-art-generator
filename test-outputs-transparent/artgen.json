@@ -1,0 +1,28 @@
+{
+  "name": "CLI: test-cli.txt",
+  "description": "",
+  "style": {
+    "global_prompt_prefix": "",
+    "global_prompt_suffix": "",
+    "negative_prompt": "",
+    "aspect_ratio": "1:1",
+    "image_size": "1K"
+  },
+  "pipeline": [
+    {
+      "id": "generate_sprite",
+      "type": "generate_sprite",
+      "provider": null,
+      "prompt_template": null,
+      "requires_approval": false,
+      "variations": 1,
+      "parallel_with": null,
+      "config": {
+        "auto_remove_background": true
+      }
+    }
+  ],
+  "default_image_provider": "gemini",
+  "default_text_provider": "gemini",
+  "settings": {}
+}

@@ -1,0 +1,58 @@
+# Test 02: Multiple Assets + Global Step
+# Tests: global step caching, per-asset iteration, template substitution
+
+name: test-02-multi-asset
+version: "1.0"
+description: "Test global context + 3 assets"
+
+state:
+  directory: .artgen
+
+# Global context - will be enriched by research step
+context:
+  game_name: "Dungeon Quest"
+  art_style: "fantasy pixel art"
+
+# Three game items
+assets:
+  items:
+    - id: sword
+      name: "Iron Sword"
+      description: "A basic iron sword for beginners"
+    - id: shield  
+      name: "Wooden Shield"
+      description: "A round wooden shield with metal studs"
+    - id: potion
+      name: "Health Potion"
+      description: "A red glass bottle filled with healing elixir"
+
+steps:
+  # Global step - decide the exact art direction
+  - id: define_style
+    type: generate_text
+    config:
+      prompt: |
+        For a game called "{context.game_name}", define a consistent art style.
+        Base style: {context.art_style}
+        
+        Provide a 2-3 sentence description of the exact visual style to use
+        for all game items (weapons, potions, equipment).
+        Be specific about colors, line weight, and pixel density.
+      max_length: 200
+
+  # Per-asset step - generate each item
+  - id: generate
+    type: generate_image
+    for_each: asset
+    requires:
+      - define_style
+    config:
+      prompt: |
+        {asset.name}: {asset.description}
+        
+        Style: {context.art_style}
+        
+        Game item sprite on transparent background.
+        Centered, single object, pixel art style.
+      size: 512
+    writes_to: asset.art

@@ -1,0 +1,120 @@
+{
+  "pipeline_hash": "f8d7f06f7c4bba38",
+  "updated_at": "2026-01-29T22:10:38.019001",
+  "steps": {
+    "research:card-001": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:08:59.761097",
+      "output_path": "research/card-001/output.json",
+      "output_files": []
+    },
+    "research:card-002": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:09:05.987691",
+      "output_path": "research/card-002/output.json",
+      "output_files": []
+    },
+    "research:card-003": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:09:12.380445",
+      "output_path": "research/card-003/output.json",
+      "output_files": []
+    },
+    "research:card-004": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:09:18.253787",
+      "output_path": "research/card-004/output.json",
+      "output_files": []
+    },
+    "research:card-005": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:09:24.254174",
+      "output_path": "research/card-005/output.json",
+      "output_files": []
+    },
+    "design:card-001": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:09:29.890443",
+      "output_path": "design/card-001/output.json",
+      "output_files": []
+    },
+    "design:card-002": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:09:33.769986",
+      "output_path": "design/card-002/output.json",
+      "output_files": []
+    },
+    "design:card-003": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:09:39.575062",
+      "output_path": "design/card-003/output.json",
+      "output_files": []
+    },
+    "design:card-004": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:09:45.373758",
+      "output_path": "design/card-004/output.json",
+      "output_files": []
+    },
+    "design:card-005": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:09:50.952584",
+      "output_path": "design/card-005/output.json",
+      "output_files": []
+    },
+    "flavor:card-001": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:09:56.907734",
+      "output_path": "flavor/card-001/output.json",
+      "output_files": []
+    },
+    "flavor:card-002": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:10:02.441957",
+      "output_path": "flavor/card-002/output.json",
+      "output_files": []
+    },
+    "flavor:card-003": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:10:05.994824",
+      "output_path": "flavor/card-003/output.json",
+      "output_files": []
+    },
+    "flavor:card-004": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:10:10.566520",
+      "output_path": "flavor/card-004/output.json",
+      "output_files": []
+    },
+    "flavor:card-005": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:10:15.799521",
+      "output_path": "flavor/card-005/output.json",
+      "output_files": []
+    },
+    "mechanics:card-001": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:10:21.462795",
+      "output_path": "mechanics/card-001/output.json",
+      "output_files": []
+    },
+    "mechanics:card-002": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:10:26.907034",
+      "output_path": "mechanics/card-002/output.json",
+      "output_files": []
+    },
+    "mechanics:card-003": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:10:32.581891",
+      "output_path": "mechanics/card-003/output.json",
+      "output_files": []
+    },
+    "mechanics:card-004": {
+      "completed": true,
+      "completed_at": "2026-01-29T22:10:38.018987",
+      "output_path": "mechanics/card-004/output.json",
+      "output_files": []
+    }
+  }
+}

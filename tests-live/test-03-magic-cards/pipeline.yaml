@@ -1,0 +1,135 @@
+# Test 03: Magic Card Generation Pipeline
+# Full creative flow: concept → research → design → mechanics → flavor → art
+
+name: test-03-magic-cards
+version: "1.0"
+description: "Generate 5 weird Magic: The Gathering style cards"
+
+state:
+  directory: .artgen
+
+context:
+  game: "Magic: The Gathering"
+  art_style: "dark fantasy illustration, dramatic lighting, detailed, painterly"
+
+# 5 weird card concepts
+assets:
+  items:
+    - id: card-001
+      name: "Bureaucratic Ooze"
+      concept: "An ooze that has somehow become a mid-level manager in a fantasy corporation"
+      
+    - id: card-002
+      name: "Existential Dread Knight"
+      concept: "A paladin who questions the meaning of questing while still being very good at smiting"
+      
+    - id: card-003
+      name: "The Tax Collector of Souls"
+      concept: "A demon who insists on proper paperwork before collecting souls, very annoying to deal with"
+      
+    - id: card-004
+      name: "Procrastinating Phoenix"
+      concept: "A phoenix that keeps putting off its rebirth, 'I'll resurrect tomorrow, probably'"
+      
+    - id: card-005
+      name: "Passive-Aggressive Enchantment"
+      concept: "A spell that helps you but makes you feel bad about needing help"
+
+steps:
+  # Research similar cards and themes
+  - id: research
+    type: research
+    for_each: asset
+    config:
+      query: |
+        Magic: The Gathering card design for: {asset.name}
+        Concept: {asset.concept}
+        
+        Research similar existing MTG cards with humorous or unusual concepts.
+        What mechanics fit this theme? What colors would this card be?
+
+  # Design the card concept
+  - id: design
+    type: generate_text
+    for_each: asset
+    requires:
+      - research
+    config:
+      prompt: |
+        You are designing a Magic: The Gathering card.
+        
+        Card Name: {asset.name}
+        Concept: {asset.concept}
+        
+        Research notes: {research.content}
+        
+        Write a 2-3 sentence design statement explaining:
+        - What colors this card should be
+        - What card type (creature, enchantment, instant, etc.)
+        - The core mechanical identity
+        
+        Be creative and embrace the weird concept!
+      max_length: 200
+
+  # Generate mechanics
+  - id: mechanics
+    type: generate_text
+    for_each: asset
+    requires:
+      - design
+    config:
+      prompt: |
+        Create Magic: The Gathering mechanics for this card:
+        
+        Card: {asset.name}
+        Design: {design.content}
+        
+        Provide ONLY the mechanics text as it would appear on the card.
+        Include mana cost, type line, power/toughness if creature.
+        Use proper MTG templating (tap symbols as {{T}}, etc.)
+        
+        Format:
+        COST: [mana cost]
+        TYPE: [card type]
+        TEXT: [abilities]
+        P/T: [if creature]
+      max_length: 300
+
+  # Generate flavor text
+  - id: flavor
+    type: generate_text
+    for_each: asset
+    requires:
+      - design
+    config:
+      prompt: |
+        Write flavor text for this Magic: The Gathering card:
+        
+        Card: {asset.name}
+        Concept: {asset.concept}
+        Design: {design.content}
+        
+        Write 1-2 sentences of evocative, in-world flavor text.
+        It should be funny but still feel like it belongs in MTG.
+        Use italics formatting (just write the text, it will be italicized).
+      max_length: 150
+
+  # Generate card art
+  - id: art
+    type: generate_image
+    for_each: asset
+    requires:
+      - design
+      - flavor
+    config:
+      prompt: |
+        Magic: The Gathering card art for "{asset.name}"
+        
+        {asset.concept}
+        
+        Style: {context.art_style}
+        
+        Fantasy card game illustration, centered composition,
+        suitable for a trading card frame. No text or borders.
+      size: 512
+    writes_to: asset.art

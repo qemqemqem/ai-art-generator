@@ -1,8 +1,8 @@
 {
   "step_id": "mechanics",
   "asset_id": "card-001",
-  "timestamp": "2026-01-29T22:10:21.462652",
+  "timestamp": "2026-01-30T01:44:41.201136",
   "data": {
-    "content": "COST: {2}{U}{B}\nTYPE: Creature \u2014 Ooze\nTEXT: Creatures your opponents control can't attack unless their controller pays {1} for each attacking creature they control"
+    "content": "COST: {2}{U}{B}\nTYPE: Creature - Ooze Advisor\nTEXT: Spells your opponents cast cost {1} more to cast.\nWhenever an opponent casts"
   }
 }

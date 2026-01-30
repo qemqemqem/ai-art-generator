@@ -1,8 +1,8 @@
 {
   "step_id": "mechanics",
   "asset_id": "card-005",
-  "timestamp": "2026-01-29T22:10:43.507558",
+  "timestamp": "2026-01-30T01:44:46.423844",
   "data": {
-    "content": "COST: {1}{U}{B}\nTYPE: Enchantment\nTEXT: At the beginning of each opponent's end step, if that opponent cast two or more spells this turn, they put"
+    "content": "COST: {U}{B}\nTYPE: Enchantment\nTEXT: At the beginning of your upkeep, an opponent chooses one \u2014\n\u2014 You draw a card.\n\u2014 That opponent"
   }
 }

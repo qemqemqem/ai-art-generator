@@ -97,6 +97,25 @@ class StepInfo:
 
 
 @dataclass
+class AssetInfo:
+    """Information about a pipeline asset."""
+    id: str
+    name: str
+    data: dict[str, Any] = field(default_factory=dict)
+    status: str = "pending"  # "pending", "processing", "complete", "failed"
+    current_step: str | None = None
+    
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "data": self.data,
+            "status": self.status,
+            "current_step": self.current_step,
+        }
+
+
+@dataclass
 class PipelineProgress:
     """Current pipeline progress state."""
     phase: PipelinePhase = PipelinePhase.LOADING
@@ -117,6 +136,7 @@ class PipelineProgress:
     errors: list[str] = field(default_factory=list)
     started_at: datetime | None = None
     pipeline_steps: list[StepInfo] = field(default_factory=list)
+    assets: list[AssetInfo] = field(default_factory=list)  # Full asset list with status
     
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -139,6 +159,7 @@ class PipelineProgress:
             "started_at": self.started_at.isoformat() if self.started_at else None,
             "percent": self._calc_percent(),
             "pipeline_steps": [s.to_dict() for s in self.pipeline_steps],
+            "assets": [a.to_dict() for a in self.assets],
         }
     
     def _calc_percent(self) -> int:

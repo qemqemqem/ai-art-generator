@@ -94,6 +94,7 @@ from .web_bridge import (
     PipelinePhase,
     ApprovalType,
     StepInfo,
+    AssetInfo,
     get_bridge,
     reset_bridge,
 )
@@ -174,6 +175,7 @@ __all__ = [
     "PipelinePhase",
     "ApprovalType",
     "StepInfo",
+    "AssetInfo",
     "get_bridge",
     "reset_bridge",
     "WebServer",

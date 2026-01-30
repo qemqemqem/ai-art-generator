@@ -1,8 +1,8 @@
 {
   "step_id": "mechanics",
   "asset_id": "card-003",
-  "timestamp": "2026-01-29T22:10:32.581665",
+  "timestamp": "2026-01-30T01:44:41.488241",
   "data": {
-    "content": "COST: {3}{B}{B}\nTYPE: Creature - Spirit Advisor\nTEXT: Flying\nWhenever The Tax Collector of Souls or another creature an opponent controls dies, exile it. Its controller loses"
+    "content": "COST: {2}{U}{B}{B}\nTYPE: Legendary Creature \u2014 Demon\nTEXT: Flying, lifelink\nSpells and abilities your opponents control that target one or more cards"
   }
 }

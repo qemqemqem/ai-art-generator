@@ -133,6 +133,17 @@ class PipelineExecutor:
         if self.web_bridge:
             self.web_bridge.update_progress(**kwargs)
     
+    def _update_asset_status(self, asset_id: str, status: str) -> None:
+        """Update the status of a specific asset in web progress."""
+        if self.web_bridge:
+            progress = self.web_bridge.get_progress()
+            for asset_info in progress.assets:
+                if asset_info.id == asset_id:
+                    asset_info.status = status
+                    break
+            # Broadcast the updated progress
+            self._update_web_progress()
+    
     def _get_step_action_text(self, step: StepSpec) -> str:
         """
         Generate a concise action description for CLI progress display.
@@ -311,10 +322,24 @@ class PipelineExecutor:
             self.assets = load_assets(self.spec, base_path)
             console.print(f"[green]✓[/green] Loaded {len(self.assets)} assets")
             
+            # Build asset info list for web UI
+            from .web_bridge import AssetInfo
+            asset_info_list = []
+            for i, asset in enumerate(self.assets):
+                asset_id = asset.get("id", f"asset-{i}")
+                asset_name = asset.get("name", asset_id)
+                asset_info_list.append(AssetInfo(
+                    id=asset_id,
+                    name=asset_name,
+                    data=dict(asset),
+                    status="pending",
+                ))
+            
             # Update web progress
             self._update_web_progress(
                 total_assets=len(self.assets),
                 message="Assets loaded",
+                assets=asset_info_list,
             )
             
             # Initialize providers
@@ -427,6 +452,10 @@ class PipelineExecutor:
             # Update web bridge to complete phase
             if self.web_bridge:
                 from .web_bridge import PipelinePhase
+                # Mark all assets as complete
+                progress = self.web_bridge.get_progress()
+                for asset_info in progress.assets:
+                    asset_info.status = "complete"
                 self.web_bridge.set_phase(PipelinePhase.COMPLETE, "Pipeline completed!")
                 self._update_web_progress(
                     completed_steps=len(self.spec.steps),
@@ -637,6 +666,9 @@ class PipelineExecutor:
                 asset_id = asset.get("id", f"asset-{asset_idx}")
                 asset_name = asset.get("name", asset_id)
                 
+                # Mark asset as processing
+                self._update_asset_status(asset_id, "processing")
+                
                 # Get asset-specific description and prompt
                 step_desc = self._get_step_description(step, asset)
                 step_prompt = step.config.get("prompt", "") if step.config else ""
@@ -735,6 +767,12 @@ class PipelineExecutor:
                         if step.id not in self.step_outputs:
                             self.step_outputs[step.id] = {"assets": {}}
                         self.step_outputs[step.id]["assets"][asset_id] = result.output
+                    
+                    # Mark asset as complete
+                    self._update_asset_status(asset_id, "complete")
+                else:
+                    # Mark asset as failed
+                    self._update_asset_status(asset_id, "failed")
                 
                 async with results_lock:
                     results.append(result)

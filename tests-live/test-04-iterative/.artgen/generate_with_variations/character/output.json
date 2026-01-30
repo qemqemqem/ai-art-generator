@@ -1,7 +1,7 @@
 {
   "step_id": "generate_with_variations",
   "asset_id": "character",
-  "timestamp": "2026-01-29T22:38:04.832440",
+  "timestamp": "2026-01-30T00:29:31.566671",
   "data": {
     "prompt": "Happy Cat: A cheerful cartoon cat\nStyle: colorful cartoon\nCute, expressive, high quality\n",
     "paths": [
@@ -9,7 +9,7 @@
       ".artgen/generate_image/character/v2.png",
       ".artgen/generate_image/character/v3.png"
     ],
-    "selected_index": 1,
-    "selected_path": ".artgen/generate_image/character/v2.png"
+    "selected_index": 2,
+    "selected_path": ".artgen/generate_image/character/v3.png"
   }
 }

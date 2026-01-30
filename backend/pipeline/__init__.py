@@ -86,6 +86,22 @@ from .executor import (
     run_pipeline,
 )
 
+from .web_bridge import (
+    WebApprovalBridge,
+    ApprovalRequest,
+    ApprovalResponse,
+    PipelineProgress,
+    PipelinePhase,
+    ApprovalType,
+    StepInfo,
+    get_bridge,
+    reset_bridge,
+)
+
+from .web_server import (
+    WebServer,
+)
+
 __all__ = [
     # Spec parsing
     "PipelineSpec",
@@ -149,4 +165,16 @@ __all__ = [
     "PipelineExecutor",
     "ExecutionResult",
     "run_pipeline",
+    
+    # Web mode
+    "WebApprovalBridge",
+    "ApprovalRequest",
+    "ApprovalResponse",
+    "PipelineProgress",
+    "PipelinePhase",
+    "ApprovalType",
+    "StepInfo",
+    "get_bridge",
+    "reset_bridge",
+    "WebServer",
 ]

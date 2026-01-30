@@ -53,11 +53,17 @@ def load_env_file(env_path: Optional[str] = None) -> Path | None:
 _loaded_env_path = load_env_file()
 
 
+def _get_google_api_key() -> Optional[str]:
+    """Get Google API key from environment, checking multiple variable names."""
+    return os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+
+
 class ProviderConfig(BaseModel):
     """Configuration for AI providers."""
     
     # Google/Gemini (default image generator)
-    google_api_key: Optional[str] = Field(default_factory=lambda: os.getenv("GOOGLE_API_KEY"))
+    # Supports both GOOGLE_API_KEY and GEMINI_API_KEY
+    google_api_key: Optional[str] = Field(default_factory=_get_google_api_key)
     gemini_model: str = "gemini-2.5-flash-image"
     gemini_pro_model: str = "gemini-3-pro-image-preview"
     

@@ -55,10 +55,10 @@ def validate_environment() -> ValidationResult:
     """
     result = ValidationResult(valid=True)
     
-    # Required for Gemini image generation
-    if not os.environ.get("GOOGLE_API_KEY"):
+    # Required for Gemini image generation (supports both env var names)
+    if not os.environ.get("GOOGLE_API_KEY") and not os.environ.get("GEMINI_API_KEY"):
         result.add_error(
-            "GOOGLE_API_KEY environment variable not set. "
+            "GOOGLE_API_KEY or GEMINI_API_KEY environment variable not set. "
             "Required for image generation with Gemini."
         )
     

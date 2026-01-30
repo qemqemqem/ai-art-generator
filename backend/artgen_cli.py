@@ -44,6 +44,12 @@ def cli():
               help="Max parallel assets per step (default: 3)")
 @click.option("--skip-validation", is_flag=True,
               help="Skip pre-run validation")
+@click.option("--web", "-w", is_flag=True,
+              help="Enable web-based interactive mode (opens browser)")
+@click.option("--port", default=8080, type=int,
+              help="Port for web server (default: 8080)")
+@click.option("--no-browser", is_flag=True,
+              help="Don't auto-open browser (with --web)")
 def run(
     pipeline: str,
     input_file: str | None,
@@ -52,6 +58,9 @@ def run(
     dry_run: bool,
     parallel: int,
     skip_validation: bool,
+    web: bool,
+    port: int,
+    no_browser: bool,
 ):
     """Run an ArtGen pipeline."""
     
@@ -79,6 +88,20 @@ def run(
         elif result.warnings and verbose:
             print_validation_result(result, verbose=True)
     
+    # Web mode
+    if web:
+        _run_with_web(
+            pipeline_path=pipeline_path,
+            input_file=input_file,
+            auto_approve=auto_approve,
+            verbose=verbose,
+            parallel=parallel,
+            port=port,
+            open_browser=not no_browser,
+        )
+        return
+    
+    # CLI mode
     console.print()
     console.print(Panel(
         f"[bold]ArtGen Pipeline Runner[/bold]\n\n"
@@ -104,6 +127,83 @@ def run(
         for error in result.errors:
             console.print(f"  • {error}")
         sys.exit(1)
+
+
+def _run_with_web(
+    pipeline_path: Path,
+    input_file: str | None,
+    auto_approve: bool,
+    verbose: bool,
+    parallel: int,
+    port: int,
+    open_browser: bool,
+):
+    """Run pipeline with web-based interactive mode."""
+    from pipeline.web_server import WebServer, set_base_path
+    from pipeline.web_bridge import get_bridge, reset_bridge, PipelinePhase
+    from pipeline.executor import run_pipeline
+    
+    # Reset the bridge for this run
+    bridge = reset_bridge()
+    
+    # Start web server
+    base_path = pipeline_path.parent
+    server = WebServer(port=port)
+    
+    console.print()
+    console.print(Panel(
+        f"[bold]ArtGen Pipeline Runner (Web Mode)[/bold]\n\n"
+        f"Pipeline: {pipeline_path.name}\n"
+        f"Web UI: http://127.0.0.1:{port}\n"
+        f"Parallelism: {parallel}",
+        border_style="blue"
+    ))
+    console.print()
+    
+    console.print(f"[cyan]Starting web server on port {port}...[/cyan]")
+    server.start(base_path=base_path, open_browser=open_browser)
+    console.print(f"[green]✓[/green] Web server started: {server.url}")
+    
+    if open_browser:
+        console.print("[dim]Browser opened - approvals will appear there[/dim]")
+    
+    console.print()
+    
+    try:
+        # Run pipeline with web bridge active
+        bridge.set_phase(PipelinePhase.LOADING, "Loading pipeline...")
+        
+        result = asyncio.run(run_pipeline(
+            pipeline_path=pipeline_path,
+            input_override=input_file,
+            auto_approve=auto_approve,
+            verbose=verbose,
+            asset_parallelism=parallel,
+            web_bridge=bridge,
+        ))
+        
+        if result.success:
+            bridge.set_phase(PipelinePhase.COMPLETE, "Pipeline completed successfully")
+            console.print("\n[green]Pipeline completed![/green]")
+        else:
+            bridge.update_progress(errors=result.errors)
+            bridge.set_phase(PipelinePhase.FAILED, "Pipeline failed")
+            console.print("\n[red]Pipeline failed:[/red]")
+            for error in result.errors:
+                console.print(f"  • {error}")
+        
+        # Wait for browser close or user shutdown
+        console.print("\n[dim]Waiting for browser close or Ctrl+C to exit...[/dim]")
+        
+        try:
+            asyncio.run(bridge.wait_for_shutdown())
+        except KeyboardInterrupt:
+            pass
+        
+    finally:
+        console.print("\n[dim]Shutting down web server...[/dim]")
+        server.stop()
+        console.print("[green]✓[/green] Done")
 
 
 @cli.command()

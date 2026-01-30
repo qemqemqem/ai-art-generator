@@ -5,7 +5,9 @@ Handles human-in-the-loop steps:
   - user_select: User chooses from K variations
   - user_approve: User approves or rejects
 
-For v1, these are CLI-blocking operations.
+Supports two modes:
+  - CLI mode: Terminal prompts (blocking)
+  - Web mode: Browser-based approval via WebApprovalBridge
 """
 
 from pathlib import Path
@@ -23,9 +25,22 @@ from ..templates import substitute_template
 console = Console()
 
 
+def _get_web_bridge():
+    """Get the web bridge if in web mode."""
+    try:
+        from ..web_bridge import get_bridge
+        bridge = get_bridge()
+        # Check if bridge has a broadcast callback set (indicates web mode)
+        if bridge._broadcast_callback is not None:
+            return bridge
+    except Exception:
+        pass
+    return None
+
+
 @register_executor("user_select")
 class UserSelectExecutor(StepExecutor):
-    """Execute user selection steps (CLI-blocking)."""
+    """Execute user selection steps (CLI or web mode)."""
     
     async def execute(
         self,
@@ -46,6 +61,7 @@ class UserSelectExecutor(StepExecutor):
         prompt_text = config.get("prompt", "Select the best option")
         options_from = config.get("options_from")
         allow_regenerate = config.get("allow_regenerate", True)
+        step_id = config.get("_step_id", "user_select")
         
         # Substitute template variables
         prompt_text = substitute_template(
@@ -63,11 +79,11 @@ class UserSelectExecutor(StepExecutor):
             source_output = ctx.step_outputs[options_from]
         else:
             # Look for the most recent step with variations
-            for step_id in reversed(list(ctx.step_outputs.keys())):
-                output = ctx.step_outputs[step_id]
+            for sid in reversed(list(ctx.step_outputs.keys())):
+                output = ctx.step_outputs[sid]
                 if isinstance(output, dict) and "paths" in output:
                     source_output = output
-                    options_from = step_id
+                    options_from = sid
                     break
         
         if not source_output:
@@ -89,9 +105,74 @@ class UserSelectExecutor(StepExecutor):
                 error="No options available for selection",
             )
         
-        # Display options to user
+        # Get asset info
+        asset_id = ctx.asset.get("id") if ctx.asset else None
         asset_name = ctx.asset.get("name", ctx.asset.get("id", "item")) if ctx.asset else "item"
         
+        # Check for web mode
+        bridge = _get_web_bridge()
+        
+        if bridge:
+            # Web mode: send to browser
+            web_options = []
+            for opt in options:
+                if isinstance(opt, (str, Path)):
+                    # Make path relative to base_path for serving
+                    try:
+                        rel_path = str(Path(opt).relative_to(ctx.base_path))
+                    except ValueError:
+                        rel_path = str(opt)
+                    web_options.append({"path": rel_path})
+                else:
+                    web_options.append({"content": str(opt)})
+            
+            # Get generation prompt if available from source step
+            generation_prompt = ""
+            if source_output and isinstance(source_output, dict):
+                generation_prompt = source_output.get("prompt", "")
+            
+            # Determine step type from source
+            step_type = "user_select"
+            if options_from and options_from in ctx.step_outputs:
+                src = ctx.step_outputs[options_from]
+                if isinstance(src, dict) and src.get("type"):
+                    step_type = src["type"]
+            
+            selected_index, regenerate = await bridge.request_selection(
+                step_id=step_id,
+                asset_name=asset_name,
+                options=web_options,
+                asset_id=asset_id,
+                prompt=prompt_text,
+                step_type=step_type,
+                generation_prompt=generation_prompt,
+                step_description=f"Choose the best result from {len(options)} variations",
+                metadata={
+                    "options_from": options_from,
+                    "total_options": len(options),
+                },
+            )
+            
+            if regenerate:
+                return StepResult(
+                    success=True,
+                    output={"action": "regenerate"},
+                    duration_ms=int((time.time() - start) * 1000),
+                )
+            
+            selected_option = options[selected_index]
+            return StepResult(
+                success=True,
+                output={
+                    "selected_index": selected_index,
+                    "selected_path": selected_option if isinstance(selected_option, str) else str(selected_option),
+                    "action": "select",
+                },
+                selected_index=selected_index,
+                duration_ms=int((time.time() - start) * 1000),
+            )
+        
+        # CLI mode: terminal prompt
         console.print()
         console.print(Panel(
             f"[bold]{prompt_text}[/bold]",
@@ -169,7 +250,7 @@ class UserSelectExecutor(StepExecutor):
 
 @register_executor("user_approve")
 class UserApproveExecutor(StepExecutor):
-    """Execute user approval steps (CLI-blocking)."""
+    """Execute user approval steps (CLI or web mode)."""
     
     async def execute(
         self,
@@ -189,6 +270,7 @@ class UserApproveExecutor(StepExecutor):
         
         prompt_text = config.get("prompt", "Do you approve this result?")
         max_attempts = config.get("max_attempts", 5)
+        step_id = config.get("_step_id", "user_approve")
         
         # Substitute template variables
         prompt_text = substitute_template(
@@ -203,8 +285,8 @@ class UserApproveExecutor(StepExecutor):
         
         if not artifact_path:
             # Look for most recent image output
-            for step_id in reversed(list(ctx.step_outputs.keys())):
-                output = ctx.step_outputs[step_id]
+            for sid in reversed(list(ctx.step_outputs.keys())):
+                output = ctx.step_outputs[sid]
                 if isinstance(output, dict):
                     if "selected_path" in output:
                         artifact_path = output["selected_path"]
@@ -216,9 +298,58 @@ class UserApproveExecutor(StepExecutor):
                         artifact_path = output["paths"][0]
                         break
         
-        # Display to user
+        # Get asset info
+        asset_id = ctx.asset.get("id") if ctx.asset else None
         asset_name = ctx.asset.get("name", ctx.asset.get("id", "item")) if ctx.asset else "item"
         
+        # Check for web mode
+        bridge = _get_web_bridge()
+        
+        if bridge:
+            # Web mode: send to browser
+            result = {}
+            generation_prompt = ""
+            if artifact_path:
+                try:
+                    rel_path = str(Path(artifact_path).relative_to(ctx.base_path))
+                except ValueError:
+                    rel_path = str(artifact_path)
+                result["path"] = rel_path
+            
+            # Try to find the generation prompt from previous step outputs
+            for sid in reversed(list(ctx.step_outputs.keys())):
+                output = ctx.step_outputs[sid]
+                if isinstance(output, dict) and "prompt" in output:
+                    generation_prompt = output["prompt"]
+                    break
+            
+            approved, regenerate = await bridge.request_approval(
+                step_id=step_id,
+                asset_name=asset_name,
+                result=result,
+                asset_id=asset_id,
+                prompt=prompt_text,
+                step_type="user_approve",
+                generation_prompt=generation_prompt,
+                step_description="Review and approve the generated result, or reject to regenerate",
+            )
+            
+            duration = int((time.time() - start) * 1000)
+            
+            if approved:
+                return StepResult(
+                    success=True,
+                    output={"approved": True, "action": "approve"},
+                    duration_ms=duration,
+                )
+            else:
+                return StepResult(
+                    success=True,
+                    output={"approved": False, "action": "reject"},
+                    duration_ms=duration,
+                )
+        
+        # CLI mode: terminal prompt
         console.print()
         console.print(Panel(
             f"[bold]{prompt_text}[/bold]",

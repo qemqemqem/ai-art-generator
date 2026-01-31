@@ -8,6 +8,9 @@ description: "Test human-in-the-loop features"
 state:
   directory: .artgen
 
+output:
+  directory: output/
+
 context:
   style: "colorful cartoon"
 
@@ -22,6 +25,7 @@ steps:
   - id: generate_with_variations
     type: generate_image
     for_each: asset
+    is_output: true           # Collect this step's output
     variations: 3
     select: user
     config:

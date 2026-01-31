@@ -474,6 +474,394 @@ def get_html_page() -> str:
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
+        /* Queue Button */
+        .queue-btn {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .queue-btn:hover { background: #e2e8f0; border-color: #cbd5e1; }
+        .queue-btn.has-items { background: #fef3c7; border-color: #fcd34d; animation: queuePulse 2s ease-in-out infinite; }
+        .queue-btn.has-items:hover { background: #fde68a; animation: none; }
+        
+        @keyframes queuePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+            50% { box-shadow: 0 0 0 8px rgba(251, 191, 36, 0.3); }
+        }
+        
+        .queue-icon { font-size: 20px; }
+        
+        .queue-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            background: #ef4444;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .queue-badge.empty { display: none; }
+        
+        /* Queue Mode Overlay */
+        .queue-mode {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #f8fafc;
+            z-index: 500;
+            flex-direction: column;
+        }
+        .queue-mode.visible { display: flex; }
+        
+        .queue-mode-header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .queue-mode-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .queue-mode-title h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .queue-progress {
+            font-size: 14px;
+            color: #64748b;
+            background: #f1f5f9;
+            padding: 6px 14px;
+            border-radius: 16px;
+        }
+        
+        .queue-mode-close {
+            padding: 8px 16px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .queue-mode-close:hover { background: #e2e8f0; }
+        
+        .queue-mode-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .queue-item-container {
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        .queue-item-header {
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        
+        .queue-item-asset {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        
+        .queue-item-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .queue-item-subtitle {
+            font-size: 15px;
+            color: #64748b;
+        }
+        
+        .queue-options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .queue-option-card {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .queue-option-card:hover { 
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+        }
+        .queue-option-card.selected { border-color: #22c55e; background: #f0fdf4; }
+        
+        .queue-option-image {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            background: #f1f5f9;
+        }
+        
+        .queue-option-text {
+            padding: 16px;
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .queue-option-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .queue-option-number {
+            width: 28px;
+            height: 28px;
+            background: #e2e8f0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .queue-option-card:hover .queue-option-number { background: #3b82f6; color: white; }
+        .queue-option-card.selected .queue-option-number { background: #22c55e; color: white; }
+        
+        .queue-option-label { font-size: 14px; font-weight: 500; }
+        
+        .queue-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .queue-btn-primary {
+            padding: 12px 28px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .queue-btn-primary:hover { background: #2563eb; }
+        .queue-btn-primary:disabled { background: #94a3b8; cursor: not-allowed; }
+        
+        .queue-btn-secondary {
+            padding: 12px 24px;
+            background: white;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .queue-btn-secondary:hover { background: #f8fafc; border-color: #cbd5e1; }
+        
+        .queue-btn-skip {
+            padding: 12px 24px;
+            background: transparent;
+            color: #94a3b8;
+            border: 1px dashed #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .queue-btn-skip:hover { color: #64748b; border-color: #cbd5e1; }
+        
+        .queue-shortcuts {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+        
+        .queue-shortcuts kbd {
+            display: inline-block;
+            padding: 3px 8px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 0 2px;
+        }
+        
+        .queue-empty {
+            text-align: center;
+            padding: 80px 20px;
+        }
+        
+        .queue-empty-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .queue-empty-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+        
+        .queue-empty-text {
+            font-size: 15px;
+            color: #94a3b8;
+        }
+        
+        /* Queue Approval Layout (single item) */
+        .queue-approval-layout {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
+            padding: 20px 0;
+        }
+        
+        .queue-approval-preview {
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        .queue-approval-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            cursor: zoom-in;
+        }
+        
+        .queue-approval-text {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            font-size: 15px;
+            line-height: 1.7;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .queue-approval-actions {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .queue-approve-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 24px 48px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.15s;
+            min-width: 160px;
+        }
+        
+        .queue-approve-btn:hover { transform: translateY(-2px); }
+        
+        .queue-approve-btn.accept {
+            border-color: #86efac;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+        .queue-approve-btn.accept:hover {
+            border-color: #22c55e;
+            box-shadow: 0 8px 24px rgba(34, 197, 94, 0.2);
+        }
+        
+        .queue-approve-btn.reject {
+            border-color: #fecaca;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        }
+        .queue-approve-btn.reject:hover {
+            border-color: #ef4444;
+            box-shadow: 0 8px 24px rgba(239, 68, 68, 0.2);
+        }
+        
+        .queue-approve-icon {
+            font-size: 32px;
+            line-height: 1;
+        }
+        .queue-approve-btn.accept .queue-approve-icon { color: #22c55e; }
+        .queue-approve-btn.reject .queue-approve-icon { color: #ef4444; }
+        
+        .queue-approve-label {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .queue-approve-btn.accept .queue-approve-label { color: #166534; }
+        .queue-approve-btn.reject .queue-approve-label { color: #991b1b; }
+        
+        .queue-approve-keys {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .queue-approve-keys kbd {
+            background: rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        
         /* Pipeline Steps Row */
         .pipeline-steps-row {
             display: flex;
@@ -1428,10 +1816,11 @@ def get_html_page() -> str:
             text-align: center;
         }
         
-        /* Make images in history/approval clickable */
+        /* Make images in history/approval/queue clickable */
         .history-image-card img,
         .option-preview img,
-        .approval-images img {
+        .approval-images img,
+        .queue-option-image {
             cursor: zoom-in;
         }
     </style>
@@ -1445,9 +1834,15 @@ def get_html_page() -> str:
                     <h1 id="pipelineName">Loading pipeline...</h1>
                     <span class="percent" id="progressPercent">0%</span>
                 </div>
-                <div class="status-badge">
-                    <div class="status-dot" id="statusDot"></div>
-                    <span id="statusText">Connecting...</span>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <button class="queue-btn" id="queueBtn" onclick="enterQueueMode()" title="Review Queue">
+                        <span class="queue-icon">📋</span>
+                        <span class="queue-badge" id="queueBadge">0</span>
+                    </button>
+                    <div class="status-badge">
+                        <div class="status-dot" id="statusDot"></div>
+                        <span id="statusText">Connecting...</span>
+                    </div>
                 </div>
             </div>
             <div class="pipeline-steps-row" id="pipelineStepsRow">
@@ -1579,6 +1974,30 @@ def get_html_page() -> str:
         </main>
     </div>
     
+    <!-- Queue Mode Overlay -->
+    <div id="queueMode" class="queue-mode">
+        <div class="queue-mode-header">
+            <div class="queue-mode-title">
+                <h2>📋 Review Queue</h2>
+                <span class="queue-progress" id="queueProgress">0 of 0</span>
+            </div>
+            <button class="queue-mode-close" onclick="exitQueueMode()">
+                <span>✕</span> Exit Queue
+            </button>
+        </div>
+        <div class="queue-mode-content">
+            <div class="queue-item-container" id="queueItemContainer">
+                <!-- Queue items rendered here -->
+            </div>
+            <div class="queue-empty" id="queueEmpty" style="display: none;">
+                <div class="queue-empty-icon">✓</div>
+                <h3 class="queue-empty-title">Queue is empty</h3>
+                <p class="queue-empty-text">No items need review right now. Nice work!</p>
+                <button class="queue-btn-secondary" onclick="exitQueueMode()" style="margin-top: 24px;">Back to Pipeline</button>
+            </div>
+        </div>
+    </div>
+    
     <!-- Lightbox Modal -->
     <div id="lightbox" class="lightbox" onclick="closeLightboxOnBackdrop(event)">
         <button class="lightbox-close" onclick="closeLightbox()" title="Close (Esc)">&times;</button>
@@ -1612,6 +2031,11 @@ def get_html_page() -> str:
         let currentStepType = null;
         let progressData = null;
         let pipelineComplete = false;
+        
+        // Queue state
+        let queueItems = []; // Array of pending approval requests
+        let queueIndex = 0; // Current position in queue
+        let queueMode = false; // Whether queue mode is active
         
         // Provider descriptions
         const PROVIDER_DESCRIPTIONS = {
@@ -1671,6 +2095,12 @@ def get_html_page() -> str:
         const futureStepView = $('futureStepView');
         const completeSection = $('completeSection');
         const emptyState = $('emptyState');
+        const queueBtn = $('queueBtn');
+        const queueBadge = $('queueBadge');
+        const queueModeEl = $('queueMode');
+        const queueProgress = $('queueProgress');
+        const queueItemContainer = $('queueItemContainer');
+        const queueEmpty = $('queueEmpty');
         
         // ===== WEBSOCKET =====
         function connect() {
@@ -1707,7 +2137,11 @@ def get_html_page() -> str:
             switch (msg.type) {
                 case 'connected':
                     if (msg.data.progress) updateProgress(msg.data.progress);
-                    if (msg.data.pending?.length > 0) showApproval(msg.data.pending[0]);
+                    // Add all pending requests to queue
+                    if (msg.data.pending?.length > 0) {
+                        msg.data.pending.forEach(req => addToQueue(req));
+                        showApproval(msg.data.pending[0]);
+                    }
                     break;
                 case 'progress':
                     updateProgress(msg.data);
@@ -2337,6 +2771,9 @@ def get_html_page() -> str:
         function showApproval(request) {
             currentRequest = request;
             
+            // Add to queue if not already there
+            addToQueue(request);
+            
             // Re-render assets to show warning icon
             renderAssets();
             
@@ -2396,12 +2833,14 @@ def get_html_page() -> str:
             
             await new Promise(r => setTimeout(r, 150));
             
+            const requestId = currentRequest.id;
+            
             try {
                 const resp = await fetch('/api/approve', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        request_id: currentRequest.id,
+                        request_id: requestId,
                         approved: true,
                         selected_index: index,
                         regenerate: false,
@@ -2411,6 +2850,7 @@ def get_html_page() -> str:
                 if (resp.ok) {
                     approvalSection.classList.remove('visible');
                     currentRequest = null;
+                    removeFromQueue(requestId); // Remove from queue
                     renderAssets(); // Re-render to remove warning icon
                 }
             } catch (e) {
@@ -2421,12 +2861,14 @@ def get_html_page() -> str:
         async function submitRegenerate() {
             if (!currentRequest) return;
             
+            const requestId = currentRequest.id;
+            
             try {
                 const resp = await fetch('/api/approve', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        request_id: currentRequest.id,
+                        request_id: requestId,
                         approved: false,
                         regenerate: true,
                     }),
@@ -2435,11 +2877,305 @@ def get_html_page() -> str:
                 if (resp.ok) {
                     approvalSection.classList.remove('visible');
                     currentRequest = null;
+                    removeFromQueue(requestId); // Remove from queue
                     renderAssets(); // Re-render to remove warning icon
                 }
             } catch (e) {
                 console.error('Regenerate failed:', e);
             }
+        }
+        
+        // ===== QUEUE MODE =====
+        function updateQueueBadge() {
+            const count = queueItems.length;
+            queueBadge.textContent = count;
+            queueBadge.classList.toggle('empty', count === 0);
+            queueBtn.classList.toggle('has-items', count > 0);
+        }
+        
+        function addToQueue(request) {
+            // Don't add duplicates
+            if (!queueItems.find(q => q.id === request.id)) {
+                queueItems.push(request);
+                updateQueueBadge();
+                
+                // If in queue mode, refresh display
+                if (queueMode) {
+                    renderQueueItem();
+                }
+            }
+        }
+        
+        function removeFromQueue(requestId) {
+            const idx = queueItems.findIndex(q => q.id === requestId);
+            if (idx !== -1) {
+                queueItems.splice(idx, 1);
+                // Adjust index if needed
+                if (queueIndex >= queueItems.length) {
+                    queueIndex = Math.max(0, queueItems.length - 1);
+                }
+                updateQueueBadge();
+                
+                // If in queue mode, refresh or show empty
+                if (queueMode) {
+                    renderQueueItem();
+                }
+            }
+        }
+        
+        function enterQueueMode() {
+            queueMode = true;
+            queueIndex = 0;
+            queueModeEl.classList.add('visible');
+            document.body.style.overflow = 'hidden';
+            renderQueueItem();
+        }
+        
+        function exitQueueMode() {
+            queueMode = false;
+            queueModeEl.classList.remove('visible');
+            document.body.style.overflow = '';
+        }
+        
+        function renderQueueItem() {
+            if (queueItems.length === 0) {
+                queueItemContainer.style.display = 'none';
+                queueEmpty.style.display = 'block';
+                queueProgress.textContent = '0 of 0';
+                return;
+            }
+            
+            queueItemContainer.style.display = 'block';
+            queueEmpty.style.display = 'none';
+            queueProgress.textContent = `${queueIndex + 1} of ${queueItems.length}`;
+            
+            const request = queueItems[queueIndex];
+            const isSelect = request.type === 'select_one' && request.options.length > 1;
+            const isApproval = !isSelect; // Single option = approval mode
+            
+            let html = `
+                <div class="queue-item-header">
+                    <div class="queue-item-asset">${request.step_id || 'Step'}</div>
+                    <h2 class="queue-item-title">${isSelect ? 'Select Best Option' : 'Approve Result'}</h2>
+                    <p class="queue-item-subtitle">${request.asset_name || 'Asset'}</p>
+                </div>
+            `;
+            
+            // Build image data for lightbox
+            const imageOptions = request.options
+                .map((opt, i) => ({ path: opt.path || opt.image_path, index: i }))
+                .filter(o => o.path);
+            
+            // Store image data for lightbox
+            window._queueImageOptions = imageOptions;
+            
+            if (isApproval) {
+                // Approval mode: centered single item with Accept/Reject
+                const opt = request.options[0];
+                const imgPath = opt?.path || opt?.image_path;
+                const textContent = opt?.text || opt?.content;
+                
+                html += '<div class="queue-approval-layout">';
+                
+                if (imgPath) {
+                    html += `
+                        <div class="queue-approval-preview">
+                            <img class="queue-approval-image" src="/files/${imgPath}" alt="Result"
+                                 onclick="openQueueLightbox(0)">
+                        </div>
+                    `;
+                } else if (textContent) {
+                    html += `
+                        <div class="queue-approval-preview">
+                            <div class="queue-approval-text">${textContent}</div>
+                        </div>
+                    `;
+                }
+                
+                html += `
+                    <div class="queue-approval-actions">
+                        <button class="queue-approve-btn accept" onclick="queueSelectOption(0)">
+                            <span class="queue-approve-icon">✓</span>
+                            <span class="queue-approve-label">Accept</span>
+                            <span class="queue-approve-keys"><kbd>1</kbd> or <kbd>Y</kbd></span>
+                        </button>
+                        <button class="queue-approve-btn reject" onclick="queueRegenerate()">
+                            <span class="queue-approve-icon">✕</span>
+                            <span class="queue-approve-label">Reject</span>
+                            <span class="queue-approve-keys"><kbd>2</kbd> or <kbd>N</kbd></span>
+                        </button>
+                    </div>
+                </div>
+                <div class="queue-actions" style="justify-content: center;">
+                    <button class="queue-btn-skip" onclick="queueSkip()" ${queueItems.length <= 1 ? 'disabled' : ''}>
+                        Skip for now →
+                    </button>
+                </div>
+                <div class="queue-shortcuts">
+                    <kbd>1</kbd> / <kbd>Y</kbd> accept &bull; 
+                    <kbd>2</kbd> / <kbd>N</kbd> reject &bull; 
+                    <kbd>Tab</kbd> skip &bull; 
+                    <kbd>Esc</kbd> exit queue
+                </div>
+                `;
+            } else {
+                // Selection mode: grid of options
+                html += '<div class="queue-options-grid">';
+                
+                request.options.forEach((opt, i) => {
+                    if (opt.path || opt.image_path) {
+                        const imgPath = opt.path || opt.image_path;
+                        const imgIndex = imageOptions.findIndex(o => o.index === i);
+                        html += `
+                            <div class="queue-option-card" onclick="queueSelectOption(${i})" data-index="${i}">
+                                <img class="queue-option-image" src="/files/${imgPath}" alt="Option ${i+1}" 
+                                     onclick="event.stopPropagation(); openQueueLightbox(${imgIndex})">
+                                <div class="queue-option-footer">
+                                    <span class="queue-option-number">${i+1}</span>
+                                    <span class="queue-option-label">Option ${i+1}</span>
+                                </div>
+                            </div>
+                        `;
+                    } else if (opt.text || opt.content) {
+                        html += `
+                            <div class="queue-option-card" onclick="queueSelectOption(${i})" data-index="${i}">
+                                <div class="queue-option-text">${opt.text || opt.content}</div>
+                                <div class="queue-option-footer">
+                                    <span class="queue-option-number">${i+1}</span>
+                                    <span class="queue-option-label">Option ${i+1}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                
+                html += `
+                </div>
+                <div class="queue-actions">
+                    <button class="queue-btn-secondary" onclick="queueRegenerate()">Regenerate All</button>
+                    <button class="queue-btn-skip" onclick="queueSkip()" ${queueItems.length <= 1 ? 'disabled' : ''}>
+                        Skip for now →
+                    </button>
+                </div>
+                <div class="queue-shortcuts">
+                    <kbd>1</kbd>-<kbd>9</kbd> select option &bull; 
+                    <kbd>R</kbd> regenerate &bull; 
+                    <kbd>Tab</kbd> skip &bull; 
+                    <kbd>Esc</kbd> exit queue
+                </div>
+                `;
+            }
+            
+            queueItemContainer.innerHTML = html;
+        }
+        
+        async function queueSelectOption(index) {
+            if (queueItems.length === 0) return;
+            const request = queueItems[queueIndex];
+            
+            // Visual feedback
+            document.querySelectorAll('.queue-option-card').forEach((c, i) => {
+                c.classList.toggle('selected', i === index);
+            });
+            
+            await new Promise(r => setTimeout(r, 200));
+            
+            try {
+                const resp = await fetch('/api/approve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        request_id: request.id,
+                        approved: true,
+                        selected_index: index,
+                        regenerate: false,
+                    }),
+                });
+                
+                if (resp.ok) {
+                    // Also update the main UI state
+                    if (currentRequest?.id === request.id) {
+                        approvalSection.classList.remove('visible');
+                        currentRequest = null;
+                    }
+                    
+                    removeFromQueue(request.id);
+                    renderAssets();
+                }
+            } catch (e) {
+                console.error('Queue select failed:', e);
+            }
+        }
+        
+        async function queueRegenerate() {
+            if (queueItems.length === 0) return;
+            const request = queueItems[queueIndex];
+            
+            try {
+                const resp = await fetch('/api/approve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        request_id: request.id,
+                        approved: false,
+                        regenerate: true,
+                    }),
+                });
+                
+                if (resp.ok) {
+                    // Also update the main UI state
+                    if (currentRequest?.id === request.id) {
+                        approvalSection.classList.remove('visible');
+                        currentRequest = null;
+                    }
+                    
+                    removeFromQueue(request.id);
+                    renderAssets();
+                }
+            } catch (e) {
+                console.error('Queue regenerate failed:', e);
+            }
+        }
+        
+        function queueSkip() {
+            if (queueItems.length <= 1) return;
+            
+            // Move current item to end of queue
+            const skipped = queueItems.splice(queueIndex, 1)[0];
+            queueItems.push(skipped);
+            
+            // Stay at same index (which now shows the next item)
+            if (queueIndex >= queueItems.length) {
+                queueIndex = 0;
+            }
+            
+            renderQueueItem();
+        }
+        
+        function queueNext() {
+            if (queueIndex < queueItems.length - 1) {
+                queueIndex++;
+                renderQueueItem();
+            }
+        }
+        
+        function queuePrev() {
+            if (queueIndex > 0) {
+                queueIndex--;
+                renderQueueItem();
+            }
+        }
+        
+        function openQueueLightbox(imageIndex) {
+            const imageOptions = window._queueImageOptions || [];
+            if (imageOptions.length === 0) return;
+            
+            const images = imageOptions.map((opt, i) => ({
+                src: `/files/${opt.path}`,
+                caption: `Option ${opt.index + 1} of ${imageOptions.length}`
+            }));
+            
+            openLightbox(images[imageIndex].src, images[imageIndex].caption, images, imageIndex);
         }
         
         // ===== COMPLETE =====
@@ -2466,6 +3202,48 @@ def get_html_page() -> str:
         $('backToCurrentBtn').onclick = backToCurrent;
         
         document.addEventListener('keydown', (e) => {
+            // Queue mode keyboard shortcuts
+            if (queueMode) {
+                if (e.key === 'Escape') {
+                    exitQueueMode();
+                    return;
+                }
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    queueSkip();
+                    return;
+                }
+                if (queueItems.length > 0) {
+                    const request = queueItems[queueIndex];
+                    const isApproval = request.options.length === 1;
+                    
+                    if (isApproval) {
+                        // Approval mode: 1/Y = accept, 2/N = reject
+                        if (e.key === '1' || e.key.toLowerCase() === 'y') {
+                            queueSelectOption(0);
+                            return;
+                        }
+                        if (e.key === '2' || e.key.toLowerCase() === 'n') {
+                            queueRegenerate();
+                            return;
+                        }
+                    } else {
+                        // Selection mode: 1-9 to select, R to regenerate
+                        const num = parseInt(e.key);
+                        if (num >= 1 && num <= request.options?.length) {
+                            queueSelectOption(num - 1);
+                            return;
+                        }
+                        if (e.key.toLowerCase() === 'r') {
+                            queueRegenerate();
+                            return;
+                        }
+                    }
+                }
+                return;
+            }
+            
+            // Normal mode keyboard shortcuts
             if (!currentRequest) return;
             
             const num = parseInt(e.key);
@@ -2655,10 +3433,10 @@ def get_html_page() -> str:
             mutations.forEach(m => {
                 m.addedNodes.forEach(node => {
                     if (node.nodeType === 1) {
-                        if (node.matches?.('.history-images, .approval-images, .option-grid')) {
+                        if (node.matches?.('.history-images, .approval-images, .option-grid, .queue-options-grid')) {
                             setupImageLightbox(node);
                         }
-                        node.querySelectorAll?.('.history-images, .approval-images, .option-grid').forEach(setupImageLightbox);
+                        node.querySelectorAll?.('.history-images, .approval-images, .option-grid, .queue-options-grid').forEach(setupImageLightbox);
                     }
                 });
             });

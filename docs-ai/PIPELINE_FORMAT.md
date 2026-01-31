@@ -135,6 +135,66 @@ The state directory contains:
 
 ---
 
+## Output Configuration
+
+Controls automatic collection of final outputs after the pipeline completes.
+
+```yaml
+output:
+  directory: output/        # Where to collect outputs (default: output/)
+  flatten: false            # If true, all files go to root; if false, organize by asset
+  naming: "{asset.id}"      # Optional naming pattern for output files
+  copy: true                # If true, copy files; if false, create symlinks
+```
+
+### Marking Output Steps
+
+To indicate which steps produce final output artifacts, add `is_output: true` to those steps:
+
+```yaml
+steps:
+  - id: research
+    type: research
+    config:
+      query: "Research {asset.concept}"
+  
+  - id: generate_art
+    type: generate_image
+    for_each: asset
+    is_output: true           # This step's output will be collected
+    config:
+      prompt: "{asset.name}: {asset.description}"
+```
+
+### Output Directory Structure
+
+With `flatten: false` (default):
+```
+output/
+  asset-001/
+    image.png
+  asset-002/
+    image.png
+```
+
+With `flatten: true`:
+```
+output/
+  asset-001_generate_art_image.png
+  asset-002_generate_art_image.png
+```
+
+### Naming Patterns
+
+The `naming` option supports these placeholders:
+- `{asset.id}` - The asset's ID
+- `{asset.name}` - The asset's name
+- `{step.id}` - The step that produced the output
+
+Example: `naming: "{asset.name}_{step.id}"` produces files like `Hero_generate_art.png`
+
+---
+
 ## Assets
 
 Define what the pipeline produces. Assets can be:

@@ -157,6 +157,9 @@ class StepSpec:
     save_to: str | None = None  # Path pattern for saving output
     cache: bool | str | None = None   # True, False, "skip_existing", or None for smart defaults
     
+    # Output collection
+    is_output: bool = False  # Mark this step as producing final output artifacts
+    
     # Human-in-the-loop iteration
     until: str | None = None  # "approved" - iterate until user approves
     max_attempts: int = 5  # Maximum iterations for until loops
@@ -187,6 +190,15 @@ class StateConfig:
     directory: str = ".artgen/"
 
 
+@dataclass
+class OutputConfig:
+    """Configuration for collecting final outputs."""
+    directory: str = "output/"  # Where to collect outputs
+    flatten: bool = False  # If true, all files go to root; if false, organize by asset
+    naming: str | None = None  # Optional naming pattern: "{asset.id}_{step.id}"
+    copy: bool = True  # If true, copy files; if false, create symlinks
+
+
 # =============================================================================
 # Pipeline
 # =============================================================================
@@ -200,6 +212,7 @@ class PipelineSpec:
     types: dict[str, TypeDef] = field(default_factory=dict)
     context: dict[str, Any] = field(default_factory=dict)
     state: StateConfig = field(default_factory=StateConfig)
+    output: OutputConfig | None = None  # Output collection configuration
     assets: AssetSpec | None = None
     steps: list[StepSpec] = field(default_factory=list)
     
@@ -252,6 +265,7 @@ def parse_step(data: dict[str, Any], path: str = "") -> StepSpec:
         output=data.get("output"),
         save_to=data.get("save_to"),
         cache=data.get("cache"),  # None enables smart defaults
+        is_output=data.get("is_output", False),  # Mark as final output
         until=data.get("until"),
         max_attempts=data.get("max_attempts", 5),
         variations=data.get("variations"),
@@ -281,6 +295,19 @@ def parse_state(data: dict[str, Any] | None) -> StateConfig:
     
     return StateConfig(
         directory=data.get("directory", ".artgen/"),
+    )
+
+
+def parse_output(data: dict[str, Any] | None) -> OutputConfig | None:
+    """Parse output collection configuration."""
+    if not data:
+        return None
+    
+    return OutputConfig(
+        directory=data.get("directory", "output/"),
+        flatten=data.get("flatten", False),
+        naming=data.get("naming"),
+        copy=data.get("copy", True),
     )
 
 
@@ -333,6 +360,7 @@ def parse_pipeline(yaml_content: str) -> PipelineSpec:
         types=types,
         context=data.get("context", {}),
         state=parse_state(data.get("state")),
+        output=parse_output(data.get("output")),
         assets=parse_assets(data.get("assets")),
         steps=steps,
     )

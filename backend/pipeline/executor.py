@@ -12,6 +12,9 @@ Main execution engine that orchestrates:
 """
 
 import asyncio
+import json
+import shutil
+import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
@@ -77,6 +80,7 @@ class ExecutionResult:
     steps_skipped: int
     duration_ms: int
     errors: list[str]
+    outputs_collected: dict[str, list[str]] | None = None  # asset_id -> list of output paths
 
 
 class PipelineExecutor:
@@ -143,6 +147,116 @@ class PipelineExecutor:
                     break
             # Broadcast the updated progress
             self._update_web_progress()
+    
+    def _collect_outputs(self, base_path: Path, state_dir: Path) -> dict[str, list[Path]]:
+        """
+        Collect outputs from steps marked with is_output: true.
+        
+        Returns a dict mapping asset_id -> list of output file paths.
+        """
+        if not self.spec.output:
+            return {}
+        
+        output_config = self.spec.output
+        output_dir = base_path / output_config.directory
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Find all output steps
+        output_steps = [s for s in self.spec.steps if s.is_output]
+        
+        if not output_steps:
+            console.print("[yellow]No steps marked with is_output: true[/yellow]")
+            return {}
+        
+        collected: dict[str, list[Path]] = {}
+        total_files = 0
+        
+        console.print(f"\n[bold]Collecting outputs to {output_config.directory}[/bold]")
+        
+        for step in output_steps:
+            step_dir = state_dir / step.id
+            
+            if not step_dir.exists():
+                continue
+            
+            # Check for per-asset outputs
+            for asset_dir in step_dir.iterdir():
+                if not asset_dir.is_dir():
+                    continue
+                
+                asset_id = asset_dir.name
+                output_file = asset_dir / "output.json"
+                
+                if not output_file.exists():
+                    continue
+                
+                try:
+                    with open(output_file) as f:
+                        data = json.load(f)
+                    
+                    output_data = data.get("data", {})
+                    
+                    # Extract file paths from output
+                    paths_to_collect = []
+                    for key in ["selected_path", "path", "paths", "output_path", "image_path"]:
+                        val = output_data.get(key)
+                        if isinstance(val, str) and val:
+                            paths_to_collect.append(Path(val))
+                        elif isinstance(val, list):
+                            paths_to_collect.extend(Path(p) for p in val if p)
+                    
+                    # Copy/symlink each file
+                    for src_path in paths_to_collect:
+                        if not src_path.is_absolute():
+                            src_path = base_path / src_path
+                        
+                        if not src_path.exists():
+                            continue
+                        
+                        # Determine destination path
+                        if output_config.flatten:
+                            # All files in root of output dir
+                            dest_name = f"{asset_id}_{step.id}_{src_path.name}"
+                            dest_path = output_dir / dest_name
+                        else:
+                            # Organize by asset
+                            asset_output_dir = output_dir / asset_id
+                            asset_output_dir.mkdir(parents=True, exist_ok=True)
+                            dest_path = asset_output_dir / src_path.name
+                        
+                        # Apply naming pattern if specified
+                        if output_config.naming:
+                            asset_data = next(
+                                (a for a in self.assets if a.get("id") == asset_id),
+                                {"id": asset_id}
+                            )
+                            name_pattern = output_config.naming
+                            name_pattern = name_pattern.replace("{asset.id}", asset_id)
+                            name_pattern = name_pattern.replace("{asset.name}", asset_data.get("name", asset_id))
+                            name_pattern = name_pattern.replace("{step.id}", step.id)
+                            ext = src_path.suffix
+                            dest_path = dest_path.parent / f"{name_pattern}{ext}"
+                        
+                        # Copy or symlink
+                        if dest_path.exists():
+                            dest_path.unlink()
+                        
+                        if output_config.copy:
+                            shutil.copy2(src_path, dest_path)
+                        else:
+                            dest_path.symlink_to(src_path.resolve())
+                        
+                        if asset_id not in collected:
+                            collected[asset_id] = []
+                        collected[asset_id].append(dest_path)
+                        total_files += 1
+                        
+                except (json.JSONDecodeError, IOError) as e:
+                    console.print(f"[yellow]Warning: Could not read {output_file}: {e}[/yellow]")
+        
+        console.print(f"[green]Collected {total_files} files for {len(collected)} assets[/green]")
+        
+        return collected
     
     def _get_step_action_text(self, step: StepSpec) -> str:
         """
@@ -437,14 +551,22 @@ class PipelineExecutor:
             
             duration_ms = int((time.time() - start_time) * 1000)
             
+            # Collect outputs if configured
+            collected_outputs = {}
+            if self.spec.output and len(errors) == 0:
+                collected_outputs = self._collect_outputs(base_path, state_dir)
+            
             # Summary
             console.print()
+            output_info = ""
+            if collected_outputs:
+                output_info = f"\nOutputs collected: {sum(len(v) for v in collected_outputs.values())} files → {self.spec.output.directory}"
             console.print(Panel(
                 f"[green]Pipeline completed![/green]\n\n"
                 f"Assets processed: {len(self.assets)}\n"
                 f"Steps completed: {steps_completed}\n"
                 f"Steps skipped (cached): {steps_skipped}\n"
-                f"Duration: {duration_ms / 1000:.1f}s",
+                f"Duration: {duration_ms / 1000:.1f}s{output_info}",
                 title="Summary",
                 border_style="green"
             ))
@@ -469,6 +591,7 @@ class PipelineExecutor:
                 steps_skipped=steps_skipped,
                 duration_ms=duration_ms,
                 errors=errors,
+                outputs_collected={k: [str(p) for p in v] for k, v in collected_outputs.items()} if collected_outputs else None,
             )
             
         except Exception as e:

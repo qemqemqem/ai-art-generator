@@ -1,5 +1,22 @@
 {
   "pipeline_hash": "f2167e4cf3805415",
-  "updated_at": "2026-01-31T20:25:26.429628",
-  "steps": {}
+  "updated_at": "2026-01-31T20:35:01.164718",
+  "steps": {
+    "generate_with_variations:character": {
+      "completed": true,
+      "completed_at": "2026-01-31T20:34:48.415083",
+      "output_path": "generate_with_variations/character/output.json",
+      "output_files": [
+        ".artgen/generate_image/character/v1.png",
+        ".artgen/generate_image/character/v2.png",
+        ".artgen/generate_image/character/v3.png"
+      ]
+    },
+    "assess_result:character": {
+      "completed": true,
+      "completed_at": "2026-01-31T20:35:01.164698",
+      "output_path": "assess_result/character/output.json",
+      "output_files": []
+    }
+  }
 }

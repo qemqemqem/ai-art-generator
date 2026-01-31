@@ -221,8 +221,9 @@ async def get_step_history(step_id: str, asset_id: str = None):
     # Gather all outputs for this step
     outputs = []
     files = set()  # Use set to avoid duplicates
+    saved_paths = []  # Track where files were saved
     
-    def extract_files_from_output(output_data: dict, for_asset_id: str = None) -> None:
+    def extract_files_from_output(output_data: dict, for_asset_id: str = None, source_path: Path = None) -> None:
         """Extract file paths from output data."""
         if not isinstance(output_data, dict):
             return
@@ -245,13 +246,19 @@ async def get_step_history(step_id: str, asset_id: str = None):
                 with open(global_output) as f:
                     data = json.load(f)
                     output_data = data.get("data", {})
+                    
+                    # Calculate relative path for display
+                    rel_cache_path = str(global_output.relative_to(_base_path))
+                    saved_paths.append(rel_cache_path)
+                    
                     outputs.append({
                         "type": "global",
                         "data": output_data,
                         "timestamp": data.get("timestamp"),
                         "selected_index": output_data.get("selected_index") if isinstance(output_data, dict) else None,
+                        "cache_path": rel_cache_path,
                     })
-                    extract_files_from_output(output_data)
+                    extract_files_from_output(output_data, source_path=global_output)
             except (json.JSONDecodeError, IOError):
                 pass
     
@@ -269,6 +276,10 @@ async def get_step_history(step_id: str, asset_id: str = None):
                         data = json.load(f)
                         output_data = data.get("data", {})
                         
+                        # Calculate relative path for display
+                        rel_cache_path = str(output_file.relative_to(_base_path))
+                        saved_paths.append(rel_cache_path)
+                        
                         # Build comprehensive output entry
                         entry = {
                             "type": "per_asset",
@@ -276,6 +287,7 @@ async def get_step_history(step_id: str, asset_id: str = None):
                             "data": output_data,
                             "timestamp": data.get("timestamp"),
                             "selected_index": None,
+                            "cache_path": rel_cache_path,
                         }
                         
                         # Extract selection info
@@ -290,7 +302,7 @@ async def get_step_history(step_id: str, asset_id: str = None):
                                 entry["verdict"] = output_data["verdict"]
                         
                         outputs.append(entry)
-                        extract_files_from_output(output_data, asset_dir.name)
+                        extract_files_from_output(output_data, asset_dir.name, source_path=output_file)
                 except (json.JSONDecodeError, IOError):
                     pass
     
@@ -307,11 +319,16 @@ async def get_step_history(step_id: str, asset_id: str = None):
             except ValueError:
                 relative_files.append(str(path))
     
+    # Determine the main cache directory for this step
+    cache_dir = str(step_dir.relative_to(_base_path)) if step_dir.exists() else None
+    
     return {
         "step_id": step_id,
         "asset_id": asset_id,
         "outputs": outputs,
         "files": sorted(relative_files),
+        "cache_dir": cache_dir,
+        "saved_paths": saved_paths,
     }
 
 
@@ -326,6 +343,73 @@ async def get_assets():
         "total": progress.total_assets,
         "completed": progress.completed_assets,
         "current": progress.current_asset,
+    }
+
+
+@app.get("/api/saved-files")
+async def get_saved_files():
+    """Get summary of all saved files across the pipeline."""
+    if _base_path is None:
+        raise HTTPException(500, "Server not configured")
+    
+    state_dir = _base_path / ".artgen"
+    if not state_dir.exists():
+        return {"cache_dir": None, "steps": [], "total_files": 0, "total_size_bytes": 0}
+    
+    import json
+    
+    steps = []
+    total_files = 0
+    total_size = 0
+    
+    # Scan all step directories
+    for step_dir in sorted(state_dir.iterdir()):
+        if not step_dir.is_dir():
+            continue
+        
+        step_info = {
+            "step_id": step_dir.name,
+            "path": str(step_dir.relative_to(_base_path)),
+            "files": [],
+            "file_count": 0,
+            "size_bytes": 0,
+        }
+        
+        # Collect all files in this step
+        for file_path in step_dir.rglob("*"):
+            if file_path.is_file():
+                try:
+                    size = file_path.stat().st_size
+                    step_info["files"].append({
+                        "path": str(file_path.relative_to(_base_path)),
+                        "name": file_path.name,
+                        "size_bytes": size,
+                        "type": file_path.suffix.lower().lstrip("."),
+                    })
+                    step_info["file_count"] += 1
+                    step_info["size_bytes"] += size
+                    total_files += 1
+                    total_size += size
+                except OSError:
+                    pass
+        
+        if step_info["file_count"] > 0:
+            steps.append(step_info)
+    
+    # Format total size for display
+    def format_size(size_bytes):
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size_bytes < 1024:
+                return f"{size_bytes:.1f} {unit}"
+            size_bytes /= 1024
+        return f"{size_bytes:.1f} TB"
+    
+    return {
+        "cache_dir": str(state_dir.relative_to(_base_path)),
+        "steps": steps,
+        "total_files": total_files,
+        "total_size_bytes": total_size,
+        "total_size_formatted": format_size(total_size),
     }
 
 
@@ -1823,6 +1907,161 @@ def get_html_page() -> str:
         .queue-option-image {
             cursor: zoom-in;
         }
+        
+        /* Saved Files Indicators */
+        .step-chip-save {
+            font-size: 10px;
+            margin-left: 4px;
+            opacity: 0.6;
+        }
+        
+        .saved-path-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin: 16px 0;
+            font-size: 12px;
+            color: #166534;
+        }
+        
+        .saved-path-info.compact {
+            padding: 6px 10px;
+            margin: 8px 0;
+            font-size: 11px;
+        }
+        
+        .saved-path-icon {
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .saved-path-text {
+            flex: 1;
+        }
+        
+        .saved-path-label {
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        
+        .saved-path-value {
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            color: #15803d;
+            word-break: break-all;
+        }
+        
+        .saved-path-copy {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 11px;
+            color: #22c55e;
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+        
+        .saved-path-copy:hover {
+            background: #dcfce7;
+        }
+        
+        /* Saved Files Summary in Completion */
+        .saved-files-summary {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 24px;
+            text-align: left;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .saved-files-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #1e293b;
+        }
+        
+        .saved-files-header-icon {
+            font-size: 18px;
+        }
+        
+        .saved-files-stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .saved-stat {
+            text-align: center;
+        }
+        
+        .saved-stat-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .saved-stat-label {
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+        
+        .saved-files-path {
+            background: #f1f5f9;
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 12px;
+            color: #475569;
+            word-break: break-all;
+        }
+        
+        .saved-files-path-label {
+            font-size: 11px;
+            color: #64748b;
+            margin-bottom: 4px;
+            font-family: inherit;
+        }
+        
+        .saved-files-steps {
+            margin-top: 12px;
+        }
+        
+        .saved-step-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 13px;
+        }
+        
+        .saved-step-item:last-child {
+            border-bottom: none;
+        }
+        
+        .saved-step-name {
+            color: #475569;
+        }
+        
+        .saved-step-count {
+            color: #94a3b8;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -1963,6 +2202,30 @@ def get_html_page() -> str:
                         <div class="result-label">Duration</div>
                     </div>
                 </div>
+                
+                <!-- Saved Files Summary -->
+                <div class="saved-files-summary" id="savedFilesSummary" style="display: none;">
+                    <div class="saved-files-header">
+                        <span class="saved-files-header-icon">💾</span>
+                        Saved Files
+                    </div>
+                    <div class="saved-files-stats">
+                        <div class="saved-stat">
+                            <div class="saved-stat-value" id="savedFilesCount">0</div>
+                            <div class="saved-stat-label">Files</div>
+                        </div>
+                        <div class="saved-stat">
+                            <div class="saved-stat-value" id="savedFilesSize">0 KB</div>
+                            <div class="saved-stat-label">Total Size</div>
+                        </div>
+                    </div>
+                    <div class="saved-files-path">
+                        <div class="saved-files-path-label">Cache Directory:</div>
+                        <span id="savedCacheDir">.artgen/</span>
+                    </div>
+                    <div class="saved-files-steps" id="savedFilesSteps"></div>
+                </div>
+                
                 <button class="btn btn-secondary" id="closeBtn">Close Window</button>
             </section>
             
@@ -2183,7 +2446,21 @@ def get_html_page() -> str:
             
             // Update steps
             if (data.pipeline_steps?.length > 0) {
+                const prevSteps = pipelineSteps;
                 pipelineSteps = data.pipeline_steps;
+                
+                // Check if any steps just completed (for cache indicators)
+                const newlyCompleted = pipelineSteps.some((step, i) => {
+                    const prevStatus = prevSteps[i]?.status;
+                    return (step.status === 'complete' || step.status === 'skipped') 
+                        && prevStatus !== 'complete' && prevStatus !== 'skipped';
+                });
+                
+                if (newlyCompleted || data.phase === 'complete') {
+                    // Refresh cache indicators when steps complete
+                    checkStepCaches();
+                }
+                
                 renderPipelineSteps();
             }
             
@@ -2235,6 +2512,29 @@ def get_html_page() -> str:
         }
         
         // ===== RENDER PIPELINE STEPS =====
+        // Track which steps have cached data
+        let stepsWithCache = new Set();
+        
+        async function checkStepCaches() {
+            // Check which steps have saved data
+            for (const step of pipelineSteps) {
+                if (step.status === 'complete' || step.status === 'skipped') {
+                    try {
+                        const resp = await fetch(`/api/step/${step.id}/asset-status`);
+                        if (resp.ok) {
+                            const data = await resp.json();
+                            if (data.completed_assets?.length > 0) {
+                                stepsWithCache.add(step.id);
+                            }
+                        }
+                    } catch (e) {
+                        // Ignore errors
+                    }
+                }
+            }
+            renderPipelineSteps();
+        }
+        
         function renderPipelineSteps() {
             const icons = { pending: '○', running: '●', complete: '✓', failed: '✕', skipped: '−' };
             let html = '';
@@ -2244,6 +2544,7 @@ def get_html_page() -> str:
                 const isViewing = viewingStep === step.id;
                 const isComplete = step.status === 'complete' || step.status === 'skipped';
                 const isPending = step.status === 'pending';
+                const hasCachedData = stepsWithCache.has(step.id);
                 
                 if (i > 0) {
                     const prevComplete = pipelineSteps[i-1].status === 'complete' || pipelineSteps[i-1].status === 'skipped';
@@ -2251,12 +2552,14 @@ def get_html_page() -> str:
                     html += `<div class="step-connector ${connectorClass}"></div>`;
                 }
                 
+                const saveIndicator = hasCachedData ? '<span class="step-chip-save" title="Has saved data">💾</span>' : '';
+                
                 html += `
                     <div class="pipeline-step-chip ${isActive ? 'active' : ''} ${isComplete ? 'complete' : ''} ${isPending ? 'pending' : ''} ${isViewing ? 'viewing' : ''}"
                          onclick="viewStep('${step.id}')"
-                         title="${step.description || step.id}">
+                         title="${step.description || step.id}${hasCachedData ? ' (saved)' : ''}">
                         <div class="step-chip-icon ${step.status}">${icons[step.status] || '○'}</div>
-                        <span>${step.id}</span>
+                        <span>${step.id}</span>${saveIndicator}
                     </div>
                 `;
             });
@@ -2375,6 +2678,19 @@ def get_html_page() -> str:
                             outputHtml += `<div class="output-assessment">${outputData.assessment}</div>`;
                         }
                     });
+                    
+                    // Show saved path (compact version)
+                    if (data.saved_paths && data.saved_paths.length > 0) {
+                        const cachePath = data.saved_paths[0];
+                        outputHtml += `
+                            <div class="saved-path-info compact">
+                                <span class="saved-path-icon">💾</span>
+                                <div class="saved-path-text">
+                                    <div class="saved-path-value">${cachePath}</div>
+                                </div>
+                            </div>
+                        `;
+                    }
                     
                     outputHtml += '</div>';
                     
@@ -2542,6 +2858,7 @@ def get_html_page() -> str:
         function updateStageInfoForStep(step) {
             const isPending = step.status === 'pending';
             const isComplete = step.status === 'complete' || step.status === 'skipped';
+            const hasCachedData = stepsWithCache.has(step.id);
             
             stageSectionTitle.textContent = isPending ? 'Future Stage' : (isComplete ? 'Completed Stage' : 'Current Stage');
             stageInfo.classList.toggle('future-stage', isPending);
@@ -2549,7 +2866,12 @@ def get_html_page() -> str:
             stageIcon.textContent = STEP_TYPE_ICONS[step.type] || '▶';
             stageName.textContent = step.id;
             stageType.textContent = step.type;
-            stageDesc.textContent = step.description || `This step will ${step.for_each === 'asset' ? 'process each asset' : 'run globally'}`;
+            
+            let descText = step.description || `This step will ${step.for_each === 'asset' ? 'process each asset' : 'run globally'}`;
+            if (isComplete && hasCachedData) {
+                descText += ` 💾 Data saved to .artgen/${step.id}/`;
+            }
+            stageDesc.textContent = descText;
             
             if (isPending) {
                 stageStatusBadge.style.display = 'inline-flex';
@@ -2558,7 +2880,7 @@ def get_html_page() -> str:
             } else if (isComplete) {
                 stageStatusBadge.style.display = 'inline-flex';
                 stageStatusBadge.className = 'stage-status-badge complete';
-                stageStatusBadge.textContent = '✓ Completed';
+                stageStatusBadge.textContent = hasCachedData ? '✓ Completed & Saved' : '✓ Completed';
             } else {
                 stageStatusBadge.style.display = 'none';
             }
@@ -2690,6 +3012,28 @@ def get_html_page() -> str:
                 html += '</div>';
             }
             
+            // Show saved path info
+            if (data.cache_dir || (data.saved_paths && data.saved_paths.length > 0)) {
+                const displayPath = assetId && data.saved_paths?.length > 0 
+                    ? data.saved_paths[0] 
+                    : data.cache_dir;
+                
+                if (displayPath) {
+                    html += `
+                        <div class="saved-path-info compact">
+                            <span class="saved-path-icon">💾</span>
+                            <div class="saved-path-text">
+                                <div class="saved-path-label">Saved to:</div>
+                                <div class="saved-path-value">${displayPath}</div>
+                            </div>
+                            <button class="saved-path-copy" onclick="copyToClipboard('${displayPath}')" title="Copy path">
+                                📋 Copy
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+            
             if (!html || (data.outputs.length === 0 && data.files.length === 0)) {
                 if (assetId) {
                     html = '<div class="empty-state"><div class="empty-state-text">No outputs recorded for this asset at this step</div></div>';
@@ -2701,7 +3045,15 @@ def get_html_page() -> str:
             historyContent.innerHTML = html;
         }
         
-        function viewFinStep() {
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Brief visual feedback could be added here
+            }).catch(err => {
+                console.error('Copy failed:', err);
+            });
+        }
+        
+        async function viewFinStep() {
             viewingStep = '_fin';
             
             // Hide other sections
@@ -2728,6 +3080,8 @@ def get_html_page() -> str:
             stageStatusBadge.className = 'stage-status-badge complete';
             stageStatusBadge.textContent = '✓ Complete';
             
+            // Ensure cache indicators are up to date
+            await checkStepCaches();
             renderPipelineSteps();
             showComplete(progressData || {});
         }
@@ -3179,7 +3533,7 @@ def get_html_page() -> str:
         }
         
         // ===== COMPLETE =====
-        function showComplete(data) {
+        async function showComplete(data) {
             completeSection.classList.add('visible');
             
             $('totalAssets').textContent = data.total_assets || assets.length || 0;
@@ -3188,6 +3542,35 @@ def get_html_page() -> str:
             if (startTime) {
                 const elapsed = Math.floor((Date.now() - startTime.getTime()) / 1000);
                 $('duration').textContent = elapsed < 60 ? `${elapsed}s` : `${Math.floor(elapsed/60)}m ${elapsed%60}s`;
+            }
+            
+            // Fetch and display saved files summary
+            try {
+                const resp = await fetch('/api/saved-files');
+                if (resp.ok) {
+                    const savedData = await resp.json();
+                    
+                    if (savedData.total_files > 0) {
+                        $('savedFilesSummary').style.display = 'block';
+                        $('savedFilesCount').textContent = savedData.total_files;
+                        $('savedFilesSize').textContent = savedData.total_size_formatted;
+                        $('savedCacheDir').textContent = savedData.cache_dir || '.artgen/';
+                        
+                        // Show per-step breakdown
+                        let stepsHtml = '';
+                        savedData.steps.forEach(step => {
+                            stepsHtml += `
+                                <div class="saved-step-item">
+                                    <span class="saved-step-name">${step.step_id}</span>
+                                    <span class="saved-step-count">${step.file_count} files</span>
+                                </div>
+                            `;
+                        });
+                        $('savedFilesSteps').innerHTML = stepsHtml;
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to fetch saved files:', e);
             }
         }
         

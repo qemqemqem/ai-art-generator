@@ -1,0 +1,123 @@
+mse_version: 2.0.2
+game: magic
+game_version: 2020-04-25
+stylesheet: m15-altered
+stylesheet_version: 2020-09-04
+set_info:
+	title: vela_archipelago
+	symbol:
+	masterpiece_symbol:
+styling:
+	magic-m15-altered:
+		other_options: auto vehicles, auto nyx crowns
+		text_box_mana_symbols: magic-mana-small.mse-symbol-font
+		level_mana_symbols: magic-mana-large.mse-symbol-font
+		overlay:
+card:
+	has_styling: false
+	time_created: 2026-02-01 11:04:14
+	time_modified: 2026-02-01 11:04:14
+	name: Ancestral Star-Whisperer
+	image: image0
+	super_type: <word-list-type>Creature</word-list-type>
+	sub_type: <word-list-type>Spirit Wizard</word-list-type>
+	casting_cost: 2U
+	rule_text:
+		When Ancestral Star-Whisperer enters the battlefield, scry 2.
+		At the beginning of your upkeep, scry 1.
+	flavor_text: <i-flavor>The eyes of the departed see past the nebula's shroud, revealing the true path through the cosmic currents.</i-flavor>
+	power: 1
+	toughness: 3
+	loyalty: 
+	illustrator: inspired by Seb McKinnon
+	rarity: uncommon
+card:
+	has_styling: false
+	time_created: 2026-02-01 11:04:14
+	time_modified: 2026-02-01 11:04:14
+	name: Mana-Core Eruption
+	image: image1
+	super_type: <word-list-type>Sorcery</word-list-type>
+	sub_type: <word-list-type></word-list-type>
+	casting_cost: 3RR
+	rule_text:
+		You may sacrifice any number of lands.
+		Mana-Core Eruption deals damage equal to the number of lands sacrificed this way to each creature and planeswalker.
+		If you sacrificed three or more lands, Mana-Core Eruption deals 4 damage to each opponent.
+	flavor_text: <i-flavor>"To save one world, sometimes you must shatter another."
+—High Priestess Xylara</i-flavor>
+	power: 
+	toughness: 
+	loyalty: 
+	illustrator: Inspired by Ryan Pancoast
+	rarity: rare
+card:
+	has_styling: false
+	time_created: 2026-02-01 11:04:14
+	time_modified: 2026-02-01 11:04:14
+	name: Nebula Coral Sanctuary
+	image: image2
+	super_type: <word-list-type>Enchantment</word-list-type>
+	sub_type: <word-list-type></word-list-type>
+	casting_cost: 2G
+	rule_text:
+		<sym>T</sym>: Add <sym>G</sym>.
+		Creatures you control with one or more +1/+1 counters on them have hexproof.
+	flavor_text: <i-flavor>Within the swirling nebulae, sanctuaries bloom like untouched coral. Their vibrant mana nourishes the Wayfinders, shielding life from the encroaching void.</i-flavor>
+	power: None
+	toughness: None
+	loyalty: 
+	illustrator: Fantasy Concept Artist
+	rarity: uncommon
+card:
+	has_styling: false
+	time_created: 2026-02-01 11:04:14
+	time_modified: 2026-02-01 11:04:14
+	name: Obsidian Crag Siphoner
+	image: image3
+	super_type: <word-list-type>Creature</word-list-type>
+	sub_type: <word-list-type>Human Shaman</word-list-type>
+	casting_cost: 1B
+	rule_text:
+		<sym>T</sym>, Sacrifice another creature: Add <sym>B</sym>.
+	flavor_text: <i-flavor>They gather at the Obsidian Crag, bodies etched with grim tattoos, to drain the very mana from life itself and feed Xylara's hungry blight.</i-flavor>
+	power: 1
+	toughness: 2
+	loyalty: 
+	illustrator: inspired by Dave Kendall
+	rarity: common
+card:
+	has_styling: false
+	time_created: 2026-02-01 11:04:14
+	time_modified: 2026-02-01 11:04:14
+	name: Outrigger Star-Skiff
+	image: image4
+	super_type: <word-list-type>Artifact</word-list-type>
+	sub_type: <word-list-type>Vehicle</word-list-type>
+	casting_cost: 2
+	rule_text:
+		Crew 1
+		Whenever Outrigger Star-Skiff becomes crewed, scry 1.
+	flavor_text: <i-flavor>Whether charting a new cosmic current or fetching provisions from a neighboring isle, a Wayfinder always takes a moment to scry the path ahead.</i-flavor>
+	power: 2
+	toughness: 3
+	loyalty: 
+	illustrator: Inspired by Chris Rahn
+	rarity: common
+card:
+	has_styling: false
+	time_created: 2026-02-01 11:04:14
+	time_modified: 2026-02-01 11:04:14
+	name: Vela Wayfinder Initiate
+	image: image5
+	super_type: <word-list-type>Creature</word-list-type>
+	sub_type: <word-list-type>Human Warrior</word-list-type>
+	casting_cost: 1W
+	rule_text:
+		When Vela Wayfinder Initiate enters the battlefield, scry 1.
+	flavor_text: <i-flavor>"The greatest lesson for an initiate: keep your eyes on the stars, but always scout the currents ahead."</i-flavor>
+	power: 2
+	toughness: 1
+	loyalty: 
+	illustrator: Inspired by vibrant cosmic fantasy artists
+	rarity: common

@@ -137,6 +137,7 @@ class StepType(str, Enum):
     COMPOSITE = "composite"
     REMOVE_BACKGROUND = "remove_background"
     RESIZE = "resize"
+    RENDER_MSE_CARDS = "render_mse_cards"  # Render Magic cards using MSE
     LOOP = "loop"
     BRANCH = "branch"
     CUSTOM = "custom"

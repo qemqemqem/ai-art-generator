@@ -37,6 +37,11 @@ class ConnectionManager:
     def __init__(self):
         self._connections: list[WebSocket] = []
         self._lock = asyncio.Lock()
+        self._loop: asyncio.AbstractEventLoop | None = None
+    
+    def set_event_loop(self, loop: asyncio.AbstractEventLoop):
+        """Set the event loop to use for thread-safe broadcasting."""
+        self._loop = loop
     
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
@@ -61,15 +66,20 @@ class ConnectionManager:
                 self._connections.remove(ws)
     
     def broadcast_sync(self, message: dict):
-        """Sync wrapper for broadcast (for use from non-async context)."""
+        """
+        Sync wrapper for broadcast (for use from non-async context).
+        
+        This is called from the pipeline execution thread, so we need
+        to use thread-safe scheduling to the web server's event loop.
+        """
+        if self._loop is None:
+            return
+        
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.create_task(self.broadcast(message))
-            else:
-                loop.run_until_complete(self.broadcast(message))
+            # Schedule the broadcast on the web server's event loop (thread-safe)
+            asyncio.run_coroutine_threadsafe(self.broadcast(message), self._loop)
         except RuntimeError:
-            # No event loop - we're likely shutting down
+            # Loop might be closed or shutting down
             pass
     
     @property
@@ -79,17 +89,30 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+# Event to signal server is ready (set by lifespan, waited on by WebServer.start)
+_server_ready = threading.Event()
+
 
 # --- FastAPI App ---
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan - setup and teardown."""
-    # Setup: connect bridge to websocket broadcast
+    # Setup: capture the event loop for thread-safe broadcasting
+    loop = asyncio.get_running_loop()
+    manager.set_event_loop(loop)
+    
+    # Connect bridge to websocket broadcast
     bridge = get_bridge()
     bridge.set_broadcast_callback(manager.broadcast_sync)
+    
+    # Signal that the server is ready to accept connections
+    _server_ready.set()
+    
     yield
-    # Teardown: nothing needed
+    # Teardown: clear the loop reference
+    manager.set_event_loop(None)
+    _server_ready.clear()
 
 
 app = FastAPI(
@@ -238,6 +261,10 @@ async def get_step_history(step_id: str, asset_id: str = None):
                 if not asset_id or (for_asset_id and for_asset_id == asset_id) or asset_id in val:
                     files.add(val)
     
+    # Track total cost for this step's outputs
+    total_cost = 0.0
+    total_tokens = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+    
     # Check for global step output (only if not filtering by asset)
     if not asset_id:
         global_output = state_dir / step_id / "output.json"
@@ -251,6 +278,15 @@ async def get_step_history(step_id: str, asset_id: str = None):
                     rel_cache_path = str(global_output.relative_to(_base_path))
                     saved_paths.append(rel_cache_path)
                     
+                    # Extract cost info
+                    cost_usd = data.get("cost_usd", 0.0)
+                    tokens_used = data.get("tokens_used")
+                    total_cost += cost_usd
+                    if tokens_used:
+                        for k, v in tokens_used.items():
+                            if k in total_tokens:
+                                total_tokens[k] += v
+                    
                     outputs.append({
                         "type": "global",
                         "data": output_data,
@@ -258,6 +294,8 @@ async def get_step_history(step_id: str, asset_id: str = None):
                         "selected_index": output_data.get("selected_index") if isinstance(output_data, dict) else None,
                         "cache_path": rel_cache_path,
                         "prompt": data.get("prompt"),  # Include the prompt used for generation
+                        "cost_usd": cost_usd,
+                        "tokens_used": tokens_used,
                     })
                     extract_files_from_output(output_data, source_path=global_output)
             except (json.JSONDecodeError, IOError):
@@ -281,6 +319,15 @@ async def get_step_history(step_id: str, asset_id: str = None):
                         rel_cache_path = str(output_file.relative_to(_base_path))
                         saved_paths.append(rel_cache_path)
                         
+                        # Extract cost info
+                        cost_usd = data.get("cost_usd", 0.0)
+                        tokens_used = data.get("tokens_used")
+                        total_cost += cost_usd
+                        if tokens_used:
+                            for k, v in tokens_used.items():
+                                if k in total_tokens:
+                                    total_tokens[k] += v
+                        
                         # Build comprehensive output entry
                         entry = {
                             "type": "per_asset",
@@ -290,6 +337,8 @@ async def get_step_history(step_id: str, asset_id: str = None):
                             "selected_index": None,
                             "cache_path": rel_cache_path,
                             "prompt": data.get("prompt"),  # Include the prompt used for generation
+                            "cost_usd": cost_usd,
+                            "tokens_used": tokens_used,
                         }
                         
                         # Extract selection info
@@ -331,6 +380,8 @@ async def get_step_history(step_id: str, asset_id: str = None):
         "files": sorted(relative_files),
         "cache_dir": cache_dir,
         "saved_paths": saved_paths,
+        "total_cost_usd": total_cost,
+        "total_tokens": total_tokens if any(total_tokens.values()) else None,
     }
 
 
@@ -1465,6 +1516,23 @@ def get_html_page() -> str:
             flex: 1;
         }
         
+        .asset-prop-value.truncated {
+            cursor: pointer;
+        }
+        
+        .asset-prop-toggle {
+            font-size: 11px;
+            color: #3b82f6;
+            cursor: pointer;
+            padding: 2px 0;
+            margin-top: 4px;
+            display: inline-block;
+        }
+        
+        .asset-prop-toggle:hover {
+            text-decoration: underline;
+        }
+        
         .asset-prop-new {
             font-size: 10px;
             background: #dbeafe;
@@ -2395,6 +2463,183 @@ def get_html_page() -> str:
             color: #94a3b8;
             font-size: 12px;
         }
+        
+        /* Cost Tracking Styles */
+        .cost-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border: 1px solid #fcd34d;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #92400e;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+        
+        .cost-badge.large {
+            padding: 4px 10px;
+            font-size: 12px;
+        }
+        
+        .cost-badge-icon {
+            font-size: 10px;
+        }
+        
+        .stage-info-badges {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .stage-info-cost {
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .step-chip-cost {
+            font-size: 9px;
+            color: #92400e;
+            background: #fef3c7;
+            padding: 1px 4px;
+            border-radius: 4px;
+            margin-left: 4px;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+        
+        /* Cost section in history */
+        .cost-usage-section {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin: 12px 0;
+        }
+        
+        .cost-usage-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .cost-usage-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #92400e;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .cost-usage-total {
+            font-size: 14px;
+            font-weight: 700;
+            color: #78350f;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+        
+        .cost-usage-breakdown {
+            display: flex;
+            gap: 16px;
+            font-size: 11px;
+            color: #a16207;
+        }
+        
+        .cost-usage-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        /* Cost summary in Fin view */
+        .cost-summary {
+            background: linear-gradient(135deg, #fffbeb, #fef3c7);
+            border: 1px solid #fde68a;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .cost-summary-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #fde68a;
+        }
+        
+        .cost-summary-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #78350f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .cost-summary-total {
+            font-size: 18px;
+            font-weight: 700;
+            color: #78350f;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+        
+        .cost-summary-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .cost-summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+        }
+        
+        .cost-summary-step {
+            color: #92400e;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .cost-summary-step-icon {
+            font-size: 10px;
+            opacity: 0.7;
+        }
+        
+        .cost-summary-value {
+            font-family: 'SF Mono', Monaco, monospace;
+            color: #78350f;
+            font-weight: 500;
+        }
+        
+        .cost-summary-bar {
+            height: 4px;
+            background: #fde68a;
+            border-radius: 2px;
+            margin-top: 2px;
+        }
+        
+        .cost-summary-bar-fill {
+            height: 100%;
+            background: #f59e0b;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
     </style>
 </head>
 <body>
@@ -2438,7 +2683,10 @@ def get_html_page() -> str:
                         </div>
                     </div>
                     <div class="stage-info-desc" id="stageDesc">Waiting to start...</div>
-                    <div class="stage-status-badge pending" id="stageStatusBadge" style="display: none;">Not started yet</div>
+                    <div class="stage-info-badges">
+                        <div class="stage-status-badge pending" id="stageStatusBadge" style="display: none;">Not started yet</div>
+                        <div class="cost-badge" id="stageCostBadge" style="display: none;"><span class="cost-badge-icon">💰</span> $0.00</div>
+                    </div>
                 </div>
             </div>
             
@@ -2534,6 +2782,17 @@ def get_html_page() -> str:
                         <div class="result-value" id="duration">0s</div>
                         <div class="result-label">Duration</div>
                     </div>
+                </div>
+                
+                <!-- Cost Summary -->
+                <div class="cost-summary" id="costSummary" style="display: none;">
+                    <div class="cost-summary-header">
+                        <span class="cost-summary-title">
+                            <span>💰</span> API Cost
+                        </span>
+                        <span class="cost-summary-total" id="totalCostValue">$0.00</span>
+                    </div>
+                    <div class="cost-summary-breakdown" id="costBreakdown"></div>
                 </div>
                 
                 <!-- Saved Files Summary -->
@@ -2884,6 +3143,14 @@ def get_html_page() -> str:
             renderPipelineSteps();
         }
         
+        // Helper to format cost for display
+        function formatCost(cost) {
+            if (!cost || cost === 0) return null;
+            if (cost < 0.0001) return '<$0.0001';
+            if (cost < 0.01) return '$' + cost.toFixed(4);
+            return '$' + cost.toFixed(3);
+        }
+        
         function renderPipelineSteps() {
             const icons = { pending: '○', running: '●', complete: '✓', failed: '✕', skipped: '✓' };  // skipped (cached) shows checkmark too
             let html = '';
@@ -2894,6 +3161,7 @@ def get_html_page() -> str:
                 const isComplete = step.status === 'complete' || step.status === 'skipped';
                 const isPending = step.status === 'pending';
                 const hasCachedData = stepsWithCache.has(step.id);
+                const stepCost = step.cost_usd || 0;
                 
                 if (i > 0) {
                     const prevComplete = pipelineSteps[i-1].status === 'complete' || pipelineSteps[i-1].status === 'skipped';
@@ -2902,13 +3170,19 @@ def get_html_page() -> str:
                 }
                 
                 const saveIndicator = hasCachedData ? '<span class="step-chip-save" title="Has saved data">💾</span>' : '';
+                const costIndicator = (isComplete && stepCost > 0) ? `<span class="step-chip-cost" title="Step cost">${formatCost(stepCost)}</span>` : '';
+                
+                // Build tooltip with cost info
+                let tooltip = step.description || step.id;
+                if (hasCachedData) tooltip += ' (saved)';
+                if (stepCost > 0) tooltip += ` - Cost: ${formatCost(stepCost)}`;
                 
                 html += `
                     <div class="pipeline-step-chip ${isActive ? 'active' : ''} ${isComplete ? 'complete' : ''} ${isPending ? 'pending' : ''} ${isViewing ? 'viewing' : ''}"
                          onclick="viewStep('${step.id}')"
-                         title="${step.description || step.id}${hasCachedData ? ' (saved)' : ''}">
+                         title="${tooltip}">
                         <div class="step-chip-icon ${step.status}">${icons[step.status] || '○'}</div>
-                        <span>${step.id}</span>${saveIndicator}
+                        <span>${step.id}</span>${saveIndicator}${costIndicator}
                     </div>
                 `;
             });
@@ -3132,19 +3406,29 @@ def get_html_page() -> str:
             const formatLabel = (key) => key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
             
             const props = Object.entries(asset.data || {}).filter(([k]) => k !== 'id');
-            assetProperties.innerHTML = props.map(([key, value]) => {
+            assetProperties.innerHTML = props.map(([key, value], idx) => {
                 const isNew = outputField && key === outputField;
                 const displayValue = typeof value === 'object' ? JSON.stringify(value) : (value || '-');
-                // Longer truncation for NEW fields (likely the main output to show), shorter for others
-                const maxLen = isNew ? 1000 : 300;
-                const truncatedValue = displayValue.length > maxLen 
+                // Truncation threshold - show toggle for longer values
+                const maxLen = 200;
+                const isTruncated = displayValue.length > maxLen;
+                const truncatedValue = isTruncated
                     ? displayValue.substring(0, maxLen) + '...' 
                     : displayValue;
+                
+                const toggleId = `prop-toggle-${idx}`;
+                const valueId = `prop-value-${idx}`;
                 
                 return `
                     <div class="asset-prop ${isNew ? 'is-new' : ''}">
                         <div class="asset-prop-label">${formatLabel(key)}:</div>
-                        <div class="asset-prop-value">${escapeHtmlSafe(truncatedValue)}</div>
+                        <div class="asset-prop-value-container" style="flex: 1;">
+                            <div id="${valueId}" class="asset-prop-value ${isTruncated ? 'truncated' : ''}" 
+                                 data-full="${isTruncated ? encodeURIComponent(displayValue) : ''}"
+                                 data-truncated="${isTruncated ? encodeURIComponent(truncatedValue) : ''}"
+                                 data-expanded="false">${escapeHtmlSafe(truncatedValue)}</div>
+                            ${isTruncated ? `<span id="${toggleId}" class="asset-prop-toggle" onclick="togglePropValue('${valueId}', '${toggleId}')">Show more</span>` : ''}
+                        </div>
                         ${isNew ? '<span class="asset-prop-new">New</span>' : ''}
                     </div>
                 `;
@@ -3274,6 +3558,7 @@ def get_html_page() -> str:
             // A step is per-asset if it has any for_each value (could be "asset", "cards", etc.)
             const isPerAssetStep = step.for_each != null && step.for_each !== '';
             const collectionName = step.for_each || 'assets';
+            const stepCost = step.cost_usd || 0;
             
             stageSectionTitle.textContent = isPending ? 'Future Stage' : (isComplete ? 'Completed Stage' : 'Current Stage');
             stageInfo.classList.toggle('future-stage', isPending);
@@ -3292,6 +3577,7 @@ def get_html_page() -> str:
             }
             stageDesc.textContent = descText;
             
+            // Build status badge content with cost if available
             if (isPending) {
                 stageStatusBadge.style.display = 'inline-flex';
                 stageStatusBadge.className = 'stage-status-badge not-started';
@@ -3299,9 +3585,19 @@ def get_html_page() -> str:
             } else if (isComplete) {
                 stageStatusBadge.style.display = 'inline-flex';
                 stageStatusBadge.className = 'stage-status-badge complete';
-                stageStatusBadge.textContent = hasCachedData ? '✓ Completed & Saved' : '✓ Completed';
+                let statusText = hasCachedData ? '✓ Completed & Saved' : '✓ Completed';
+                stageStatusBadge.textContent = statusText;
             } else {
                 stageStatusBadge.style.display = 'none';
+            }
+            
+            // Show cost badge for completed steps with cost
+            const costBadgeEl = document.getElementById('stageCostBadge');
+            if (isComplete && stepCost > 0) {
+                costBadgeEl.style.display = 'inline-flex';
+                costBadgeEl.innerHTML = `<span class="cost-badge-icon">💰</span> ${formatCost(stepCost)}`;
+            } else {
+                costBadgeEl.style.display = 'none';
             }
             
             // Show/hide assets section based on whether this is a per-asset step
@@ -3477,6 +3773,31 @@ def get_html_page() -> str:
                 }
             }
             
+            // Show cost & usage info if available
+            const totalCost = data.total_cost_usd || 0;
+            const totalTokens = data.total_tokens;
+            if (totalCost > 0 || (totalTokens && totalTokens.total_tokens > 0)) {
+                let costBreakdown = '';
+                if (totalTokens && totalTokens.total_tokens > 0) {
+                    costBreakdown = `
+                        <div class="cost-usage-breakdown">
+                            <span class="cost-usage-item">↓ ${totalTokens.prompt_tokens.toLocaleString()} input</span>
+                            <span class="cost-usage-item">↑ ${totalTokens.completion_tokens.toLocaleString()} output</span>
+                            <span class="cost-usage-item">= ${totalTokens.total_tokens.toLocaleString()} total tokens</span>
+                        </div>
+                    `;
+                }
+                html += `
+                    <div class="cost-usage-section">
+                        <div class="cost-usage-header">
+                            <span class="cost-usage-title">💰 API Cost</span>
+                            <span class="cost-usage-total">${formatCost(totalCost)}</span>
+                        </div>
+                        ${costBreakdown}
+                    </div>
+                `;
+            }
+            
             // Show collapsible prompt section
             // Collect prompts from outputs
             const promptsFromOutputs = data.outputs
@@ -3551,6 +3872,16 @@ def get_html_page() -> str:
             stageStatusBadge.style.display = 'inline-flex';
             stageStatusBadge.className = 'stage-status-badge complete';
             stageStatusBadge.textContent = '✓ Complete';
+            
+            // Show total cost badge in sidebar if available
+            const costBadgeEl = document.getElementById('stageCostBadge');
+            const totalCost = progressData?.total_cost_usd || 0;
+            if (totalCost > 0) {
+                costBadgeEl.style.display = 'inline-flex';
+                costBadgeEl.innerHTML = `<span class="cost-badge-icon">💰</span> ${formatCost(totalCost)} total`;
+            } else {
+                costBadgeEl.style.display = 'none';
+            }
             
             // Ensure cache indicators are up to date
             await checkStepCaches();
@@ -4053,6 +4384,28 @@ def get_html_page() -> str:
             }
         }
         
+        function togglePropValue(valueId, toggleId) {
+            const valueEl = document.getElementById(valueId);
+            const toggleEl = document.getElementById(toggleId);
+            if (!valueEl || !toggleEl) return;
+            
+            const isExpanded = valueEl.dataset.expanded === 'true';
+            
+            if (isExpanded) {
+                // Collapse - show truncated
+                const truncated = decodeURIComponent(valueEl.dataset.truncated);
+                valueEl.innerHTML = escapeHtmlSafe(truncated);
+                valueEl.dataset.expanded = 'false';
+                toggleEl.textContent = 'Show more';
+            } else {
+                // Expand - show full
+                const full = decodeURIComponent(valueEl.dataset.full);
+                valueEl.innerHTML = escapeHtmlSafe(full);
+                valueEl.dataset.expanded = 'true';
+                toggleEl.textContent = 'Show less';
+            }
+        }
+        
         async function queueSelectOption(index) {
             if (queueItems.length === 0) return;
             const request = queueItems[queueIndex];
@@ -4172,6 +4525,49 @@ def get_html_page() -> str:
             if (startTime) {
                 const elapsed = Math.floor((Date.now() - startTime.getTime()) / 1000);
                 $('duration').textContent = elapsed < 60 ? `${elapsed}s` : `${Math.floor(elapsed/60)}m ${elapsed%60}s`;
+            }
+            
+            // Show cost summary if available
+            const costSummaryEl = $('costSummary');
+            const totalCost = data.total_cost_usd || 0;
+            const costByStep = data.cost_by_step || {};
+            
+            if (totalCost > 0 && costSummaryEl) {
+                costSummaryEl.style.display = 'block';
+                $('totalCostValue').textContent = formatCost(totalCost);
+                
+                // Build cost breakdown by step
+                const sortedSteps = Object.entries(costByStep)
+                    .filter(([_, cost]) => cost > 0)
+                    .sort((a, b) => b[1] - a[1]); // Sort by cost descending
+                
+                if (sortedSteps.length > 0) {
+                    const maxCost = sortedSteps[0][1];
+                    let breakdownHtml = '';
+                    
+                    sortedSteps.forEach(([stepId, cost]) => {
+                        const percentage = (cost / totalCost * 100).toFixed(0);
+                        const barWidth = (cost / maxCost * 100).toFixed(0);
+                        const stepIcon = STEP_TYPE_ICONS[pipelineSteps.find(s => s.id === stepId)?.type] || '▶';
+                        
+                        breakdownHtml += `
+                            <div class="cost-summary-row">
+                                <span class="cost-summary-step">
+                                    <span class="cost-summary-step-icon">${stepIcon}</span>
+                                    ${stepId}
+                                </span>
+                                <span class="cost-summary-value">${formatCost(cost)} (${percentage}%)</span>
+                            </div>
+                            <div class="cost-summary-bar">
+                                <div class="cost-summary-bar-fill" style="width: ${barWidth}%"></div>
+                            </div>
+                        `;
+                    });
+                    
+                    $('costBreakdown').innerHTML = breakdownHtml;
+                }
+            } else if (costSummaryEl) {
+                costSummaryEl.style.display = 'none';
             }
             
             // Fetch and display saved files summary
@@ -4483,11 +4879,13 @@ class WebServer:
         self.host = host
         self._server: uvicorn.Server | None = None
         self._thread: threading.Thread | None = None
-        self._started = threading.Event()
     
     def start(self, base_path: Path, open_browser: bool = True) -> None:
         """Start the server in a background thread."""
         set_base_path(base_path)
+        
+        # Reset the ready event
+        _server_ready.clear()
         
         config = uvicorn.Config(
             app,
@@ -4501,18 +4899,14 @@ class WebServer:
             # Run in its own event loop
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            self._started.set()
             loop.run_until_complete(self._server.serve())
         
         self._thread = threading.Thread(target=run, daemon=True)
         self._thread.start()
         
-        # Wait for server to start
-        self._started.wait(timeout=5)
-        
-        # Small delay to ensure server is ready
-        import time
-        time.sleep(0.5)
+        # Wait for server lifespan to complete setup (event loop captured, bridge connected)
+        if not _server_ready.wait(timeout=10):
+            raise RuntimeError("Server failed to start within timeout")
         
         if open_browser:
             url = f"http://{self.host}:{self.port}"

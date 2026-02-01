@@ -1,0 +1,12 @@
+{
+  "step_id": "generate_art",
+  "asset_id": "obsidian-crag-siphoner",
+  "timestamp": "2026-02-01T19:04:00.253468",
+  "data": {
+    "prompt": "Magic: The Gathering card art.\n\nFinal Prompt: A gaunt Human Shaman, an Obsidian Crag Siphoner, stands on the jagged, dark volcanic surface of the corrupted Obsidian Crag. They are mid-ritual, siphoning sickly purple mana from a sacrificed, withered creature at their feet, with dark, shadow-like tattoos glowing faintly on their skin. The background features a blighted nebula-sea under a starless, oppressive sky, emphasizing the spread of corruption and scarcity.\n\nArtist Credit: inspired by Dave Kendall\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n",
+    "paths": [
+      "../pipelines/mtg-generator/.artgen/generate_image/obsidian-crag-siphoner/v1.png"
+    ]
+  },
+  "prompt": "Magic: The Gathering card art.\n\nFinal Prompt: A gaunt Human Shaman, an Obsidian Crag Siphoner, stands on the jagged, dark volcanic surface of the corrupted Obsidian Crag. They are mid-ritual, siphoning sickly purple mana from a sacrificed, withered creature at their feet, with dark, shadow-like tattoos glowing faintly on their skin. The background features a blighted nebula-sea under a starless, oppressive sky, emphasizing the spread of corruption and scarcity.\n\nArtist Credit: inspired by Dave Kendall\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n"
+}

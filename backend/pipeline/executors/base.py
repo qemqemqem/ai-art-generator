@@ -65,6 +65,10 @@ class StepResult:
     
     # The prompt used to generate this output (for display/debugging)
     prompt: str | None = None
+    
+    # Cost tracking (USD)
+    cost_usd: float = 0.0
+    tokens_used: dict[str, int] | None = None  # prompt_tokens, completion_tokens, total_tokens
 
 
 class StepExecutor(ABC):

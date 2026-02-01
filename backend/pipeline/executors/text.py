@@ -139,7 +139,21 @@ Provide:
 Be thorough but concise. Focus on details that would help create visual art."""
         
         try:
-            result = await provider.generate(prompt, max_tokens=max_tokens)
+            # Use generate_with_cost if available for cost tracking
+            cost_usd = 0.0
+            tokens_used = None
+            
+            if hasattr(provider, 'generate_with_cost'):
+                gen_result = await provider.generate_with_cost(prompt, max_tokens=max_tokens)
+                result = gen_result.content
+                cost_usd = gen_result.cost_usd
+                tokens_used = {
+                    "prompt_tokens": gen_result.prompt_tokens,
+                    "completion_tokens": gen_result.completion_tokens,
+                    "total_tokens": gen_result.total_tokens,
+                }
+            else:
+                result = await provider.generate(prompt, max_tokens=max_tokens)
             
             duration = int((time.time() - start) * 1000)
             
@@ -148,6 +162,8 @@ Be thorough but concise. Focus on details that would help create visual art."""
                 output={"content": result, "query": query},
                 duration_ms=duration,
                 prompt=prompt,
+                cost_usd=cost_usd,
+                tokens_used=tokens_used,
             )
         except Exception as e:
             return StepResult(
@@ -209,9 +225,20 @@ Task:
         
         try:
             results = []
+            total_cost = 0.0
+            total_tokens = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+            
             for i in range(variations):
-                result = await provider.generate(full_prompt, max_tokens=max_tokens)
-                results.append(result)
+                if hasattr(provider, 'generate_with_cost'):
+                    gen_result = await provider.generate_with_cost(full_prompt, max_tokens=max_tokens)
+                    results.append(gen_result.content)
+                    total_cost += gen_result.cost_usd
+                    total_tokens["prompt_tokens"] += gen_result.prompt_tokens
+                    total_tokens["completion_tokens"] += gen_result.completion_tokens
+                    total_tokens["total_tokens"] += gen_result.total_tokens
+                else:
+                    result = await provider.generate(full_prompt, max_tokens=max_tokens)
+                    results.append(result)
             
             duration = int((time.time() - start) * 1000)
             
@@ -221,6 +248,8 @@ Task:
                 variations=results,
                 duration_ms=duration,
                 prompt=full_prompt,
+                cost_usd=total_cost,
+                tokens_used=total_tokens if total_cost > 0 else None,
             )
         except Exception as e:
             return StepResult(
@@ -275,9 +304,20 @@ Respond with just the name, nothing else."""
         
         try:
             results = []
+            total_cost = 0.0
+            total_tokens = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+            
             for i in range(variations):
-                result = await provider.generate(prompt)
-                results.append(result.strip())
+                if hasattr(provider, 'generate_with_cost'):
+                    gen_result = await provider.generate_with_cost(prompt)
+                    results.append(gen_result.content.strip())
+                    total_cost += gen_result.cost_usd
+                    total_tokens["prompt_tokens"] += gen_result.prompt_tokens
+                    total_tokens["completion_tokens"] += gen_result.completion_tokens
+                    total_tokens["total_tokens"] += gen_result.total_tokens
+                else:
+                    result = await provider.generate(prompt)
+                    results.append(result.strip())
             
             duration = int((time.time() - start) * 1000)
             
@@ -287,6 +327,8 @@ Respond with just the name, nothing else."""
                 variations=results,
                 duration_ms=duration,
                 prompt=prompt,
+                cost_usd=total_cost,
+                tokens_used=total_tokens if total_cost > 0 else None,
             )
         except Exception as e:
             return StepResult(

@@ -1,0 +1,12 @@
+{
+  "step_id": "generate_art",
+  "asset_id": "nebula-coral-sanctuary",
+  "timestamp": "2026-02-01T19:03:47.447870",
+  "data": {
+    "prompt": "Magic: The Gathering card art.\n\nFinal Prompt: \"A breathtaking, pristine sanctuary within a cosmic coral nebula, radiating vibrant, bioluminescent green and teal mana. Massive, intricate coral-like structures form a living reef across a starlit void, teeming with unique, glowing cosmic sea creatures and ethereal flora. The light from swirling stars catches on the vibrant hues, illustrating a haven of pure, untainted life and energy, a stark beacon against the encroaching cosmic darkness.\"\n\nArtist Credit: Fantasy Concept Artist\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n",
+    "paths": [
+      "../pipelines/mtg-generator/.artgen/generate_image/nebula-coral-sanctuary/v1.png"
+    ]
+  },
+  "prompt": "Magic: The Gathering card art.\n\nFinal Prompt: \"A breathtaking, pristine sanctuary within a cosmic coral nebula, radiating vibrant, bioluminescent green and teal mana. Massive, intricate coral-like structures form a living reef across a starlit void, teeming with unique, glowing cosmic sea creatures and ethereal flora. The light from swirling stars catches on the vibrant hues, illustrating a haven of pure, untainted life and energy, a stark beacon against the encroaching cosmic darkness.\"\n\nArtist Credit: Fantasy Concept Artist\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n"
+}

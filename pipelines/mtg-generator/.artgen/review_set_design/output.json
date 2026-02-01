@@ -1,0 +1,17 @@
+{
+  "step_id": "review_set_design",
+  "asset_id": null,
+  "timestamp": "2026-02-01T18:39:54.740771",
+  "data": {
+    "approved": true,
+    "title": "Set Design Review",
+    "reviewed_steps": [
+      "design_set_mechanics",
+      "write_set_story",
+      "generate_card_names",
+      "generate_card_concepts"
+    ],
+    "timestamp": "2026-02-01T10:39:54.739244"
+  },
+  "prompt": "Review the completed set design work before proceeding to individual card design.\n\nThis includes:\n- Set mechanics and thematic framework\n- World narrative and story\n- Card names and concepts for the entire set\n\nApprove to continue with individual card design, or reject to restart the set design phase.\n"
+}

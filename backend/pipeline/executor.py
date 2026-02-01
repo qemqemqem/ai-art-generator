@@ -36,7 +36,7 @@ from .spec_parser import PipelineSpec, StepSpec, StepType, get_execution_order, 
 from .templates import substitute_all
 
 # Import all executors to register them
-from .executors import assess, image, text, user
+from .executors import assess, image, mse, text, user
 
 console = Console()
 
@@ -81,6 +81,11 @@ class ExecutionResult:
     duration_ms: int
     errors: list[str]
     outputs_collected: dict[str, list[str]] | None = None  # asset_id -> list of output paths
+    
+    # Cost tracking
+    total_cost_usd: float = 0.0
+    cost_by_step: dict[str, float] | None = None  # step_id -> cost in USD
+    tokens_by_step: dict[str, dict[str, int]] | None = None  # step_id -> token breakdown
 
 
 class PipelineExecutor:
@@ -132,6 +137,10 @@ class PipelineExecutor:
         # Execution state
         self.context: dict[str, Any] = {}
         self.step_outputs: dict[str, Any] = {}
+        
+        # Cost tracking
+        self.cost_by_step: dict[str, float] = {}
+        self.tokens_by_step: dict[str, dict[str, int]] = {}
     
     def _update_web_progress(self, **kwargs) -> None:
         """Update web bridge progress if in web mode."""
@@ -508,14 +517,24 @@ class PipelineExecutor:
         else:
             return f"Execute {step_type}"
     
-    def _update_step_status(self, step_id: str, status: str) -> None:
+    def _update_step_status(self, step_id: str, status: str, cost_usd: float = 0.0, tokens_used: dict | None = None) -> None:
         """Update the status of a step in the web progress."""
         if self.web_bridge:
             progress = self.web_bridge.get_progress()
             for step_info in progress.pipeline_steps:
                 if step_info.id == step_id:
                     step_info.status = status
+                    if cost_usd > 0:
+                        step_info.cost_usd = cost_usd
+                    if tokens_used:
+                        step_info.tokens_used = tokens_used
                     break
+            
+            # Update total cost in progress
+            if cost_usd > 0:
+                progress.cost_by_step[step_id] = progress.cost_by_step.get(step_id, 0.0) + cost_usd
+                progress.total_cost_usd = sum(progress.cost_by_step.values())
+            
             self._update_web_progress()
     
     async def run(self) -> ExecutionResult:
@@ -683,7 +702,10 @@ class PipelineExecutor:
                         self._update_step_status(step.id, "skipped")
                     elif result.success:
                         steps_completed += 1
-                        self._update_step_status(step.id, "complete")
+                        # Get accumulated cost for this step
+                        step_cost = self.cost_by_step.get(step.id, 0.0)
+                        step_tokens = self.tokens_by_step.get(step.id)
+                        self._update_step_status(step.id, "complete", cost_usd=step_cost, tokens_used=step_tokens)
                     else:
                         errors.append(f"Step '{tier[0]}' failed: {result.error}")
                         self._update_step_status(step.id, "failed")
@@ -723,7 +745,10 @@ class PipelineExecutor:
                                 self._update_step_status(step_id, "skipped")
                             elif result.success:
                                 steps_completed += 1
-                                self._update_step_status(step_id, "complete")
+                                # Get accumulated cost for this step
+                                step_cost = self.cost_by_step.get(step_id, 0.0)
+                                step_tokens = self.tokens_by_step.get(step_id)
+                                self._update_step_status(step_id, "complete", cost_usd=step_cost, tokens_used=step_tokens)
                             else:
                                 errors.append(f"Step '{step_id}' failed: {result.error}")
                                 self._update_step_status(step_id, "failed")
@@ -742,12 +767,25 @@ class PipelineExecutor:
             output_info = ""
             if collected_outputs:
                 output_info = f"\nOutputs collected: {sum(len(v) for v in collected_outputs.values())} files → {self.spec.output.directory}"
+            
+            # Calculate total cost
+            total_cost = sum(self.cost_by_step.values())
+            cost_info = ""
+            if total_cost > 0:
+                cost_info = f"\n[bold]Total Cost: ${total_cost:.6f}[/bold]"
+                # Show per-step breakdown if there's meaningful cost
+                if len(self.cost_by_step) > 1:
+                    cost_info += "\n  Cost by step:"
+                    for step_id, cost in sorted(self.cost_by_step.items(), key=lambda x: -x[1]):
+                        if cost > 0:
+                            cost_info += f"\n    {step_id}: ${cost:.6f}"
+            
             console.print(Panel(
                 f"[green]Pipeline completed![/green]\n\n"
                 f"Assets processed: {len(self.assets)}\n"
                 f"Steps completed: {steps_completed}\n"
                 f"Steps skipped (cached): {steps_skipped}\n"
-                f"Duration: {duration_ms / 1000:.1f}s{output_info}",
+                f"Duration: {duration_ms / 1000:.1f}s{output_info}{cost_info}",
                 title="Summary",
                 border_style="green"
             ))
@@ -773,6 +811,9 @@ class PipelineExecutor:
                 duration_ms=duration_ms,
                 errors=errors,
                 outputs_collected={k: [str(p) for p in v] for k, v in collected_outputs.items()} if collected_outputs else None,
+                total_cost_usd=total_cost,
+                cost_by_step=dict(self.cost_by_step) if self.cost_by_step else None,
+                tokens_by_step=dict(self.tokens_by_step) if self.tokens_by_step else None,
             )
             
         except Exception as e:
@@ -904,18 +945,34 @@ class PipelineExecutor:
         result = await executor.execute(config, ctx)
         
         if result.success:
-            console.print(f"    [green]✓[/green] Done ({result.duration_ms}ms)")
+            # Format cost if available
+            cost_str = ""
+            if result.cost_usd > 0:
+                cost_str = f", ${result.cost_usd:.6f}"
+            console.print(f"    [green]✓[/green] Done ({result.duration_ms}ms{cost_str})")
+            
             self.step_outputs[step.id] = result.output
             # Also store under writes_to alias if specified
             if step.output:
                 self.step_outputs[step.output] = result.output
             
-            # Cache the output (include prompt for history display)
+            # Track cost
+            if result.cost_usd > 0:
+                self.cost_by_step[step.id] = self.cost_by_step.get(step.id, 0.0) + result.cost_usd
+            if result.tokens_used:
+                if step.id not in self.tokens_by_step:
+                    self.tokens_by_step[step.id] = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+                for k, v in result.tokens_used.items():
+                    self.tokens_by_step[step.id][k] = self.tokens_by_step[step.id].get(k, 0) + v
+            
+            # Cache the output (include prompt and cost for history display)
             self.cache.cache_step_output(
                 step.id,
                 result.output,
                 output_paths=result.output_paths,
                 prompt=result.prompt,
+                cost_usd=result.cost_usd,
+                tokens_used=result.tokens_used,
             )
             
             # Handle creates_assets - populate the target collection
@@ -976,9 +1033,11 @@ class PipelineExecutor:
         Parse text content to extract a list of items.
         
         Tries:
-        1. JSON parsing
-        2. YAML parsing
-        3. Simple line-by-line parsing for numbered lists
+        1. JSON parsing (direct)
+        2. JSON parsing (after stripping markdown code fences)
+        3. JSON array extraction from text
+        4. YAML parsing
+        5. Simple line-by-line parsing for numbered lists
         
         Args:
             content: Text content to parse
@@ -988,27 +1047,48 @@ class PipelineExecutor:
         """
         import re
         
-        # Try JSON
-        try:
-            data = json.loads(content)
-            if isinstance(data, list):
-                return data
-            if isinstance(data, dict):
-                for key in ["items", "assets", "list", "data"]:
-                    if key in data and isinstance(data[key], list):
-                        return data[key]
-        except (json.JSONDecodeError, ValueError):
-            pass
-        
-        # Try to find JSON array in content
-        json_match = re.search(r'\[\s*\{.*?\}\s*\]', content, re.DOTALL)
-        if json_match:
+        # Helper to try parsing JSON and extracting list
+        def try_parse_json(text: str) -> list[dict[str, Any]] | None:
             try:
-                data = json.loads(json_match.group())
+                data = json.loads(text)
                 if isinstance(data, list):
                     return data
+                if isinstance(data, dict):
+                    for key in ["items", "assets", "list", "data"]:
+                        if key in data and isinstance(data[key], list):
+                            return data[key]
             except (json.JSONDecodeError, ValueError):
                 pass
+            return None
+        
+        # Try direct JSON parsing
+        result = try_parse_json(content)
+        if result is not None:
+            return result
+        
+        # Strip markdown code fences and try again
+        # Handles: ```json\n...\n``` or ```\n...\n```
+        stripped = content.strip()
+        if stripped.startswith("```"):
+            # Remove opening fence (possibly with language tag)
+            lines = stripped.split("\n", 1)
+            if len(lines) > 1:
+                stripped = lines[1]
+            # Remove closing fence
+            if stripped.rstrip().endswith("```"):
+                stripped = stripped.rstrip()[:-3].rstrip()
+            
+            result = try_parse_json(stripped)
+            if result is not None:
+                return result
+        
+        # Try to find JSON array in content using greedy regex
+        # Use greedy .* to match the longest possible array
+        json_match = re.search(r'\[[\s\S]*\]', content)
+        if json_match:
+            result = try_parse_json(json_match.group())
+            if result is not None:
+                return result
         
         # Try YAML
         try:
@@ -1022,7 +1102,6 @@ class PipelineExecutor:
         # Try parsing numbered list (1. Name - Description)
         lines = content.strip().split('\n')
         items = []
-        current_item = None
         
         for line in lines:
             line = line.strip()
@@ -1072,10 +1151,34 @@ class PipelineExecutor:
             skipped = len(assets_to_process) - len(pending_assets)
             if skipped > 0:
                 console.print(f"    [dim]Skipping {skipped} cached assets[/dim]")
+                
+                # Restore step_outputs from cache for skipped assets
+                # This is important for subsequent steps that reference this step's output
+                if step.id not in self.step_outputs:
+                    self.step_outputs[step.id] = {"assets": {}}
+                
+                for i, asset in enumerate(assets_to_process):
+                    asset_id = asset.get("id", f"asset-{i}")
+                    if asset_id not in pending_ids:
+                        # This asset was cached - restore its output
+                        cached_output = self.cache.get_cached_output(step.id, asset_id)
+                        if cached_output is not None:
+                            self.step_outputs[step.id]["assets"][asset_id] = cached_output
+                            
+                            # Also restore writes_to field in asset data
+                            if step.output:
+                                output_value = cached_output
+                                if isinstance(output_value, dict):
+                                    output_value = output_value.get("content", output_value)
+                                self._update_asset_data(asset_id, step.output, output_value)
+                            
+                            # Update web UI to show cached asset as complete
+                            self._update_asset_status(asset_id, "complete")
         else:
             pending_assets = list(enumerate(assets_to_process))
         
         if not pending_assets:
+            console.print(f"    [green]✓[/green] All {len(assets_to_process)} assets cached")
             return StepResult(success=True, cached=True)
         
         # Get executor
@@ -1208,13 +1311,15 @@ class PipelineExecutor:
                                 )
                 
                 if result.success:
-                    # Cache the output (include prompt for history display)
+                    # Cache the output (include prompt and cost for history display)
                     self.cache.cache_step_output(
                         step.id,
                         result.output,
                         asset_id=asset_id,
                         output_paths=result.output_paths,
                         prompt=result.prompt,
+                        cost_usd=result.cost_usd,
+                        tokens_used=result.tokens_used,
                     )
                     
                     # Store per-asset output (with lock for thread safety)
@@ -1222,6 +1327,15 @@ class PipelineExecutor:
                         if step.id not in self.step_outputs:
                             self.step_outputs[step.id] = {"assets": {}}
                         self.step_outputs[step.id]["assets"][asset_id] = result.output
+                        
+                        # Track cost (thread-safe accumulation)
+                        if result.cost_usd > 0:
+                            self.cost_by_step[step.id] = self.cost_by_step.get(step.id, 0.0) + result.cost_usd
+                        if result.tokens_used:
+                            if step.id not in self.tokens_by_step:
+                                self.tokens_by_step[step.id] = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+                            for k, v in result.tokens_used.items():
+                                self.tokens_by_step[step.id][k] = self.tokens_by_step[step.id].get(k, 0) + v
                     
                     # Update asset data if step writes to a specific field
                     if step.output:

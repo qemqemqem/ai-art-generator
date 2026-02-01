@@ -35,7 +35,24 @@ types:
 
 # Set configuration
 context:
-  set_theme: "A dark gothic horror set inspired by Eastern European folklore, featuring vampires, werewolves, and ancient curses"
+  set_theme: |
+    A vibrant cosmic voyage set blending Polynesian wayfinding culture with interstellar exploration.
+    
+    The Vela Archipelago - scattered island-worlds across a nebula-sea where ancient wayfinders navigate 
+    using both star charts and ancestral spirits. Their great canoe-ships ride cosmic currents between 
+    worlds, powered by mana drawn from volcanic cores and celestial convergences.
+    
+    Key themes:
+    - Wayfinding: Navigation using stars, currents, and spirit guides across both ocean and space
+    - Ancestor spirits: Departed navigators whose spirits guide the living through dangerous passages
+    - Mana as fuel: Volcanic/stellar energy that powers both magic and interstellar travel
+    - Tattoo magic (Tatau): Sacred markings that store power, record lineage, and enable abilities
+    - The Great Voyage: An ongoing journey to unite scattered island-worlds under one chiefdom
+    - Cosmic sea creatures: Massive beings that swim between stars - some helpful guides, others apex predators
+    - Coral nebulae: Beautiful but treacherous regions of space filled with life and danger
+    
+    Visual motifs: Intricate tribal patterns, bioluminescent creatures, volcanic islands floating in starfields,
+    outrigger starships with solar sails, warriors with glowing tattoos, coral formations in nebula clouds.
   set_size: 6
 
 # Named asset collections
@@ -484,3 +501,23 @@ steps:
   #     Concept: {asset.concept}
   #     
   #     Does this art match the card's theme and feel?
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PHASE 4: FULL CARD RENDERING (Magic Set Editor)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - id: render_full_cards
+    type: render_mse_cards
+    requires: [generate_art, write_flavor_text, critique_and_refine]
+    is_output: true
+    description: "Render full card images using Magic Set Editor"
+    config:
+      # Path to MSE executable (runs via Wine on Linux)
+      mse_path: ~/Installs/M15-Magic-Pack/mse.exe
+      set_name: vela_archipelago
+      # Which steps to pull card data from
+      card_data_step: critique_and_refine
+      flavor_text_step: write_flavor_text
+      art_direction_step: generate_art_direction
+      art_step: generate_art
+    cache: true

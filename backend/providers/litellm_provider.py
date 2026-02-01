@@ -1,6 +1,7 @@
 """LiteLLM provider for text generation with structured output."""
 
 import logging
+from dataclasses import dataclass
 from typing import Optional, Type, TypeVar
 
 from pydantic import BaseModel, Field
@@ -9,6 +10,17 @@ from app.config import get_config
 from .base import BaseTextProvider
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class GenerationResult:
+    """Result from a text generation call, including cost tracking."""
+    content: str
+    cost_usd: float = 0.0
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    model: str = ""
 
 # Type variable for generic Pydantic model support
 T = TypeVar("T", bound=BaseModel)
@@ -116,7 +128,27 @@ class LiteLLMTextProvider(BaseTextProvider):
             system_prompt: Optional system context
             max_tokens: Maximum output tokens. If None, uses model's default (no limit imposed).
         """
+        result = await self.generate_with_cost(prompt, system_prompt, max_tokens)
+        return result.content
+    
+    async def generate_with_cost(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        max_tokens: int | None = None,
+    ) -> GenerationResult:
+        """Generate text and return result with cost tracking.
+        
+        Args:
+            prompt: The prompt to generate from
+            system_prompt: Optional system context
+            max_tokens: Maximum output tokens. If None, uses model's default (no limit imposed).
+            
+        Returns:
+            GenerationResult with content and cost information
+        """
         import litellm
+        from litellm import completion_cost
         self._ensure_init()
         
         messages = []
@@ -134,7 +166,36 @@ class LiteLLMTextProvider(BaseTextProvider):
         
         response = await litellm.acompletion(**kwargs)
         
-        return response.choices[0].message.content or ""
+        # Extract content
+        content = response.choices[0].message.content or ""
+        
+        # Extract cost - try multiple methods
+        cost_usd = 0.0
+        try:
+            # Method 1: Use completion_cost helper with response
+            cost_usd = completion_cost(completion_response=response)
+        except Exception as e:
+            logger.debug(f"Could not calculate cost via completion_cost: {e}")
+            try:
+                # Method 2: Check hidden params
+                cost_usd = response._hidden_params.get("response_cost", 0.0) or 0.0
+            except Exception:
+                pass
+        
+        # Extract token usage
+        usage = getattr(response, "usage", None)
+        prompt_tokens = getattr(usage, "prompt_tokens", 0) if usage else 0
+        completion_tokens = getattr(usage, "completion_tokens", 0) if usage else 0
+        total_tokens = getattr(usage, "total_tokens", 0) if usage else 0
+        
+        return GenerationResult(
+            content=content,
+            cost_usd=cost_usd,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
+            model=self.model,
+        )
     
     async def generate_structured(
         self,

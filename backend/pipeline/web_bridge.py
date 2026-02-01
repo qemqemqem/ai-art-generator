@@ -88,6 +88,8 @@ class StepInfo:
     creates_assets: str | None = None  # Collection name this step creates
     output: str | None = None  # Field name this step writes to (writes_to value)
     status: str = "pending"  # "pending", "running", "complete", "skipped"
+    cost_usd: float = 0.0  # Cost of this step in USD
+    tokens_used: dict[str, int] | None = None  # Token breakdown
     
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -98,6 +100,8 @@ class StepInfo:
             "creates_assets": self.creates_assets,
             "output": self.output,
             "status": self.status,
+            "cost_usd": self.cost_usd,
+            "tokens_used": self.tokens_used,
         }
 
 
@@ -146,6 +150,10 @@ class PipelineProgress:
     pipeline_steps: list[StepInfo] = field(default_factory=list)
     assets: list[AssetInfo] = field(default_factory=list)  # Full asset list with status
     
+    # Cost tracking
+    total_cost_usd: float = 0.0
+    cost_by_step: dict[str, float] = field(default_factory=dict)
+    
     def to_dict(self) -> dict[str, Any]:
         return {
             "phase": self.phase.value,
@@ -169,6 +177,8 @@ class PipelineProgress:
             "percent": self._calc_percent(),
             "pipeline_steps": [s.to_dict() for s in self.pipeline_steps],
             "assets": [a.to_dict() for a in self.assets],
+            "total_cost_usd": self.total_cost_usd,
+            "cost_by_step": self.cost_by_step,
         }
     
     def _calc_percent(self) -> int:

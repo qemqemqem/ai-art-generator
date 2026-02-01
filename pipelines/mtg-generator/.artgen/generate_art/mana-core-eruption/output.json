@@ -1,0 +1,12 @@
+{
+  "step_id": "generate_art",
+  "asset_id": "mana-core-eruption",
+  "timestamp": "2026-02-01T19:04:14.076301",
+  "data": {
+    "prompt": "Magic: The Gathering card art.\n\nFinal Prompt: A cataclysmic, fiery red mana eruption tears through the core of a floating volcanic island-world, sending molten energy and shattered rock exploding into the star-filled cosmic nebula-sea. The raw, overwhelming power illuminates the surrounding bioluminescent coral nebulae, hinting at both destructive force and dangerous, reckless mana extraction.\nArtist Credit: Inspired by Ryan Pancoast\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n",
+    "paths": [
+      "../pipelines/mtg-generator/.artgen/generate_image/mana-core-eruption/v1.png"
+    ]
+  },
+  "prompt": "Magic: The Gathering card art.\n\nFinal Prompt: A cataclysmic, fiery red mana eruption tears through the core of a floating volcanic island-world, sending molten energy and shattered rock exploding into the star-filled cosmic nebula-sea. The raw, overwhelming power illuminates the surrounding bioluminescent coral nebulae, hinting at both destructive force and dangerous, reckless mana extraction.\nArtist Credit: Inspired by Ryan Pancoast\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n"
+}

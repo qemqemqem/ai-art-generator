@@ -1,0 +1,12 @@
+{
+  "step_id": "generate_art",
+  "asset_id": "outrigger-star-skiff",
+  "timestamp": "2026-02-01T19:04:06.985425",
+  "data": {
+    "prompt": "Magic: The Gathering card art.\n\nFinal Prompt: A nimble outrigger star-skiff, crafted from dark wood with subtle glowing tribal patterns and featuring a shimmering solar sail, gracefully navigates through a vibrant, bioluminescent coral nebula. A solitary Wayfinder, adorned with subtle glowing tattoos, stands confidently at the helm, their gaze fixed on the cosmic currents ahead, with a distant volcanic island-world visible against a starfield in the background.\n\nArtist Credit: Inspired by Chris Rahn\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n",
+    "paths": [
+      "../pipelines/mtg-generator/.artgen/generate_image/outrigger-star-skiff/v1.png"
+    ]
+  },
+  "prompt": "Magic: The Gathering card art.\n\nFinal Prompt: A nimble outrigger star-skiff, crafted from dark wood with subtle glowing tribal patterns and featuring a shimmering solar sail, gracefully navigates through a vibrant, bioluminescent coral nebula. A solitary Wayfinder, adorned with subtle glowing tattoos, stands confidently at the helm, their gaze fixed on the cosmic currents ahead, with a distant volcanic island-world visible against a starfield in the background.\n\nArtist Credit: Inspired by Chris Rahn\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n"
+}

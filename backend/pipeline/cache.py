@@ -173,6 +173,8 @@ class CacheManager:
         asset_id: str | None = None,
         output_paths: list[Path] | None = None,
         prompt: str | None = None,
+        cost_usd: float = 0.0,
+        tokens_used: dict[str, int] | None = None,
     ) -> None:
         """
         Cache a step's output.
@@ -183,6 +185,8 @@ class CacheManager:
             asset_id: Optional asset ID
             output_paths: List of output file paths
             prompt: Optional prompt used to generate this output
+            cost_usd: Cost of this step in USD
+            tokens_used: Token usage breakdown (prompt_tokens, completion_tokens, total_tokens)
         """
         if asset_id:
             cache_key = f"{step_id}:{asset_id}"
@@ -206,6 +210,12 @@ class CacheManager:
         if prompt:
             output_data["prompt"] = prompt
         
+        # Include cost tracking if available
+        if cost_usd > 0:
+            output_data["cost_usd"] = cost_usd
+        if tokens_used:
+            output_data["tokens_used"] = tokens_used
+        
         with open(self.state_dir / output_file, "w") as f:
             json.dump(output_data, f, indent=2, default=str)
         
@@ -215,6 +225,7 @@ class CacheManager:
             "completed_at": datetime.utcnow().isoformat(),
             "output_path": output_file,
             "output_files": [str(p) for p in (output_paths or [])],
+            "cost_usd": cost_usd,
         }
         
         self._save_state()

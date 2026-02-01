@@ -1,0 +1,12 @@
+{
+  "step_id": "generate_art",
+  "asset_id": "ancestral-star-whisperer",
+  "timestamp": "2026-02-01T19:03:54.218262",
+  "data": {
+    "prompt": "Magic: The Gathering card art.\n\nA shimmering, ethereal spirit of an ancient Wayfinder, formed from starlight and cosmic mist, floats majestically amidst the swirling, bioluminescent coral nebulae of the Vela Archipelago. Its wise, translucent form, adorned with faint glowing tribal patterns, subtly gestures towards a clear path through the celestial currents, guiding navigators away from encroaching shadows of the Void Blight.\nArtist Credit: inspired by Seb McKinnon\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n",
+    "paths": [
+      "../pipelines/mtg-generator/.artgen/generate_image/ancestral-star-whisperer/v1.png"
+    ]
+  },
+  "prompt": "Magic: The Gathering card art.\n\nA shimmering, ethereal spirit of an ancient Wayfinder, formed from starlight and cosmic mist, floats majestically amidst the swirling, bioluminescent coral nebulae of the Vela Archipelago. Its wise, translucent form, adorned with faint glowing tribal patterns, subtly gestures towards a clear path through the celestial currents, guiding navigators away from encroaching shadows of the Void Blight.\nArtist Credit: inspired by Seb McKinnon\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n"
+}

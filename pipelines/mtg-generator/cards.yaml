@@ -1,43 +1,43 @@
-# Sample card list for MTG Set Generator
-# These cards will be populated with mechanics, art, and flavor text by the pipeline
+# Sample card list for MTG Set Generator - Vela Archipelago
+# A cosmic voyage set blending Polynesian wayfinding with interstellar exploration
 #
 # You can:
 # 1. Use these sample cards
 # 2. Modify them for your theme
 # 3. Let the pipeline's generate_card_concepts step inspire what to put here
 
-- name: "Moonlit Hunter"
-  concept: "A tracker who transforms under the full moon to hunt those who wronged her village"
-  color: "Green"
-  rarity: "Uncommon"
-  card_type: "Creature"
-
-- name: "Blood Covenant"
-  concept: "A dark pact between a vampire lord and a mortal seeking power"
-  color: "Black"
-  rarity: "Rare"
-  card_type: "Enchantment"
-
-- name: "Village Defender"
-  concept: "A stalwart guard who stands against the darkness at the village gates"
-  color: "White"
-  rarity: "Common"
-  card_type: "Creature"
-
-- name: "Cryptic Whispers"
-  concept: "Ancient secrets spoken by ghosts in the ruins"
+- name: "Starpath Navigator"
+  concept: "An elite wayfinder who reads the cosmic currents and guides great canoe-ships between island-worlds"
   color: "Blue"
   rarity: "Uncommon"
-  card_type: "Instant"
+  card_type: "Creature"
 
-- name: "Pyre of the Damned"
-  concept: "A burning stake used to destroy creatures of the night"
+- name: "Ancestral Voyage"
+  concept: "A ritual that summons the spirits of legendary navigators to guide ships through dangerous nebulae"
+  color: "White"
+  rarity: "Rare"
+  card_type: "Sorcery"
+
+- name: "Reef Stalker"
+  concept: "A massive predator that hunts among the coral nebulae, drawn to the mana signatures of passing vessels"
+  color: "Black"
+  rarity: "Uncommon"
+  card_type: "Creature"
+
+- name: "Volcanic Awakening"
+  concept: "A planet's volcanic core erupts with mana, empowering warriors and devastating enemies"
   color: "Red"
   rarity: "Common"
   card_type: "Sorcery"
 
-- name: "Ancient Tombstone"
-  concept: "A weathered grave marker that holds dark secrets"
+- name: "Tatau Warrior"
+  concept: "A fierce fighter whose sacred tattoos glow with stored mana, granting supernatural strength"
+  color: "Green"
+  rarity: "Common"
+  card_type: "Creature"
+
+- name: "Celestial Fishhook"
+  concept: "A legendary artifact said to have pulled islands from the cosmic sea, now used to anchor worlds together"
   color: "Colorless"
-  rarity: "Uncommon"
+  rarity: "Rare"
   card_type: "Artifact"

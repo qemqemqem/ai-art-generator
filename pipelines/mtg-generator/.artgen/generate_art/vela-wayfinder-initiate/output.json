@@ -1,0 +1,12 @@
+{
+  "step_id": "generate_art",
+  "asset_id": "vela-wayfinder-initiate",
+  "timestamp": "2026-02-01T19:10:31.561593",
+  "data": {
+    "prompt": "Magic: The Gathering card art.\n\nA young, determined Vela Wayfinder Initiate, a human warrior with Polynesian features, stands focused on the deck of a sleek, wooden outrigger starship. Intricate, glowing *tatau* patterns subtly illuminate their arm and shoulder as they intently study a holographic star-chart projected from a small ancestral totem or device. In the background, vibrant coral nebulae bloom across a deep cosmic twilight, dotted with distant stars and the silhouette of a floating volcanic island, emphasizing the vast, mystical journey ahead. The scene is imbued with a sense of hopeful vigilance and wonder.\n\nArtist Credit: inspired by Anna Steinbauer\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n",
+    "paths": [
+      "../pipelines/mtg-generator/.artgen/generate_image/vela-wayfinder-initiate/v1.png"
+    ]
+  },
+  "prompt": "Magic: The Gathering card art.\n\nA young, determined Vela Wayfinder Initiate, a human warrior with Polynesian features, stands focused on the deck of a sleek, wooden outrigger starship. Intricate, glowing *tatau* patterns subtly illuminate their arm and shoulder as they intently study a holographic star-chart projected from a small ancestral totem or device. In the background, vibrant coral nebulae bloom across a deep cosmic twilight, dotted with distant stars and the silhouette of a floating volcanic island, emphasizing the vast, mystical journey ahead. The scene is imbued with a sense of hopeful vigilance and wonder.\n\nArtist Credit: inspired by Anna Steinbauer\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n"
+}

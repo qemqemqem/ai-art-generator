@@ -132,6 +132,7 @@ class StepType(str, Enum):
     ASSESS = "assess"
     USER_SELECT = "user_select"
     USER_APPROVE = "user_approve"
+    REVIEW = "review"  # Checkpoint review - pause and show all work so far
     REFINE = "refine"
     COMPOSITE = "composite"
     REMOVE_BACKGROUND = "remove_background"
@@ -147,11 +148,14 @@ class StepSpec:
     id: str
     type: StepType
     requires: list[str] = field(default_factory=list)
-    for_each: str | None = None
+    for_each: str | None = None  # Collection name to iterate over (e.g., "cards")
     gather: bool = False
     condition: str | None = None
     config: dict[str, Any] = field(default_factory=dict)
     output: str | None = None  # Which field this step writes to
+    
+    # Provider override (uses pipeline defaults if not specified)
+    provider: str | None = None  # e.g., "gemini", "litellm", "dalle"
     
     # State persistence
     save_to: str | None = None  # Path pattern for saving output
@@ -159,6 +163,9 @@ class StepSpec:
     
     # Output collection
     is_output: bool = False  # Mark this step as producing final output artifacts
+    
+    # Asset creation - this step's output populates an asset collection
+    creates_assets: str | None = None  # Collection name to populate (e.g., "cards")
     
     # Human-in-the-loop iteration
     until: str | None = None  # "approved" - iterate until user approves
@@ -175,8 +182,31 @@ class StepSpec:
 # =============================================================================
 
 @dataclass 
+class AssetCollectionSpec:
+    """
+    Specification for a named asset collection.
+    
+    Each collection has either:
+    - from_file: Load from external file (yaml, json, txt, csv)
+    - generated_by: Will be created by a step
+    - items: Inline items
+    
+    Optionally specify:
+    - count: Expected/max size (None = unbounded)
+    - type: Type definition for items in this collection
+    """
+    name: str  # Collection name (e.g., "cards", "mechanics")
+    type: str | None = None  # Type name for items (e.g., "MagicCard")
+    count: int | str | None = None  # Expected count (int, template string, or None for unbounded)
+    items: list[dict[str, Any]] | None = None  # Inline items
+    generated_by: str | None = None  # Step that creates this collection
+    from_file: str | None = None  # External input file path
+
+
+# Legacy single-collection spec (for backward compatibility during transition)
+@dataclass 
 class AssetSpec:
-    """Specification for what assets we're producing."""
+    """Specification for what assets we're producing (legacy single-collection)."""
     type: str  # "image", "text", or a custom type name
     count: int | None = None
     items: list[dict[str, Any]] | None = None
@@ -199,6 +229,17 @@ class OutputConfig:
     copy: bool = True  # If true, copy files; if false, create symlinks
 
 
+@dataclass
+class ProvidersConfig:
+    """Configuration for AI providers."""
+    text: str = "litellm"  # Default text provider: litellm, gemini
+    image: str = "gemini"  # Default image provider: gemini, dalle, pixellab
+    
+    # Provider-specific settings (optional)
+    text_model: str | None = None  # e.g., "gpt-4", "gemini-1.5-flash"
+    image_model: str | None = None  # e.g., "imagen-3", "dall-e-3"
+
+
 # =============================================================================
 # Pipeline
 # =============================================================================
@@ -211,9 +252,16 @@ class PipelineSpec:
     description: str = ""
     types: dict[str, TypeDef] = field(default_factory=dict)
     context: dict[str, Any] = field(default_factory=dict)
+    providers: ProvidersConfig = field(default_factory=ProvidersConfig)  # AI provider defaults
     state: StateConfig = field(default_factory=StateConfig)
     output: OutputConfig | None = None  # Output collection configuration
+    
+    # Named asset collections (new format)
+    asset_collections: dict[str, AssetCollectionSpec] = field(default_factory=dict)
+    
+    # Legacy single assets field (deprecated, for backward compatibility)
     assets: AssetSpec | None = None
+    
     steps: list[StepSpec] = field(default_factory=list)
     
     # Computed
@@ -254,6 +302,24 @@ def parse_step(data: dict[str, Any], path: str = "") -> StepSpec:
             for i, s in enumerate(data["config"]["steps"])
         ]
     
+    # Build config, merging in top-level convenience keys
+    # This allows users to write:
+    #   - id: my_step
+    #     type: generate_text
+    #     prompt: "..."
+    # Instead of requiring:
+    #   - id: my_step
+    #     type: generate_text
+    #     config:
+    #       prompt: "..."
+    config = dict(data.get("config", {}))
+    
+    # Merge top-level keys into config (config takes precedence)
+    top_level_config_keys = ["prompt", "query", "criteria", "title"]
+    for key in top_level_config_keys:
+        if key in data and key not in config:
+            config[key] = data[key]
+    
     return StepSpec(
         id=data["id"],
         type=step_type,
@@ -261,11 +327,13 @@ def parse_step(data: dict[str, Any], path: str = "") -> StepSpec:
         for_each=data.get("for_each"),
         gather=data.get("gather", False),
         condition=data.get("condition"),
-        config=data.get("config", {}),
-        output=data.get("output"),
+        config=config,
+        output=data.get("output") or data.get("writes_to"),  # Support both output and writes_to
+        provider=data.get("provider"),  # Provider override
         save_to=data.get("save_to"),
         cache=data.get("cache"),  # None enables smart defaults
         is_output=data.get("is_output", False),  # Mark as final output
+        creates_assets=data.get("creates_assets"),  # Collection name this step populates
         until=data.get("until"),
         max_attempts=data.get("max_attempts", 5),
         variations=data.get("variations"),
@@ -274,18 +342,80 @@ def parse_step(data: dict[str, Any], path: str = "") -> StepSpec:
     )
 
 
-def parse_assets(data: dict[str, Any] | None) -> AssetSpec | None:
-    """Parse assets specification."""
-    if not data:
-        return None
-    
-    return AssetSpec(
-        type=data.get("type", "image"),
+def parse_asset_collection(name: str, data: dict[str, Any]) -> AssetCollectionSpec:
+    """Parse a single asset collection specification."""
+    return AssetCollectionSpec(
+        name=name,
+        type=data.get("type"),
         count=data.get("count"),
         items=data.get("items"),
         generated_by=data.get("generated_by"),
         from_file=data.get("from_file"),
     )
+
+
+def parse_assets(data: dict[str, Any] | None) -> tuple[dict[str, AssetCollectionSpec], AssetSpec | None]:
+    """
+    Parse assets specification.
+    
+    Supports two formats:
+    1. New named collections format:
+       assets:
+         cards:
+           type: MagicCard
+           from_file: cards.yaml
+         mechanics:
+           type: Mechanic
+           generated_by: design_mechanics
+    
+    2. Legacy single-collection format (deprecated):
+       assets:
+         type: MagicCard
+         from_file: cards.yaml
+    
+    Returns:
+        (named_collections, legacy_spec)
+        - named_collections: dict of collection name -> AssetCollectionSpec
+        - legacy_spec: AssetSpec if using legacy format, None otherwise
+    """
+    if not data:
+        return {}, None
+    
+    # Detect format: if 'type' is at top level, it's legacy format
+    # New format has collection names as keys (cards, mechanics, etc.)
+    if "type" in data:
+        # Legacy single-collection format
+        legacy_spec = AssetSpec(
+            type=data.get("type", "image"),
+            count=data.get("count"),
+            items=data.get("items"),
+            generated_by=data.get("generated_by"),
+            from_file=data.get("from_file"),
+        )
+        # Convert to named collection for internal use
+        # Use "assets" as the default collection name
+        collections = {
+            "assets": AssetCollectionSpec(
+                name="assets",
+                type=legacy_spec.type,
+                count=legacy_spec.count,
+                items=legacy_spec.items,
+                generated_by=legacy_spec.generated_by,
+                from_file=legacy_spec.from_file,
+            )
+        }
+        return collections, legacy_spec
+    
+    # New named collections format
+    collections = {}
+    for name, collection_data in data.items():
+        if not isinstance(collection_data, dict):
+            raise ParseError(
+                f"Asset collection '{name}' must be a mapping, got {type(collection_data).__name__}"
+            )
+        collections[name] = parse_asset_collection(name, collection_data)
+    
+    return collections, None
 
 
 def parse_state(data: dict[str, Any] | None) -> StateConfig:
@@ -333,6 +463,19 @@ def parse_types(data: dict[str, Any] | None) -> dict[str, TypeDef]:
     return types
 
 
+def parse_providers(data: dict[str, Any] | None) -> ProvidersConfig:
+    """Parse providers configuration."""
+    if not data:
+        return ProvidersConfig()
+    
+    return ProvidersConfig(
+        text=data.get("text", "litellm"),
+        image=data.get("image", "gemini"),
+        text_model=data.get("text_model"),
+        image_model=data.get("image_model"),
+    )
+
+
 def parse_pipeline(yaml_content: str) -> PipelineSpec:
     """Parse a YAML pipeline specification."""
     try:
@@ -353,15 +496,20 @@ def parse_pipeline(yaml_content: str) -> PipelineSpec:
     for i, step_data in enumerate(data.get("steps", [])):
         steps.append(parse_step(step_data, f"steps[{i}]"))
     
+    # Parse assets (supports both new named collections and legacy format)
+    asset_collections, legacy_assets = parse_assets(data.get("assets"))
+    
     spec = PipelineSpec(
         name=data["name"],
         version=data.get("version", "1.0"),
         description=data.get("description", ""),
         types=types,
         context=data.get("context", {}),
+        providers=parse_providers(data.get("providers")),
         state=parse_state(data.get("state")),
         output=parse_output(data.get("output")),
-        assets=parse_assets(data.get("assets")),
+        asset_collections=asset_collections,
+        assets=legacy_assets,  # Keep for backward compatibility
         steps=steps,
     )
     
@@ -449,13 +597,44 @@ def validate_pipeline(spec: PipelineSpec) -> list[str]:
                 f"Step '{step.id}' has gather=true but no requires"
             )
     
-    # Check for_each steps reference valid scope
+    # Build set of valid collection names
+    valid_collections = set(spec.asset_collections.keys())
+    # Also include legacy compatibility values
+    valid_collections.add("asset")  # Legacy: for_each: asset
+    valid_collections.add("item")   # Legacy: for_each: item
+    
+    # Check for_each steps reference valid collection
     for step in spec.steps:
-        if step.for_each and step.for_each not in ("asset", "item"):
+        if step.for_each and step.for_each not in valid_collections:
             warnings.append(
                 f"Step '{step.id}' has for_each='{step.for_each}', "
-                f"expected 'asset' or 'item'"
+                f"but no collection named '{step.for_each}' is defined. "
+                f"Available collections: {', '.join(spec.asset_collections.keys()) or 'none'}"
             )
+    
+    # Check creates_assets references valid collection
+    for step in spec.steps:
+        if step.creates_assets and step.creates_assets not in spec.asset_collections:
+            warnings.append(
+                f"Step '{step.id}' has creates_assets='{step.creates_assets}', "
+                f"but no collection named '{step.creates_assets}' is defined"
+            )
+    
+    # Verify generated_by references match creates_assets
+    for name, collection in spec.asset_collections.items():
+        if collection.generated_by:
+            # Find the step that should create this collection
+            creating_step = spec.step_index.get(collection.generated_by)
+            if not creating_step:
+                raise ValidationError(
+                    f"Collection '{name}' has generated_by='{collection.generated_by}', "
+                    f"but no step with that ID exists"
+                )
+            if creating_step.creates_assets != name:
+                warnings.append(
+                    f"Collection '{name}' has generated_by='{collection.generated_by}', "
+                    f"but step '{collection.generated_by}' doesn't have creates_assets='{name}'"
+                )
     
     return warnings
 
@@ -586,19 +765,21 @@ if __name__ == "__main__":
         # Show state config
         print(f"\nState: {spec.state.directory}")
         
-        # Show assets
-        if spec.assets:
-            print(f"\nAssets: {spec.assets.type}", end="")
-            if spec.assets.from_file:
-                print(f" (from file: {spec.assets.from_file})")
-            elif spec.assets.count:
-                print(f" (count: {spec.assets.count})")
-            elif spec.assets.items:
-                print(f" (items: {len(spec.assets.items)})")
-            elif spec.assets.generated_by:
-                print(f" (generated by: {spec.assets.generated_by})")
-            else:
-                print()
+        # Show asset collections
+        if spec.asset_collections:
+            print(f"\nAsset Collections ({len(spec.asset_collections)}):")
+            for name, collection in spec.asset_collections.items():
+                source = ""
+                if collection.from_file:
+                    source = f"from_file: {collection.from_file}"
+                elif collection.generated_by:
+                    source = f"generated_by: {collection.generated_by}"
+                elif collection.items:
+                    source = f"items: {len(collection.items)}"
+                
+                count_str = f", count: {collection.count}" if collection.count else ""
+                type_str = f"type: {collection.type}" if collection.type else "type: any"
+                print(f"  {name}: {type_str}, {source}{count_str}")
         
         print(f"\nSteps: {len(spec.steps)}")
         print()

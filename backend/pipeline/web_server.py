@@ -257,6 +257,7 @@ async def get_step_history(step_id: str, asset_id: str = None):
                         "timestamp": data.get("timestamp"),
                         "selected_index": output_data.get("selected_index") if isinstance(output_data, dict) else None,
                         "cache_path": rel_cache_path,
+                        "prompt": data.get("prompt"),  # Include the prompt used for generation
                     })
                     extract_files_from_output(output_data, source_path=global_output)
             except (json.JSONDecodeError, IOError):
@@ -288,6 +289,7 @@ async def get_step_history(step_id: str, asset_id: str = None):
                             "timestamp": data.get("timestamp"),
                             "selected_index": None,
                             "cache_path": rel_cache_path,
+                            "prompt": data.get("prompt"),  # Include the prompt used for generation
                         }
                         
                         # Extract selection info
@@ -946,6 +948,118 @@ def get_html_page() -> str:
             font-family: monospace;
         }
         
+        /* Queue Review Checkpoint Styles */
+        .queue-review-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .queue-review-summary {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 32px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .queue-review-summary h3 {
+            margin: 0 0 16px 0;
+            color: #334155;
+            font-size: 16px;
+            font-weight: 600;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 12px;
+        }
+        
+        .queue-review-step {
+            padding: 12px;
+            margin-bottom: 12px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        
+        .queue-review-step:last-child {
+            margin-bottom: 0;
+        }
+        
+        .queue-review-step-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .queue-review-step-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #22c55e;
+            color: white;
+            border-radius: 50%;
+            font-size: 12px;
+        }
+        
+        .queue-review-step-id {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 14px;
+        }
+        
+        .queue-review-step-content {
+            padding-left: 28px;
+        }
+        
+        .queue-review-text {
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.5;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            color: #334155;
+            margin: 0;
+        }
+        
+        .queue-review-preview {
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        .queue-review-expand {
+            margin-top: 8px;
+            padding: 4px 12px;
+            font-size: 12px;
+            color: #3b82f6;
+            background: transparent;
+            border: 1px solid #3b82f6;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .queue-review-expand:hover {
+            background: #eff6ff;
+        }
+        
+        .queue-review-actions {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .queue-approve-btn.large {
+            padding: 28px 56px;
+        }
+        
         /* Pipeline Steps Row */
         .pipeline-steps-row {
             display: flex;
@@ -997,7 +1111,7 @@ def get_html_page() -> str:
         .step-chip-icon.running { background: #3b82f6; color: white; }
         .step-chip-icon.complete { background: #22c55e; color: white; }
         .step-chip-icon.failed { background: #ef4444; color: white; }
-        .step-chip-icon.skipped { background: #94a3b8; color: white; }
+        .step-chip-icon.skipped { background: #22c55e; color: white; }  /* Same as complete - cached is still done */
         
         .step-connector {
             width: 20px;
@@ -1314,30 +1428,65 @@ def get_html_page() -> str:
         }
         
         .asset-properties {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 12px;
-        }
-        
-        .asset-prop {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
             background: white;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
-            padding: 12px;
+            padding: 16px;
+        }
+        
+        .asset-prop {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .asset-prop:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
         }
         
         .asset-prop-label {
-            font-size: 10px;
+            font-size: 12px;
             color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
+            font-weight: 500;
+            min-width: 100px;
+            flex-shrink: 0;
         }
         
         .asset-prop-value {
             font-size: 13px;
             color: #1e293b;
             word-break: break-word;
+            flex: 1;
+        }
+        
+        .asset-prop-new {
+            font-size: 10px;
+            background: #dbeafe;
+            color: #1d4ed8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+        
+        .asset-prop.is-new {
+            background: #f0f9ff;
+            margin: 0 -16px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            border-bottom: none;
+        }
+        
+        .asset-prop.is-new + .asset-prop {
+            border-top: none;
         }
         
         /* Asset step output (shown during live view) */
@@ -1527,6 +1676,113 @@ def get_html_page() -> str:
         
         .option-card:hover .click-hint { opacity: 1; }
         
+        /* Review Checkpoint Display (in main approval area) */
+        .review-checkpoint-container {
+            padding: 20px;
+        }
+        
+        .review-steps-list {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .review-steps-list h4 {
+            margin: 0 0 12px 0;
+            color: #334155;
+            font-size: 14px;
+            font-weight: 600;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        
+        .review-step-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .review-step-item:last-child { margin-bottom: 0; }
+        
+        .review-step-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #22c55e;
+            color: white;
+            border-radius: 50%;
+            font-size: 11px;
+        }
+        
+        .review-step-id {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 13px;
+            min-width: 150px;
+        }
+        
+        .review-step-preview {
+            flex: 1;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        
+        .review-action-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+        
+        .review-approve-btn, .review-reject-btn {
+            padding: 14px 32px;
+            font-size: 15px;
+            font-weight: 600;
+            border: 2px solid;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        
+        .review-approve-btn {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-color: #86efac;
+            color: #166534;
+        }
+        .review-approve-btn:hover {
+            border-color: #22c55e;
+            box-shadow: 0 4px 16px rgba(34, 197, 94, 0.2);
+            transform: translateY(-1px);
+        }
+        
+        .review-reject-btn {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border-color: #fecaca;
+            color: #991b1b;
+        }
+        .review-reject-btn:hover {
+            border-color: #ef4444;
+            box-shadow: 0 4px 16px rgba(239, 68, 68, 0.2);
+            transform: translateY(-1px);
+        }
+        
         /* Actions */
         .actions {
             display: flex;
@@ -1601,6 +1857,21 @@ def get_html_page() -> str:
         }
         
         .history-output.verdict .history-output-label { color: #166534; }
+        
+        .history-output.text-output {
+            background: #f8fafc;
+            border-color: #3b82f6;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .history-output.text-output .history-output-label {
+            color: #1d4ed8;
+        }
+        
+        .history-output.text-output .history-output-content {
+            font-size: 14px;
+            line-height: 1.7;
+        }
         
         .history-output-label {
             font-size: 11px;
@@ -1934,6 +2205,68 @@ def get_html_page() -> str:
             font-size: 11px;
         }
         
+        /* Collapsible Prompt Section */
+        .prompt-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            margin: 16px 0 8px;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.15s;
+        }
+        
+        .prompt-toggle:hover {
+            background: #f1f5f9;
+        }
+        
+        .prompt-toggle-arrow {
+            font-size: 10px;
+            color: #64748b;
+            transition: transform 0.2s;
+        }
+        
+        .prompt-toggle.expanded .prompt-toggle-arrow {
+            transform: rotate(90deg);
+        }
+        
+        .prompt-toggle-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .prompt-content {
+            display: none;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            padding: 12px;
+            margin-top: -8px;
+            margin-bottom: 16px;
+        }
+        
+        .prompt-content.visible {
+            display: block;
+        }
+        
+        .prompt-content pre {
+            margin: 0;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #334155;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
         .saved-path-icon {
             font-size: 14px;
             flex-shrink: 0;
@@ -2109,8 +2442,8 @@ def get_html_page() -> str:
                 </div>
             </div>
             
-            <div class="sidebar-section" style="flex: 1; display: flex; flex-direction: column; padding: 0;">
-                <div class="sidebar-title" style="padding: 20px 20px 12px;">Assets <span id="assetCount">(0)</span></div>
+            <div class="sidebar-section" id="assetsSection" style="flex: 1; display: flex; flex-direction: column; padding: 0;">
+                <div class="sidebar-title" style="padding: 20px 20px 12px;"><span id="assetCollectionName">Assets</span> <span id="assetCount">(0)</span></div>
                 <div class="asset-list" id="assetList">
                     <div class="empty-state" style="padding: 20px;">
                         <div style="font-size: 13px;">No assets loaded</div>
@@ -2300,18 +2633,30 @@ def get_html_page() -> str:
         let queueIndex = 0; // Current position in queue
         let queueMode = false; // Whether queue mode is active
         
-        // Provider descriptions
-        const PROVIDER_DESCRIPTIONS = {
-            'generate_image': 'Being generated by Gemini Imagen',
-            'generate_sprite': 'Being generated by Gemini Imagen',
-            'generate_text': 'Being generated by Gemini 2.5 Flash',
-            'generate_name': 'Being generated by Gemini 2.5 Flash',
-            'generate_prompt': 'Being generated by Gemini 2.5 Flash',
-            'research': 'Researching with Gemini 2.5 Flash',
-            'assess': 'Being assessed by Gemini Vision',
+        // Provider display names (can be overridden by server)
+        const PROVIDER_NAMES = {
+            'gemini': 'Gemini Imagen',
+            'litellm': 'LiteLLM',
+            'dalle': 'DALL-E',
+            'pixellab': 'PixelLab',
+            'openai': 'OpenAI',
+            'anthropic': 'Anthropic Claude',
+        };
+        
+        // Step type action descriptions
+        const STEP_TYPE_ACTIONS = {
+            'generate_image': 'Generating image',
+            'generate_sprite': 'Generating sprite',
+            'generate_text': 'Generating text',
+            'generate_name': 'Generating name',
+            'generate_prompt': 'Generating prompt',
+            'research': 'Researching',
+            'assess': 'Assessing',
             'user_select': 'Awaiting user selection',
             'user_approve': 'Awaiting user approval',
         };
+        
+        let currentProvider = ''; // Track current provider from server
         
         const STEP_TYPE_ICONS = {
             'generate_image': '🎨', 'generate_sprite': '🎮', 'generate_text': '📝',
@@ -2335,7 +2680,9 @@ def get_html_page() -> str:
         const stageDesc = $('stageDesc');
         const stageStatusBadge = $('stageStatusBadge');
         const assetCount = $('assetCount');
+        const assetCollectionName = $('assetCollectionName');
         const assetList = $('assetList');
+        const assetsSection = $('assetsSection');
         const historyBanner = $('historyBanner');
         const historyBannerText = $('historyBannerText');
         const historyStepName = $('historyStepName');
@@ -2424,6 +2771,7 @@ def get_html_page() -> str:
             progressPercent.textContent = `${data.percent || 0}%`;
             currentStep = data.current_step;
             currentStepType = data.current_step_type;
+            currentProvider = data.current_provider || '';
             
             // Update status
             if (data.phase === 'waiting') {
@@ -2486,7 +2834,7 @@ def get_html_page() -> str:
                 renderAssets();
             }
             
-            // Update stage info if viewing current
+            // Update stage info if viewing current (live view)
             if (viewingStep === null) {
                 updateStageInfo(data);
                 
@@ -2495,19 +2843,20 @@ def get_html_page() -> str:
                     promptBox.classList.remove('hidden');
                     promptBoxText.textContent = data.current_step_prompt;
                 }
-            }
-            
-            // Update selected asset details if processing
-            if (selectedAssetId) {
-                const asset = assets.find(a => a.id === selectedAssetId);
-                if (asset) {
-                    updateAssetDetails(asset);
+                
+                // Only update asset details when in live view, not when viewing history
+                // This prevents the UI from jumping when user is browsing past steps
+                if (selectedAssetId) {
+                    const asset = assets.find(a => a.id === selectedAssetId);
+                    if (asset) {
+                        updateAssetDetails(asset);
+                    }
                 }
-            }
-            
-            // Auto-select first asset if none selected
-            if (!selectedAssetId && assets.length > 0) {
-                selectAsset(assets[0].id);
+                
+                // Auto-select first asset only in live view
+                if (!selectedAssetId && assets.length > 0) {
+                    selectAsset(assets[0].id);
+                }
             }
         }
         
@@ -2536,7 +2885,7 @@ def get_html_page() -> str:
         }
         
         function renderPipelineSteps() {
-            const icons = { pending: '○', running: '●', complete: '✓', failed: '✕', skipped: '−' };
+            const icons = { pending: '○', running: '●', complete: '✓', failed: '✕', skipped: '✓' };  // skipped (cached) shows checkmark too
             let html = '';
             
             pipelineSteps.forEach((step, i) => {
@@ -2588,6 +2937,17 @@ def get_html_page() -> str:
         // ===== RENDER ASSETS =====
         function renderAssets() {
             assetCount.textContent = `(${assets.length})`;
+            
+            // Get collection name from current/viewing step or first asset
+            let collectionName = 'Assets';
+            const activeStep = viewingStepData || pipelineSteps.find(s => s.id === currentStep);
+            if (activeStep?.for_each) {
+                // Capitalize collection name
+                collectionName = activeStep.for_each.charAt(0).toUpperCase() + activeStep.for_each.slice(1);
+            } else if (assets.length > 0 && assets[0].collection) {
+                collectionName = assets[0].collection.charAt(0).toUpperCase() + assets[0].collection.slice(1);
+            }
+            assetCollectionName.textContent = collectionName;
             
             if (assets.length === 0) {
                 assetList.innerHTML = '<div class="empty-state" style="padding: 20px;"><div style="font-size: 13px;">No assets loaded</div></div>';
@@ -2672,10 +3032,10 @@ def get_html_page() -> str:
                     data.outputs.forEach(output => {
                         const outputData = output.data;
                         if (outputData?.content) {
-                            outputHtml += `<div class="output-text">${outputData.content}</div>`;
+                            outputHtml += `<div class="output-text">${escapeHtmlSafe(outputData.content)}</div>`;
                         }
                         if (outputData?.assessment) {
-                            outputHtml += `<div class="output-assessment">${outputData.assessment}</div>`;
+                            outputHtml += `<div class="output-assessment">${escapeHtmlSafe(outputData.assessment)}</div>`;
                         }
                     });
                     
@@ -2754,21 +3114,41 @@ def get_html_page() -> str:
             if (effectiveStatus === 'processing' && currentStepType) {
                 processingInfo.classList.add('visible');
                 processingTitle.textContent = 'Generating...';
-                processingDetail.textContent = PROVIDER_DESCRIPTIONS[currentStepType] || 'Processing with AI provider';
+                // Build dynamic provider description
+                const action = STEP_TYPE_ACTIONS[currentStepType] || 'Processing';
+                const providerName = PROVIDER_NAMES[currentProvider] || currentProvider || 'AI provider';
+                processingDetail.textContent = `${action} with ${providerName}`;
                 assetDetailsSubtitle.textContent = `Currently at: ${currentStep || 'processing'}`;
             } else {
                 processingInfo.classList.remove('visible');
                 assetDetailsSubtitle.textContent = viewingStep ? `Viewing: ${viewingStep}` : '';
             }
             
-            // Show properties
+            // Show properties - get output field from current/viewing step to mark as NEW
+            const activeStep = viewingStepData || pipelineSteps.find(s => s.id === currentStep);
+            const outputField = activeStep?.output;
+            
+            // Format label: card_type -> Card Type
+            const formatLabel = (key) => key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            
             const props = Object.entries(asset.data || {}).filter(([k]) => k !== 'id');
-            assetProperties.innerHTML = props.map(([key, value]) => `
-                <div class="asset-prop">
-                    <div class="asset-prop-label">${key}</div>
-                    <div class="asset-prop-value">${typeof value === 'object' ? JSON.stringify(value) : value}</div>
-                </div>
-            `).join('');
+            assetProperties.innerHTML = props.map(([key, value]) => {
+                const isNew = outputField && key === outputField;
+                const displayValue = typeof value === 'object' ? JSON.stringify(value) : (value || '-');
+                // Longer truncation for NEW fields (likely the main output to show), shorter for others
+                const maxLen = isNew ? 1000 : 300;
+                const truncatedValue = displayValue.length > maxLen 
+                    ? displayValue.substring(0, maxLen) + '...' 
+                    : displayValue;
+                
+                return `
+                    <div class="asset-prop ${isNew ? 'is-new' : ''}">
+                        <div class="asset-prop-label">${formatLabel(key)}:</div>
+                        <div class="asset-prop-value">${escapeHtmlSafe(truncatedValue)}</div>
+                        ${isNew ? '<span class="asset-prop-new">New</span>' : ''}
+                    </div>
+                `;
+            }).join('');
             
             // Clear previous step output (will be re-populated by selectAsset if needed)
             const outputContainer = document.getElementById('assetStepOutput');
@@ -2785,8 +3165,21 @@ def get_html_page() -> str:
             
             stageIcon.textContent = STEP_TYPE_ICONS[data.current_step_type] || '▶';
             stageName.textContent = data.current_step || '-';
-            stageType.textContent = data.current_step_type || '-';
+            // Show step type with provider
+            const providerName = PROVIDER_NAMES[data.current_provider] || data.current_provider || '';
+            const typeWithProvider = providerName ? `${data.current_step_type} (${providerName})` : (data.current_step_type || '-');
+            stageType.textContent = typeWithProvider;
             stageDesc.textContent = data.current_step_description || data.message || 'Processing...';
+            
+            // Show/hide assets section based on whether this is a per-asset step
+            const currentStep = pipelineSteps.find(s => s.id === data.current_step);
+            const isPerAssetStep = currentStep?.for_each != null && currentStep?.for_each !== '';
+            assetsSection.style.display = isPerAssetStep ? 'flex' : 'none';
+            
+            // Hide asset details for global steps
+            if (!isPerAssetStep) {
+                assetDetails.classList.add('hidden');
+            }
         }
         
         // ===== VIEW STEP (HISTORY OR FUTURE) =====
@@ -2823,12 +3216,31 @@ def get_html_page() -> str:
                 historyStepName.textContent = stepId;
                 
                 historyView.classList.add('visible');
-                // Auto-select first asset if none selected
-                if (!selectedAssetId && assets.length > 0) {
-                    selectedAssetId = assets[0].id;
-                    renderAssets();
+                
+                // For per-asset steps, auto-select first asset; for global steps, fetch without asset ID
+                const isPerAssetStep = step.for_each != null && step.for_each !== '';
+                if (isPerAssetStep) {
+                    // Always ensure an asset is selected for per-asset steps
+                    if (!selectedAssetId && assets.length > 0) {
+                        selectedAssetId = assets[0].id;
+                        renderAssets();
+                    }
+                    
+                    // Show asset details for the selected asset
+                    if (selectedAssetId) {
+                        const asset = assets.find(a => a.id === selectedAssetId);
+                        if (asset) {
+                            updateAssetDetails(asset);
+                        }
+                        fetchStepHistory(stepId, selectedAssetId);
+                    } else {
+                        fetchStepHistory(stepId, null);
+                    }
+                } else {
+                    // Global step - fetch history without asset ID, hide asset details
+                    assetDetails.classList.add('hidden');
+                    fetchStepHistory(stepId, null);
                 }
-                fetchStepHistory(stepId, selectedAssetId);
             } else if (step.status === 'pending') {
                 // Show future step info
                 historyBanner.classList.add('visible');
@@ -2859,6 +3271,9 @@ def get_html_page() -> str:
             const isPending = step.status === 'pending';
             const isComplete = step.status === 'complete' || step.status === 'skipped';
             const hasCachedData = stepsWithCache.has(step.id);
+            // A step is per-asset if it has any for_each value (could be "asset", "cards", etc.)
+            const isPerAssetStep = step.for_each != null && step.for_each !== '';
+            const collectionName = step.for_each || 'assets';
             
             stageSectionTitle.textContent = isPending ? 'Future Stage' : (isComplete ? 'Completed Stage' : 'Current Stage');
             stageInfo.classList.toggle('future-stage', isPending);
@@ -2867,9 +3282,13 @@ def get_html_page() -> str:
             stageName.textContent = step.id;
             stageType.textContent = step.type;
             
-            let descText = step.description || `This step will ${step.for_each === 'asset' ? 'process each asset' : 'run globally'}`;
+            let descText = step.description || `This step will ${isPerAssetStep ? `process each ${collectionName}` : 'run globally'}`;
             if (isComplete && hasCachedData) {
                 descText += ` 💾 Data saved to .artgen/${step.id}/`;
+            }
+            // If step creates assets, show that info
+            if (step.creates_assets) {
+                descText += ` (creates: ${step.creates_assets})`;
             }
             stageDesc.textContent = descText;
             
@@ -2884,6 +3303,14 @@ def get_html_page() -> str:
             } else {
                 stageStatusBadge.style.display = 'none';
             }
+            
+            // Show/hide assets section based on whether this is a per-asset step
+            assetsSection.style.display = isPerAssetStep ? 'flex' : 'none';
+            
+            // Hide asset details panel for global steps
+            if (!isPerAssetStep) {
+                assetDetails.classList.add('hidden');
+            }
         }
         
         function showFutureStep(step) {
@@ -2894,13 +3321,18 @@ def get_html_page() -> str:
             
             let desc = step.description || '';
             if (!desc) {
-                const forEachText = step.for_each === 'asset' ? 'for each asset' : 'globally';
+                const isPerAsset = step.for_each != null && step.for_each !== '';
+                const forEachText = isPerAsset ? `for each ${step.for_each}` : 'globally';
                 desc = `This step will execute ${forEachText} when the pipeline reaches it.`;
             }
             $('futureStepDesc').textContent = desc;
         }
         
         async function fetchStepHistory(stepId, assetId = null) {
+            // Get step type for better output labeling
+            const step = pipelineSteps.find(s => s.id === stepId);
+            const stepType = step?.type || null;
+            
             try {
                 let url = `/api/history/${stepId}`;
                 if (assetId) {
@@ -2909,7 +3341,7 @@ def get_html_page() -> str:
                 const resp = await fetch(url);
                 if (resp.ok) {
                     const data = await resp.json();
-                    renderHistory(data, assetId);
+                    renderHistory(data, assetId, stepType);
                 } else {
                     historyContent.innerHTML = '<div class="empty-state"><div class="empty-state-text">No history available</div></div>';
                 }
@@ -2918,18 +3350,29 @@ def get_html_page() -> str:
             }
         }
         
-        function renderHistory(data, assetId = null) {
+        // Get a human-readable label for text output based on step type
+        function getTextOutputLabel(stepType) {
+            const labels = {
+                'generate_text': '📝 Generated Text',
+                'generate_name': '📝 Generated Name',
+                'generate_prompt': '📝 Generated Prompt',
+                'research': '📚 Research Results',
+            };
+            return labels[stepType] || 'Output';
+        }
+        
+        function renderHistory(data, assetId = null, stepType = null) {
             let html = '';
             
-            // Show which asset we're viewing
-            if (assetId) {
-                const asset = assets.find(a => a.id === assetId);
-                const assetName = asset ? asset.name : assetId;
-                html += `<div class="history-asset-header">
-                    <span class="history-asset-label">Showing results for:</span>
-                    <strong>${assetName}</strong>
-                </div>`;
-            }
+            // Show which asset we're viewing (only for per-asset steps)
+            const step = pipelineSteps.find(s => s.id === viewingStep);
+            const isPerAssetStep = step?.for_each != null && step?.for_each !== '';
+            
+            // Removed "Showing results for:" header - redundant since sidebar shows selected asset
+            
+            // Get appropriate label for text output
+            const textLabel = getTextOutputLabel(stepType);
+            const isTextStep = ['generate_text', 'generate_name', 'generate_prompt', 'research'].includes(stepType);
             
             // Show text outputs with enhanced display for verdicts/assessments
             data.outputs.forEach(output => {
@@ -2938,7 +3381,7 @@ def get_html_page() -> str:
                 
                 // Check for assessment/verdict data
                 const isVerdict = outputData.assessment || outputData.verdict || outputData.approved !== undefined;
-                const verdictClass = isVerdict ? 'verdict' : '';
+                const verdictClass = isVerdict ? 'verdict' : (isTextStep ? 'text-output' : '');
                 
                 // Handle different output structures
                 if (typeof outputData === 'object') {
@@ -2947,7 +3390,7 @@ def get_html_page() -> str:
                         html += `
                             <div class="history-output verdict">
                                 <div class="history-output-label">🔬 AI Assessment</div>
-                                <div class="history-output-content">${outputData.assessment}</div>
+                                <div class="history-output-content">${escapeHtmlSafe(outputData.assessment)}</div>
                             </div>
                         `;
                         if (outputData.approved !== undefined) {
@@ -2963,8 +3406,8 @@ def get_html_page() -> str:
                     else if (outputData.content) {
                         html += `
                             <div class="history-output ${verdictClass}">
-                                <div class="history-output-label">Output</div>
-                                <div class="history-output-content">${outputData.content}</div>
+                                <div class="history-output-label">${textLabel}</div>
+                                <div class="history-output-content">${escapeHtmlSafe(outputData.content)}</div>
                             </div>
                         `;
                     }
@@ -2979,9 +3422,9 @@ def get_html_page() -> str:
                     }
                 } else if (typeof outputData === 'string') {
                     html += `
-                        <div class="history-output">
-                            <div class="history-output-label">Output</div>
-                            <div class="history-output-content">${outputData}</div>
+                        <div class="history-output ${isTextStep ? 'text-output' : ''}">
+                            <div class="history-output-label">${textLabel}</div>
+                            <div class="history-output-content">${escapeHtmlSafe(outputData)}</div>
                         </div>
                     `;
                 }
@@ -3034,6 +3477,26 @@ def get_html_page() -> str:
                 }
             }
             
+            // Show collapsible prompt section
+            // Collect prompts from outputs
+            const promptsFromOutputs = data.outputs
+                .map(o => o.prompt)
+                .filter(p => p);
+            
+            if (promptsFromOutputs.length > 0) {
+                const promptId = 'prompt-' + Date.now();
+                const promptText = promptsFromOutputs[0].replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                html += `
+                    <div class="prompt-toggle" onclick="togglePrompt('${promptId}')">
+                        <span class="prompt-toggle-arrow">▶</span>
+                        <span class="prompt-toggle-label">Prompt</span>
+                    </div>
+                    <div class="prompt-content" id="${promptId}">
+                        <pre>${promptText}</pre>
+                    </div>
+                `;
+            }
+            
             if (!html || (data.outputs.length === 0 && data.files.length === 0)) {
                 if (assetId) {
                     html = '<div class="empty-state"><div class="empty-state-text">No outputs recorded for this asset at this step</div></div>';
@@ -3051,6 +3514,15 @@ def get_html_page() -> str:
             }).catch(err => {
                 console.error('Copy failed:', err);
             });
+        }
+        
+        function togglePrompt(promptId) {
+            const content = document.getElementById(promptId);
+            const toggle = content?.previousElementSibling;
+            if (content && toggle) {
+                const isExpanded = content.classList.toggle('visible');
+                toggle.classList.toggle('expanded', isExpanded);
+            }
         }
         
         async function viewFinStep() {
@@ -3136,7 +3608,57 @@ def get_html_page() -> str:
             emptyState.style.display = 'none';
             approvalSection.classList.add('visible');
             
+            const isReview = request.type === 'review';
             const isSelect = request.type === 'select_one';
+            
+            // Hide asset details for review/global steps - they shouldn't show individual assets
+            if (isReview) {
+                assetDetails.classList.add('hidden');
+                assetsSection.style.display = 'none';
+            }
+            
+            // Handle review checkpoint type
+            if (isReview) {
+                approvalTitle.textContent = request.asset_name || 'Checkpoint Review';
+                approvalSubtitle.textContent = request.prompt || 'Review the completed work and approve to continue';
+                
+                // Render review content
+                optionsGrid.innerHTML = '';
+                const reviewData = request.options[0] || {};
+                const completedSteps = reviewData.completed_steps || [];
+                
+                const reviewContainer = document.createElement('div');
+                reviewContainer.className = 'review-checkpoint-container';
+                
+                let html = `<div class="review-steps-list">`;
+                html += `<h4>Completed Steps (${completedSteps.length})</h4>`;
+                
+                for (const step of completedSteps) {
+                    html += `<div class="review-step-item">`;
+                    html += `<span class="review-step-icon">✓</span>`;
+                    html += `<span class="review-step-id">${step.id}</span>`;
+                    if (step.preview) {
+                        const preview = step.preview.length > 200 ? step.preview.substring(0, 200) + '...' : step.preview;
+                        html += `<div class="review-step-preview">${escapeHtmlSafe(preview)}</div>`;
+                    }
+                    html += `</div>`;
+                }
+                
+                html += `</div>`;
+                html += `<div class="review-action-buttons">`;
+                html += `<button class="review-approve-btn" onclick="selectAndSubmit(0)">✓ Approve & Continue</button>`;
+                html += `<button class="review-reject-btn" onclick="regenerate()">✕ Reject</button>`;
+                html += `</div>`;
+                
+                reviewContainer.innerHTML = html;
+                optionsGrid.appendChild(reviewContainer);
+                
+                $('regenerateBtn').style.display = 'none'; // Hide default regenerate button
+                return;
+            }
+            
+            $('regenerateBtn').style.display = ''; // Show default regenerate button
+            
             approvalTitle.textContent = isSelect 
                 ? `Select best option for "${request.asset_name}"`
                 : `Approve result for "${request.asset_name}"?`;
@@ -3163,7 +3685,7 @@ def get_html_page() -> str:
                 } else if (opt.text || opt.content) {
                     card.innerHTML = `
                         <div class="click-hint">Click to ${isSelect ? 'select' : 'approve'}</div>
-                        <div class="option-text">${opt.text || opt.content}</div>
+                        <div class="option-text">${escapeHtmlSafe(opt.text || opt.content)}</div>
                         <div class="option-content">
                             <span class="option-number">${i+1}</span>
                             <span class="option-label">${isSelect ? `Option ${i+1}` : 'Result'}</span>
@@ -3176,6 +3698,13 @@ def get_html_page() -> str:
             });
             
             $('regenerateBtn').textContent = request.type === 'approve' ? 'Reject & Regenerate' : 'Regenerate All';
+        }
+        
+        function escapeHtmlSafe(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
         
         async function selectAndSubmit(index) {
@@ -3304,8 +3833,15 @@ def get_html_page() -> str:
             queueProgress.textContent = `${queueIndex + 1} of ${queueItems.length}`;
             
             const request = queueItems[queueIndex];
+            const isReview = request.type === 'review';
             const isSelect = request.type === 'select_one' && request.options.length > 1;
-            const isApproval = !isSelect; // Single option = approval mode
+            const isApproval = !isSelect && !isReview; // Single option = approval mode
+            
+            // Handle review checkpoint type
+            if (isReview) {
+                renderQueueReview(request);
+                return;
+            }
             
             let html = `
                 <div class="queue-item-header">
@@ -3341,7 +3877,7 @@ def get_html_page() -> str:
                 } else if (textContent) {
                     html += `
                         <div class="queue-approval-preview">
-                            <div class="queue-approval-text">${textContent}</div>
+                            <div class="queue-approval-text">${escapeHtmlSafe(textContent)}</div>
                         </div>
                     `;
                 }
@@ -3393,7 +3929,7 @@ def get_html_page() -> str:
                     } else if (opt.text || opt.content) {
                         html += `
                             <div class="queue-option-card" onclick="queueSelectOption(${i})" data-index="${i}">
-                                <div class="queue-option-text">${opt.text || opt.content}</div>
+                                <div class="queue-option-text">${escapeHtmlSafe(opt.text || opt.content)}</div>
                                 <div class="queue-option-footer">
                                     <span class="queue-option-number">${i+1}</span>
                                     <span class="queue-option-label">Option ${i+1}</span>
@@ -3421,6 +3957,100 @@ def get_html_page() -> str:
             }
             
             queueItemContainer.innerHTML = html;
+        }
+        
+        function renderQueueReview(request) {
+            // Review checkpoint mode - show all completed steps
+            const reviewData = request.options[0] || {};
+            const completedSteps = reviewData.completed_steps || [];
+            const summary = reviewData.summary || '';
+            
+            let html = `
+                <div class="queue-item-header">
+                    <div class="queue-item-asset">📋 Checkpoint Review</div>
+                    <h2 class="queue-item-title">${request.asset_name || 'Review'}</h2>
+                    <p class="queue-item-subtitle">${request.prompt || 'Review the completed work and approve to continue'}</p>
+                </div>
+                <div class="queue-review-container">
+                    <div class="queue-review-summary">
+                        <h3>Completed Steps (${completedSteps.length})</h3>
+            `;
+            
+            // Render each completed step
+            for (const step of completedSteps) {
+                const stepId = step.id || 'Unknown';
+                const preview = step.preview || '';
+                const output = step.output || {};
+                
+                html += `<div class="queue-review-step">`;
+                html += `<div class="queue-review-step-header">`;
+                html += `<span class="queue-review-step-icon">✓</span>`;
+                html += `<span class="queue-review-step-id">${stepId}</span>`;
+                html += `</div>`;
+                
+                // Show output content
+                if (typeof output === 'object' && output.content) {
+                    // Text content - show expandable preview
+                    const content = output.content;
+                    const previewText = content.length > 500 ? content.substring(0, 500) + '...' : content;
+                    html += `<div class="queue-review-step-content">`;
+                    html += `<pre class="queue-review-text">${escapeHtml(previewText)}</pre>`;
+                    if (content.length > 500) {
+                        html += `<button class="queue-review-expand" onclick="toggleReviewExpand(this, '${stepId}')" data-full="${encodeURIComponent(content)}">Show more</button>`;
+                    }
+                    html += `</div>`;
+                } else if (preview) {
+                    // Show preview text
+                    html += `<div class="queue-review-step-content">`;
+                    html += `<div class="queue-review-preview">${escapeHtml(preview)}</div>`;
+                    html += `</div>`;
+                }
+                
+                html += `</div>`;
+            }
+            
+            html += `
+                    </div>
+                    <div class="queue-review-actions">
+                        <button class="queue-approve-btn accept large" onclick="queueSelectOption(0)">
+                            <span class="queue-approve-icon">✓</span>
+                            <span class="queue-approve-label">Approve & Continue</span>
+                            <span class="queue-approve-keys"><kbd>1</kbd> or <kbd>Y</kbd></span>
+                        </button>
+                        <button class="queue-approve-btn reject" onclick="queueRegenerate()">
+                            <span class="queue-approve-icon">✕</span>
+                            <span class="queue-approve-label">Reject</span>
+                            <span class="queue-approve-keys"><kbd>2</kbd> or <kbd>N</kbd></span>
+                        </button>
+                    </div>
+                </div>
+                <div class="queue-shortcuts">
+                    <kbd>1</kbd> / <kbd>Y</kbd> approve &bull; 
+                    <kbd>2</kbd> / <kbd>N</kbd> reject &bull; 
+                    <kbd>Tab</kbd> skip &bull; 
+                    <kbd>Esc</kbd> exit queue
+                </div>
+            `;
+            
+            queueItemContainer.innerHTML = html;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function toggleReviewExpand(btn, stepId) {
+            const content = decodeURIComponent(btn.dataset.full);
+            const pre = btn.previousElementSibling;
+            if (btn.textContent === 'Show more') {
+                pre.textContent = content;
+                btn.textContent = 'Show less';
+            } else {
+                pre.textContent = content.substring(0, 500) + '...';
+                btn.textContent = 'Show more';
+            }
         }
         
         async function queueSelectOption(index) {

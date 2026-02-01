@@ -1,0 +1,66 @@
+{
+  "pipeline_hash": "75fe53982a6b7ca2",
+  "updated_at": "2026-02-01T00:51:25.543905",
+  "steps": {
+    "design_set_mechanics": {
+      "completed": true,
+      "completed_at": "2026-01-31T23:53:36.235481",
+      "output_path": "design_set_mechanics/output.json",
+      "output_files": []
+    },
+    "write_set_story": {
+      "completed": true,
+      "completed_at": "2026-01-31T23:53:58.470103",
+      "output_path": "write_set_story/output.json",
+      "output_files": []
+    },
+    "generate_card_concepts": {
+      "completed": true,
+      "completed_at": "2026-01-31T23:54:13.613625",
+      "output_path": "generate_card_concepts/output.json",
+      "output_files": []
+    },
+    "generate_card_names": {
+      "completed": true,
+      "completed_at": "2026-02-01T00:01:20.797239",
+      "output_path": "generate_card_names/output.json",
+      "output_files": []
+    },
+    "generate_card_concepts:volkovs-blood-tithe": {
+      "completed": true,
+      "completed_at": "2026-02-01T00:51:14.276555",
+      "output_path": "generate_card_concepts/volkovs-blood-tithe/output.json",
+      "output_files": []
+    },
+    "generate_card_concepts:whisperwood-alpha": {
+      "completed": true,
+      "completed_at": "2026-02-01T00:51:13.980737",
+      "output_path": "generate_card_concepts/whisperwood-alpha/output.json",
+      "output_files": []
+    },
+    "generate_card_concepts:oakhaven-parish-priest": {
+      "completed": true,
+      "completed_at": "2026-02-01T00:51:17.964439",
+      "output_path": "generate_card_concepts/oakhaven-parish-priest/output.json",
+      "output_files": []
+    },
+    "generate_card_concepts:sunken-fens-horror": {
+      "completed": true,
+      "completed_at": "2026-02-01T00:51:16.735670",
+      "output_path": "generate_card_concepts/sunken-fens-horror/output.json",
+      "output_files": []
+    },
+    "generate_card_concepts:hex-weavers-torment": {
+      "completed": true,
+      "completed_at": "2026-02-01T00:51:18.372871",
+      "output_path": "generate_card_concepts/hex-weavers-torment/output.json",
+      "output_files": []
+    },
+    "generate_card_concepts:echoes-of-ancient-blight": {
+      "completed": true,
+      "completed_at": "2026-02-01T00:51:25.543867",
+      "output_path": "generate_card_concepts/echoes-of-ancient-blight/output.json",
+      "output_files": []
+    }
+  }
+}

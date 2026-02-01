@@ -385,3 +385,192 @@ class UserApproveExecutor(StepExecutor):
                 output={"approved": False, "action": "reject"},
                 duration_ms=duration,
             )
+
+
+@register_executor("review")
+class ReviewExecutor(StepExecutor):
+    """
+    Execute review checkpoint steps (CLI or web mode).
+    
+    A review step pauses the pipeline to show all completed work and
+    requires human approval before continuing. This is useful for
+    checkpoint reviews, like reviewing all set design before starting
+    individual card design.
+    """
+    
+    async def execute(
+        self,
+        config: dict[str, Any],
+        ctx: ExecutorContext,
+    ) -> StepResult:
+        """
+        Execute a review checkpoint step.
+        
+        Config:
+            title: Title for the review (e.g., "Set Design Review")
+            description: Description of what is being reviewed
+            review_steps: List of step IDs to include in the review (optional, defaults to all)
+        """
+        import time
+        from datetime import datetime
+        start = time.time()
+        
+        title = config.get("title", "Checkpoint Review")
+        description = config.get("description", "Review the completed work before continuing")
+        review_step_ids = config.get("review_steps")  # Optional filter
+        step_id = config.get("_step_id", "review")
+        
+        # Substitute template variables in title/description
+        title = substitute_template(title, ctx.context, ctx.asset, ctx.step_outputs)
+        description = substitute_template(description, ctx.context, ctx.asset, ctx.step_outputs)
+        
+        # Build summary of completed steps
+        completed_steps = []
+        for sid, output in ctx.step_outputs.items():
+            # Filter if review_steps specified
+            if review_step_ids and sid not in review_step_ids:
+                continue
+            
+            step_info = {
+                "id": sid,
+                "output_preview": _get_output_preview(output),
+            }
+            completed_steps.append(step_info)
+        
+        # Build summary text
+        summary = f"Completed {len(completed_steps)} steps:\n"
+        for step_info in completed_steps:
+            preview = step_info["output_preview"]
+            summary += f"\n• {step_info['id']}"
+            if preview:
+                # Truncate long previews
+                if len(preview) > 200:
+                    preview = preview[:197] + "..."
+                summary += f": {preview}"
+        
+        # Check for web mode
+        bridge = _get_web_bridge()
+        
+        if bridge:
+            # Web mode: send review request to browser
+            # Include full step outputs for detailed display
+            detailed_steps = []
+            for sid, output in ctx.step_outputs.items():
+                if review_step_ids and sid not in review_step_ids:
+                    continue
+                
+                step_detail = {
+                    "id": sid,
+                    "output": output,
+                    "preview": _get_output_preview(output),
+                }
+                detailed_steps.append(step_detail)
+            
+            approved = await bridge.request_review(
+                step_id=step_id,
+                title=title,
+                summary=summary,
+                completed_steps=detailed_steps,
+                prompt=description,
+                step_description=f"Review checkpoint: {title}",
+                metadata={
+                    "total_steps": len(completed_steps),
+                    "context": ctx.context,
+                },
+            )
+            
+            duration = int((time.time() - start) * 1000)
+            
+            return StepResult(
+                success=True,
+                output={
+                    "approved": approved,
+                    "title": title,
+                    "reviewed_steps": [s["id"] for s in completed_steps],
+                    "timestamp": datetime.now().isoformat(),
+                },
+                duration_ms=duration,
+                prompt=description,
+            )
+        
+        # CLI mode: terminal display
+        console.print()
+        console.print(Panel(
+            f"[bold]{title}[/bold]\n\n{description}",
+            title="📋 Review Checkpoint",
+            border_style="yellow"
+        ))
+        
+        # Display completed steps
+        console.print()
+        console.print("[bold]Completed Steps:[/bold]")
+        
+        for step_info in completed_steps:
+            sid = step_info["id"]
+            preview = step_info["output_preview"]
+            console.print(f"\n  [cyan]• {sid}[/cyan]")
+            if preview:
+                # Format preview for terminal
+                lines = preview.split("\n")
+                for line in lines[:5]:  # Show max 5 lines
+                    if line.strip():
+                        console.print(f"    {line[:100]}")
+                if len(lines) > 5:
+                    console.print(f"    [dim]... ({len(lines) - 5} more lines)[/dim]")
+        
+        console.print()
+        
+        # Get user decision
+        approved = Confirm.ask("Approve and continue?", default=True)
+        
+        duration = int((time.time() - start) * 1000)
+        
+        if approved:
+            console.print("[green]✓ Approved - continuing pipeline[/green]")
+        else:
+            console.print("[yellow]✗ Review rejected[/yellow]")
+        
+        return StepResult(
+            success=True,
+            output={
+                "approved": approved,
+                "title": title,
+                "reviewed_steps": [s["id"] for s in completed_steps],
+                "timestamp": datetime.now().isoformat(),
+            },
+            duration_ms=duration,
+            prompt=description,
+        )
+
+
+def _get_output_preview(output: Any) -> str:
+    """Get a preview string from step output for display."""
+    if isinstance(output, str):
+        return output
+    
+    if isinstance(output, dict):
+        # Try to get text content
+        for key in ["content", "text", "summary", "names", "design", "mechanics"]:
+            if key in output:
+                val = output[key]
+                if isinstance(val, str):
+                    return val
+                elif isinstance(val, list):
+                    return ", ".join(str(v) for v in val[:5])
+        
+        # For paths, just show they exist
+        if "paths" in output:
+            paths = output["paths"]
+            return f"[{len(paths)} files generated]"
+        if "path" in output or "selected_path" in output:
+            return f"[file: {output.get('path') or output.get('selected_path')}]"
+        
+        # For other dicts, summarize keys
+        if output:
+            keys = list(output.keys())[:5]
+            return f"[data with keys: {', '.join(keys)}]"
+    
+    if isinstance(output, list):
+        return f"[{len(output)} items]"
+    
+    return str(output)[:200] if output else ""

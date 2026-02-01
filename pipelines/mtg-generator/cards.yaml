@@ -1,0 +1,43 @@
+# Sample card list for MTG Set Generator
+# These cards will be populated with mechanics, art, and flavor text by the pipeline
+#
+# You can:
+# 1. Use these sample cards
+# 2. Modify them for your theme
+# 3. Let the pipeline's generate_card_concepts step inspire what to put here
+
+- name: "Moonlit Hunter"
+  concept: "A tracker who transforms under the full moon to hunt those who wronged her village"
+  color: "Green"
+  rarity: "Uncommon"
+  card_type: "Creature"
+
+- name: "Blood Covenant"
+  concept: "A dark pact between a vampire lord and a mortal seeking power"
+  color: "Black"
+  rarity: "Rare"
+  card_type: "Enchantment"
+
+- name: "Village Defender"
+  concept: "A stalwart guard who stands against the darkness at the village gates"
+  color: "White"
+  rarity: "Common"
+  card_type: "Creature"
+
+- name: "Cryptic Whispers"
+  concept: "Ancient secrets spoken by ghosts in the ruins"
+  color: "Blue"
+  rarity: "Uncommon"
+  card_type: "Instant"
+
+- name: "Pyre of the Damned"
+  concept: "A burning stake used to destroy creatures of the night"
+  color: "Red"
+  rarity: "Common"
+  card_type: "Sorcery"
+
+- name: "Ancient Tombstone"
+  concept: "A weathered grave marker that holds dark secrets"
+  color: "Colorless"
+  rarity: "Uncommon"
+  card_type: "Artifact"

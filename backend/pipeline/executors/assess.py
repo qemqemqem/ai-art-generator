@@ -113,6 +113,7 @@ class AssessImageExecutor(StepExecutor):
                     "image_path": str(image_path),
                 },
                 duration_ms=duration,
+                prompt=prompt,
             )
             
         except Exception as e:

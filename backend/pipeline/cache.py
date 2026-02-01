@@ -172,6 +172,7 @@ class CacheManager:
         output: Any,
         asset_id: str | None = None,
         output_paths: list[Path] | None = None,
+        prompt: str | None = None,
     ) -> None:
         """
         Cache a step's output.
@@ -181,6 +182,7 @@ class CacheManager:
             output: The output data
             asset_id: Optional asset ID
             output_paths: List of output file paths
+            prompt: Optional prompt used to generate this output
         """
         if asset_id:
             cache_key = f"{step_id}:{asset_id}"
@@ -199,6 +201,10 @@ class CacheManager:
             "timestamp": datetime.utcnow().isoformat(),
             "data": output,
         }
+        
+        # Include prompt if provided
+        if prompt:
+            output_data["prompt"] = prompt
         
         with open(self.state_dir / output_file, "w") as f:
             json.dump(output_data, f, indent=2, default=str)

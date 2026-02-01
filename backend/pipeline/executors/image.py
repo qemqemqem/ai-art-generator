@@ -51,8 +51,8 @@ class GenerateImageExecutor(StepExecutor):
             ctx.step_outputs,
         )
         
-        # Get image provider
-        provider = ctx.providers.get_image_provider("gemini")
+        # Get image provider (use context's configured provider)
+        provider = ctx.providers.get_image_provider(ctx.image_provider)
         
         try:
             from app.models import StyleConfig
@@ -83,6 +83,7 @@ class GenerateImageExecutor(StepExecutor):
                 variations=[str(p) for p in output_paths],
                 output_paths=output_paths,
                 duration_ms=duration,
+                prompt=prompt,
             )
         except Exception as e:
             return StepResult(
@@ -129,8 +130,8 @@ class GenerateSpriteExecutor(StepExecutor):
         # Use solid white background since AI can't create true transparency
         enhanced_prompt = f"Pixel art sprite, {prompt}, clean edges, suitable for video games, isolated on solid white background"
         
-        # Get image provider
-        provider = ctx.providers.get_image_provider("gemini")
+        # Get image provider (use context's configured provider)
+        provider = ctx.providers.get_image_provider(ctx.image_provider)
         
         try:
             from app.models import StyleConfig
@@ -173,6 +174,7 @@ class GenerateSpriteExecutor(StepExecutor):
                 variations=[str(p) for p in output_paths],
                 output_paths=output_paths,
                 duration_ms=duration,
+                prompt=enhanced_prompt,
             )
         except Exception as e:
             return StepResult(

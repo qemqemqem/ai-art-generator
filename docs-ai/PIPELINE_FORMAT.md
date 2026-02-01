@@ -8,13 +8,14 @@ This document describes the YAML format for defining ArtGen pipelines.
 2. [Pipeline Metadata](#pipeline-metadata)
 3. [Types](#types)
 4. [Context](#context)
-5. [State Configuration](#state-configuration)
-6. [Assets](#assets)
-7. [Steps](#steps)
-8. [Template Variables](#template-variables)
-9. [Human-in-the-Loop](#human-in-the-loop)
-10. [Caching](#caching)
-11. [Examples](#examples)
+5. [Providers](#providers)
+6. [State Configuration](#state-configuration)
+7. [Assets](#assets)
+8. [Steps](#steps)
+9. [Template Variables](#template-variables)
+10. [Human-in-the-Loop](#human-in-the-loop)
+11. [Caching](#caching)
+12. [Examples](#examples)
 
 ---
 
@@ -29,6 +30,9 @@ description: "Description"   # Optional
 
 types: {}                    # Optional, custom type definitions
 context: {}                  # Optional, pipeline-wide variables
+providers:                   # Optional, AI provider configuration
+  text: litellm              # Default text provider
+  image: gemini              # Default image provider
 state:                       # Optional, caching configuration
   directory: .artgen
 
@@ -116,6 +120,56 @@ context:
 ```
 
 Context values are automatically included in LLM prompts to maintain consistency across steps.
+
+---
+
+## Providers
+
+Configure default AI providers for text and image generation. These can be overridden per-step.
+
+```yaml
+providers:
+  text: litellm         # Default text provider: litellm, gemini
+  image: gemini         # Default image provider: gemini, dalle, pixellab
+  text_model: gpt-4     # Optional: specific model for text
+  image_model: imagen-3 # Optional: specific model for images
+```
+
+### Available Providers
+
+#### Text Providers
+| Provider | Description |
+|----------|-------------|
+| `litellm` | LiteLLM (supports OpenAI, Anthropic, etc.) |
+| `gemini` | Google Gemini |
+
+#### Image Providers
+| Provider | Description |
+|----------|-------------|
+| `gemini` | Google Gemini Imagen |
+| `dalle` | OpenAI DALL-E |
+| `pixellab` | PixelLab for pixel art |
+
+### Per-Step Override
+
+Override the default provider for a specific step:
+
+```yaml
+steps:
+  - id: generate_text
+    type: generate_text
+    provider: gemini    # Use Gemini instead of default litellm
+    config:
+      prompt: "Write a description..."
+
+  - id: generate_art
+    type: generate_image
+    provider: dalle     # Use DALL-E instead of default gemini
+    config:
+      prompt: "Create an image..."
+```
+
+The provider is displayed in the web GUI so you can see which AI service is processing each step.
 
 ---
 
@@ -267,6 +321,46 @@ steps:
     save_to: outputs/       # Optional, save path pattern
 ```
 
+### Top-Level Convenience Keys
+
+Common config keys can be specified at the step level for cleaner YAML:
+
+```yaml
+# These two are equivalent:
+- id: my_step
+  type: generate_text
+  prompt: "Write something..."    # Convenience: prompt at step level
+
+- id: my_step
+  type: generate_text
+  config:
+    prompt: "Write something..."  # Standard: prompt inside config
+```
+
+Supported top-level keys: `prompt`, `query`, `criteria`, `title`
+
+### Writing to Asset Fields
+
+Use `writes_to` to specify which asset field a step's output populates:
+
+```yaml
+- id: generate_mechanics
+  type: generate_text
+  for_each: asset
+  writes_to: mechanics        # Output stored in asset.mechanics
+  config:
+    prompt: "Design mechanics for {asset.name}..."
+
+- id: use_mechanics
+  type: generate_text
+  for_each: asset
+  requires: [generate_mechanics]
+  config:
+    prompt: "Based on {asset.mechanics}, write flavor text..."  # Reference the field
+```
+
+This allows subsequent steps to access the output via `{asset.fieldname}`.
+
 ### Step Types
 
 #### `research` - AI Research
@@ -278,6 +372,7 @@ steps:
     query: |
       Research {asset.name}: {asset.description}
       Focus on visual characteristics and historical context.
+    max_tokens: 4096        # Optional: limit output length
 ```
 
 #### `generate_text` - Text Generation
@@ -292,7 +387,26 @@ steps:
       Style: {context.style}
     variations: 3           # Generate 3 options
     include_context: true   # Include rich context (default: true)
+    max_tokens: 8192        # Optional: limit output length (default: no limit)
 ```
+
+### Token Limits
+
+By default, text generation steps have **no token limit** - the model will use its natural output length. To constrain output, set `max_tokens` in the step config:
+
+```yaml
+config:
+  prompt: "Write a brief description..."
+  max_tokens: 1024          # Limit to ~750 words
+```
+
+Common values:
+- `1024` - Short responses (~750 words)
+- `4096` - Medium responses (~3000 words)
+- `8192` - Long responses (~6000 words)
+- `16384+` - Very long content (model may cap at its own maximum)
+
+If not specified, the model will generate as much content as it deems appropriate for the prompt.
 
 #### `generate_image` - Image Generation
 
@@ -343,6 +457,33 @@ steps:
   config:
     prompt: "Approve this result?"
 ```
+
+#### `review` - Checkpoint Review
+
+Pause the pipeline to review all completed work. Shows a summary of all previous steps and requires human approval before continuing. Useful for reviewing major milestones (e.g., "review set design before generating individual cards").
+
+```yaml
+- id: review_set_design
+  type: review
+  requires: [design_mechanics, write_story, generate_concepts]
+  config:
+    title: "Set Design Review"
+    description: |
+      Review the completed set design work before proceeding.
+      
+      Approve to continue, or reject to restart.
+    review_steps:  # Optional: only show specific steps (default: all previous)
+      - design_mechanics
+      - write_story
+      - generate_concepts
+  cache: true
+```
+
+The review step:
+- Shows all completed step outputs in a readable format
+- In CLI mode: displays a summary and waits for confirmation
+- In web mode: shows a dedicated review panel with expandable step details
+- Saves the approval decision with timestamp to cache
 
 ### Global vs Per-Asset Steps
 

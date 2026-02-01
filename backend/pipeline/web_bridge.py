@@ -23,6 +23,7 @@ class ApprovalType(str, Enum):
     """Type of approval needed."""
     SELECT_ONE = "select_one"  # Choose from variations
     APPROVE = "approve"  # Accept/reject single item
+    REVIEW = "review"  # Review checkpoint - review all work and approve to continue
 
 
 class PipelinePhase(str, Enum):
@@ -83,7 +84,9 @@ class StepInfo:
     id: str
     type: str
     description: str = ""
-    for_each: str | None = None  # "asset" or None (global)
+    for_each: str | None = None  # Collection name or None (global)
+    creates_assets: str | None = None  # Collection name this step creates
+    output: str | None = None  # Field name this step writes to (writes_to value)
     status: str = "pending"  # "pending", "running", "complete", "skipped"
     
     def to_dict(self) -> dict[str, Any]:
@@ -92,6 +95,8 @@ class StepInfo:
             "type": self.type,
             "description": self.description,
             "for_each": self.for_each,
+            "creates_assets": self.creates_assets,
+            "output": self.output,
             "status": self.status,
         }
 
@@ -104,6 +109,7 @@ class AssetInfo:
     data: dict[str, Any] = field(default_factory=dict)
     status: str = "pending"  # "pending", "processing", "complete", "failed"
     current_step: str | None = None
+    collection: str | None = None  # Which collection this asset belongs to
     
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -112,6 +118,7 @@ class AssetInfo:
             "data": self.data,
             "status": self.status,
             "current_step": self.current_step,
+            "collection": self.collection,
         }
 
 
@@ -127,6 +134,7 @@ class PipelineProgress:
     current_step_type: str = ""
     current_step_description: str = ""
     current_step_prompt: str = ""  # The generation prompt being used
+    current_provider: str = ""  # The AI provider being used (e.g., "gemini", "litellm")
     total_assets: int = 0
     completed_assets: int = 0
     current_asset: str = ""
@@ -149,6 +157,7 @@ class PipelineProgress:
             "current_step_type": self.current_step_type,
             "current_step_description": self.current_step_description,
             "current_step_prompt": self.current_step_prompt,
+            "current_provider": self.current_provider,
             "total_assets": self.total_assets,
             "completed_assets": self.completed_assets,
             "current_asset": self.current_asset,
@@ -315,6 +324,53 @@ class WebApprovalBridge:
         
         index, regenerate = await self._wait_for_response(request, timeout)
         return (index == 0 and not regenerate), regenerate
+    
+    async def request_review(
+        self,
+        step_id: str,
+        title: str,
+        summary: str,
+        completed_steps: list[dict[str, Any]],
+        prompt: str = "",
+        step_description: str = "",
+        metadata: dict[str, Any] | None = None,
+        timeout: float | None = None,
+    ) -> bool:
+        """
+        Request user to review all work so far and approve to continue.
+        
+        Args:
+            step_id: The review step ID
+            title: Title for the review checkpoint (e.g., "Set Design Review")
+            summary: Summary of what has been completed
+            completed_steps: List of completed step info with outputs
+            prompt: Instructions for the user
+            step_description: Description of this review checkpoint
+            metadata: Additional context
+            timeout: Optional timeout in seconds
+            
+        Returns:
+            True if approved, False if rejected
+        """
+        request = ApprovalRequest(
+            type=ApprovalType.REVIEW,
+            step_id=step_id,
+            step_type="review",
+            asset_id=None,
+            asset_name=title,
+            options=[{
+                "summary": summary,
+                "completed_steps": completed_steps,
+            }],
+            prompt=prompt or f"Review the completed work and approve to continue",
+            generation_prompt="",
+            step_description=step_description,
+            metadata=metadata or {},
+        )
+        
+        index, regenerate = await self._wait_for_response(request, timeout)
+        # For review, index 0 = approved, regenerate means rejected
+        return index == 0 and not regenerate
     
     async def _wait_for_response(
         self,

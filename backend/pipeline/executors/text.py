@@ -102,11 +102,13 @@ class ResearchExecutor(StepExecutor):
         Config:
             query: The research query
             depth: How deep to research (default: "medium")
+            max_tokens: Maximum output tokens (optional, no limit if not specified)
         """
         import time
         start = time.time()
         
         query = config.get("query", "")
+        max_tokens = config.get("max_tokens")  # None = no limit
         
         # Substitute template variables
         query = substitute_template(
@@ -116,8 +118,8 @@ class ResearchExecutor(StepExecutor):
             ctx.step_outputs,
         )
         
-        # Get text provider
-        provider = ctx.providers.get_text_provider("litellm")
+        # Get text provider (use context's configured provider)
+        provider = ctx.providers.get_text_provider(ctx.text_provider)
         
         # Build context section
         context_section = _build_context_section(ctx)
@@ -137,7 +139,7 @@ Provide:
 Be thorough but concise. Focus on details that would help create visual art."""
         
         try:
-            result = await provider.generate(prompt)
+            result = await provider.generate(prompt, max_tokens=max_tokens)
             
             duration = int((time.time() - start) * 1000)
             
@@ -145,6 +147,7 @@ Be thorough but concise. Focus on details that would help create visual art."""
                 success=True,
                 output={"content": result, "query": query},
                 duration_ms=duration,
+                prompt=prompt,
             )
         except Exception as e:
             return StepResult(
@@ -167,7 +170,7 @@ class GenerateTextExecutor(StepExecutor):
         
         Config:
             prompt: The generation prompt
-            max_length: Maximum output length
+            max_tokens: Maximum output tokens (optional, no limit if not specified)
             variations: Number of variations to generate
             include_context: Whether to include rich context (default: True)
         """
@@ -177,6 +180,7 @@ class GenerateTextExecutor(StepExecutor):
         prompt = config.get("prompt", "")
         variations = config.get("variations", 1)
         include_context = config.get("include_context", True)
+        max_tokens = config.get("max_tokens")  # None = no limit
         
         # Substitute template variables
         prompt = substitute_template(
@@ -200,13 +204,13 @@ Task:
         else:
             full_prompt = prompt
         
-        # Get text provider
-        provider = ctx.providers.get_text_provider("litellm")
+        # Get text provider (use context's configured provider)
+        provider = ctx.providers.get_text_provider(ctx.text_provider)
         
         try:
             results = []
             for i in range(variations):
-                result = await provider.generate(full_prompt)
+                result = await provider.generate(full_prompt, max_tokens=max_tokens)
                 results.append(result)
             
             duration = int((time.time() - start) * 1000)
@@ -216,6 +220,7 @@ Task:
                 output={"content": results[0]},
                 variations=results,
                 duration_ms=duration,
+                prompt=full_prompt,
             )
         except Exception as e:
             return StepResult(
@@ -265,8 +270,8 @@ The name should be:
 
 Respond with just the name, nothing else."""
         
-        # Get text provider
-        provider = ctx.providers.get_text_provider("litellm")
+        # Get text provider (use context's configured provider)
+        provider = ctx.providers.get_text_provider(ctx.text_provider)
         
         try:
             results = []
@@ -281,6 +286,7 @@ Respond with just the name, nothing else."""
                 output={"names": results},
                 variations=results,
                 duration_ms=duration,
+                prompt=prompt,
             )
         except Exception as e:
             return StepResult(
@@ -343,4 +349,5 @@ class GeneratePromptExecutor(StepExecutor):
             success=True,
             output={"prompt": prompt_template},
             duration_ms=duration,
+            prompt=template if template else "(built from context)",
         )

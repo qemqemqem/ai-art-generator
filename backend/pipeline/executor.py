@@ -26,7 +26,7 @@ from rich.panel import Panel
 from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 from rich.table import Table
 
-from .asset_loader import load_assets
+from .asset_loader import load_assets, load_asset_collections
 from .cache import CacheManager, should_skip_step
 from .context import build_rich_context, get_asset_aware_step_outputs
 from .executors import ExecutorContext, StepExecutor, StepResult, get_executor
@@ -124,7 +124,8 @@ class PipelineExecutor:
         
         # Will be set during run()
         self.spec: PipelineSpec | None = None
-        self.assets: list[dict[str, Any]] = []
+        self.assets: list[dict[str, Any]] = []  # Legacy: default asset list
+        self.asset_collections: dict[str, list[dict[str, Any]]] = {}  # Named collections
         self.cache: CacheManager | None = None
         self.providers: Any = None
         
@@ -147,6 +148,153 @@ class PipelineExecutor:
                     break
             # Broadcast the updated progress
             self._update_web_progress()
+    
+    def _update_asset_data(self, asset_id: str, field_name: str, value: Any) -> None:
+        """Update a specific field in an asset's data dictionary."""
+        # Update in asset_collections
+        for collection_name, items in self.asset_collections.items():
+            for asset in items:
+                if asset.get("id") == asset_id:
+                    asset[field_name] = value
+                    break
+        
+        # Update in web bridge
+        if self.web_bridge:
+            progress = self.web_bridge.get_progress()
+            for asset_info in progress.assets:
+                if asset_info.id == asset_id:
+                    asset_info.data[field_name] = value
+                    break
+            # Broadcast the updated progress
+            self._update_web_progress()
+    
+    def _get_step_providers(self, step: StepSpec) -> tuple[str, str, str | None, str | None]:
+        """
+        Get the resolved provider names for a step.
+        
+        Resolves from:
+        1. Step-level `provider` override
+        2. Pipeline-level `providers` defaults
+        
+        Returns:
+            (text_provider, image_provider, text_model, image_model)
+        """
+        # Pipeline defaults
+        text_provider = self.spec.providers.text
+        image_provider = self.spec.providers.image
+        text_model = self.spec.providers.text_model
+        image_model = self.spec.providers.image_model
+        
+        # Step-level override
+        if step.provider:
+            # Determine if this is a text or image step and override accordingly
+            if step.type.value in ("generate_text", "generate_name", "generate_prompt", "research"):
+                text_provider = step.provider
+            elif step.type.value in ("generate_image", "generate_sprite"):
+                image_provider = step.provider
+            else:
+                # For other types, override both (user can specify)
+                text_provider = step.provider
+                image_provider = step.provider
+        
+        return text_provider, image_provider, text_model, image_model
+    
+    def _get_step_assets(self, step: StepSpec) -> list[dict[str, Any]]:
+        """
+        Get the assets for a step based on its for_each value.
+        
+        Args:
+            step: The step to get assets for
+            
+        Returns:
+            List of asset dictionaries. Empty if step has no for_each.
+        """
+        if not step.for_each:
+            return []
+        
+        # Handle legacy "asset" value
+        if step.for_each == "asset":
+            # Return the first non-empty collection (backward compatibility)
+            for items in self.asset_collections.values():
+                if items:
+                    return items
+            return self.assets  # Fallback
+        
+        # Handle legacy "item" value (same as "asset")
+        if step.for_each == "item":
+            for items in self.asset_collections.values():
+                if items:
+                    return items
+            return self.assets
+        
+        # Named collection
+        if step.for_each in self.asset_collections:
+            return self.asset_collections[step.for_each]
+        
+        # Check if collection is defined in spec (may be generated_by and not yet populated)
+        if self.spec and step.for_each in self.spec.asset_collections:
+            # Collection is defined but not yet populated - this is expected for generated_by collections
+            return []
+        
+        # Collection truly not found - warn only for undefined collections
+        console.print(f"[yellow]Warning: Collection '{step.for_each}' not found for step '{step.id}'[/yellow]")
+        return []
+    
+    def _populate_collection(self, collection_name: str, items: list[dict[str, Any]]) -> None:
+        """
+        Populate an asset collection with generated items.
+        
+        Called when a step with creates_assets completes.
+        
+        Args:
+            collection_name: Name of the collection to populate
+            items: List of asset dictionaries to add
+        """
+        # Ensure each item has an ID
+        normalized = []
+        for i, item in enumerate(items):
+            if not isinstance(item, dict):
+                # If item is a string, wrap it
+                item = {"content": item, "name": str(item)[:50]}
+            item = dict(item)  # Copy to avoid mutation
+            
+            if "id" not in item:
+                if "name" in item:
+                    name_slug = item["name"].lower().replace(" ", "-").replace("'", "")[:30]
+                    item["id"] = f"{name_slug}"
+                else:
+                    item["id"] = f"{collection_name}-{i+1:03d}"
+            
+            normalized.append(item)
+        
+        self.asset_collections[collection_name] = normalized
+        
+        # Update legacy self.assets if this was the first collection
+        if not self.assets:
+            self.assets = normalized
+        
+        # Update web UI with new assets
+        if self.web_bridge:
+            from .web_bridge import AssetInfo
+            asset_info_list = []
+            for i, asset in enumerate(normalized):
+                asset_id = asset.get("id", f"{collection_name}-{i}")
+                asset_name = asset.get("name", asset_id)
+                asset_info_list.append(AssetInfo(
+                    id=asset_id,
+                    name=asset_name,
+                    data=dict(asset),
+                    status="pending",
+                    collection=collection_name,
+                ))
+            
+            # Add to existing assets in progress
+            progress = self.web_bridge.get_progress()
+            progress.assets.extend(asset_info_list)
+            progress.total_assets = len(progress.assets)
+            self._update_web_progress()
+        
+        console.print(f"    [green]Created {len(normalized)} assets in collection '{collection_name}'[/green]")
     
     def _collect_outputs(self, base_path: Path, state_dir: Path) -> dict[str, list[Path]]:
         """
@@ -281,6 +429,7 @@ class PipelineExecutor:
             "assess": "Assessing with Gemini Vision",
             "user_select": "Awaiting user selection",
             "user_approve": "Awaiting user approval",
+            "review": "Checkpoint review",
             "refine": "Refining output",
             "remove_background": "Removing background",
             "resize": "Resizing image",
@@ -347,6 +496,9 @@ class PipelineExecutor:
             return "User selects best option"
         elif step_type == "user_approve":
             return "User approval required"
+        elif step_type == "review":
+            title = config.get("title", "Checkpoint Review")
+            return f"Review checkpoint: {title}"
         elif step_type == "refine":
             return "Refine output"
         elif step_type == "remove_background":
@@ -388,19 +540,39 @@ class PipelineExecutor:
             
             console.print(f"[green]✓[/green] Pipeline '{self.spec.name}' loaded")
             
+            # Set up directories
+            base_path = self.pipeline_path.parent
+            state_dir = base_path / self.spec.state.directory
+            state_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Initialize cache manager
+            self.cache = CacheManager(state_dir)
+            
+            # Check if pipeline changed
+            pipeline_yaml = self.pipeline_path.read_text()
+            if self.cache.check_pipeline_changed(pipeline_yaml):
+                console.print("[yellow]Pipeline definition changed - some cache may be invalid[/yellow]")
+            
+            # Load asset collections (must happen before step info building for per-asset steps)
+            self.asset_collections = load_asset_collections(self.spec, base_path)
+            
             # Build step info for web UI
             from .web_bridge import StepInfo
             step_infos = []
-            # Use first asset for preview substitution if available
-            preview_asset = self.assets[0] if self.assets else None
             for step in self.spec.steps:
+                # Get preview asset for this step if it's a per-asset step
+                step_assets = self._get_step_assets(step)
+                preview_asset = step_assets[0] if step_assets else None
+                
                 # Generate description from step config (use preview asset for template preview)
-                step_desc = self._get_step_description(step, preview_asset if step.for_each == "asset" else None)
+                step_desc = self._get_step_description(step, preview_asset)
                 step_infos.append(StepInfo(
                     id=step.id,
                     type=step.type.value,
                     description=step_desc,
                     for_each=step.for_each,
+                    creates_assets=step.creates_assets,  # Pass creates_assets info
+                    output=step.output,  # Field name this step writes to
                     status="pending",
                 ))
             
@@ -415,43 +587,47 @@ class PipelineExecutor:
                 context_data=dict(self.spec.context),  # Pass context to web UI
             )
             
-            # Set up directories
-            base_path = self.pipeline_path.parent
-            state_dir = base_path / self.spec.state.directory
-            state_dir.mkdir(parents=True, exist_ok=True)
+            # Print collection info
+            total_loaded = sum(len(items) for items in self.asset_collections.values())
+            dynamic_collections = [name for name, spec in self.spec.asset_collections.items() 
+                                   if spec.generated_by]
             
-            # Initialize cache manager
-            self.cache = CacheManager(state_dir)
+            if self.asset_collections:
+                console.print(f"[green]✓[/green] Asset collections:")
+                for name, items in self.asset_collections.items():
+                    if items:
+                        console.print(f"    {name}: {len(items)} items loaded")
+                    else:
+                        spec = self.spec.asset_collections.get(name)
+                        if spec and spec.generated_by:
+                            console.print(f"    {name}: [dim]will be generated by {spec.generated_by}[/dim]")
+                        else:
+                            console.print(f"    {name}: [dim]empty[/dim]")
             
-            # Check if pipeline changed
-            pipeline_yaml = self.pipeline_path.read_text()
-            if self.cache.check_pipeline_changed(pipeline_yaml):
-                console.print("[yellow]Pipeline definition changed - some cache may be invalid[/yellow]")
+            # Legacy: set self.assets to the first non-empty collection for backward compatibility
+            for items in self.asset_collections.values():
+                if items:
+                    self.assets = items
+                    break
             
-            # Load assets
-            if self.input_override:
-                # Override from_file
-                self.spec.assets.from_file = str(self.input_override)
-            
-            self.assets = load_assets(self.spec, base_path)
-            console.print(f"[green]✓[/green] Loaded {len(self.assets)} assets")
-            
-            # Build asset info list for web UI
+            # Build asset info list for web UI (combine all collections)
             from .web_bridge import AssetInfo
             asset_info_list = []
-            for i, asset in enumerate(self.assets):
-                asset_id = asset.get("id", f"asset-{i}")
-                asset_name = asset.get("name", asset_id)
-                asset_info_list.append(AssetInfo(
-                    id=asset_id,
-                    name=asset_name,
-                    data=dict(asset),
-                    status="pending",
-                ))
+            for collection_name, items in self.asset_collections.items():
+                for i, asset in enumerate(items):
+                    asset_id = asset.get("id", f"{collection_name}-{i}")
+                    asset_name = asset.get("name", asset_id)
+                    asset_info_list.append(AssetInfo(
+                        id=asset_id,
+                        name=asset_name,
+                        data=dict(asset),
+                        status="pending",
+                        collection=collection_name,  # Track which collection this asset belongs to
+                    ))
             
             # Update web progress
             self._update_web_progress(
-                total_assets=len(self.assets),
+                total_assets=len(asset_info_list),
                 message="Assets loaded",
                 assets=asset_info_list,
             )
@@ -480,17 +656,22 @@ class PipelineExecutor:
                     # Single step - execute directly
                     step = self.spec.step_index[tier[0]]
                     # Use first asset for per-asset steps (preview)
-                    preview_asset = self.assets[0] if self.assets and step.for_each == "asset" else None
+                    step_assets = self._get_step_assets(step)
+                    preview_asset = step_assets[0] if step_assets else None
                     step_desc = self._get_step_description(step, preview_asset)
                     step_prompt = step.config.get("prompt", "") if step.config else ""
                     # Substitute templates in prompt for display
                     if step_prompt:
                         step_prompt = substitute_all(step_prompt, self.context, preview_asset, self.step_outputs)
+                    # Get the provider for this step
+                    text_provider, image_provider, _, _ = self._get_step_providers(step)
+                    current_provider = image_provider if step.type.value in ("generate_image", "generate_sprite") else text_provider
                     self._update_web_progress(
                         current_step=step.id,
                         current_step_type=step.type.value,
                         current_step_description=step_desc,
                         current_step_prompt=step_prompt,
+                        current_provider=current_provider,
                         message=f"Running {step.id}...",
                     )
                     self._update_step_status(step.id, "running")
@@ -650,8 +831,9 @@ class PipelineExecutor:
                 return StepResult(success=True, cached=True)
         
         # Handle per-asset vs global steps
-        if step.for_each == "asset":
-            return await self._execute_per_asset(step, base_path, state_dir, cache_setting)
+        step_assets = self._get_step_assets(step)
+        if step.for_each and step_assets:
+            return await self._execute_per_asset(step, base_path, state_dir, cache_setting, step_assets)
         else:
             return await self._execute_global(step, base_path, state_dir, cache_setting)
     
@@ -670,6 +852,16 @@ class PipelineExecutor:
             if cached_output is not None:
                 console.print(f"  [dim]{step.id}: cached[/dim]")
                 self.step_outputs[step.id] = cached_output
+                # Also store under writes_to alias if specified
+                if step.output:
+                    self.step_outputs[step.output] = cached_output
+                
+                # Restore asset collection if this step creates assets
+                if step.creates_assets:
+                    items = self._extract_asset_list(cached_output, step)
+                    if items:
+                        self._populate_collection(step.creates_assets, items)
+                
                 return StepResult(success=True, cached=True, output=cached_output)
         
         action_text = self._get_step_action_text(step)
@@ -682,6 +874,9 @@ class PipelineExecutor:
             console.print(f"    [red]No executor for step type: {step.type.value}[/red]")
             return StepResult(success=False, error=f"No executor for {step.type.value}")
         
+        # Get resolved providers for this step
+        text_provider, image_provider, text_model, image_model = self._get_step_providers(step)
+        
         # Build context
         ctx = ExecutorContext(
             pipeline_name=self.spec.name,
@@ -690,6 +885,10 @@ class PipelineExecutor:
             context=self.context,
             step_outputs=self.step_outputs,
             providers=self.providers,
+            text_provider=text_provider,
+            image_provider=image_provider,
+            text_model=text_model,
+            image_model=image_model,
         )
         
         # Substitute templates in config
@@ -707,17 +906,137 @@ class PipelineExecutor:
         if result.success:
             console.print(f"    [green]✓[/green] Done ({result.duration_ms}ms)")
             self.step_outputs[step.id] = result.output
+            # Also store under writes_to alias if specified
+            if step.output:
+                self.step_outputs[step.output] = result.output
             
-            # Cache the output
+            # Cache the output (include prompt for history display)
             self.cache.cache_step_output(
                 step.id,
                 result.output,
                 output_paths=result.output_paths,
+                prompt=result.prompt,
             )
+            
+            # Handle creates_assets - populate the target collection
+            if step.creates_assets:
+                items = self._extract_asset_list(result.output, step)
+                if items:
+                    self._populate_collection(step.creates_assets, items)
+                else:
+                    console.print(f"    [yellow]Warning: Step '{step.id}' has creates_assets but output didn't contain a list[/yellow]")
         else:
             console.print(f"    [red]✗[/red] Failed: {result.error}")
         
         return result
+    
+    def _extract_asset_list(self, output: Any, step: StepSpec) -> list[dict[str, Any]]:
+        """
+        Extract a list of assets from step output.
+        
+        Handles various output formats:
+        - List directly
+        - Dict with "items" or "assets" key
+        - Text content that can be parsed as JSON or structured format
+        
+        Args:
+            output: The step output
+            step: The step specification (for config hints)
+            
+        Returns:
+            List of asset dicts, or empty list if extraction fails
+        """
+        # If output is already a list
+        if isinstance(output, list):
+            return output
+        
+        # If output is a dict
+        if isinstance(output, dict):
+            # Check for common list keys
+            for key in ["items", "assets", "list", "data", "results"]:
+                if key in output and isinstance(output[key], list):
+                    return output[key]
+            
+            # Check for "content" that might be parseable
+            if "content" in output:
+                content = output["content"]
+                if isinstance(content, list):
+                    return content
+                if isinstance(content, str):
+                    return self._parse_content_as_list(content)
+        
+        # If output is a string, try to parse it
+        if isinstance(output, str):
+            return self._parse_content_as_list(output)
+        
+        return []
+    
+    def _parse_content_as_list(self, content: str) -> list[dict[str, Any]]:
+        """
+        Parse text content to extract a list of items.
+        
+        Tries:
+        1. JSON parsing
+        2. YAML parsing
+        3. Simple line-by-line parsing for numbered lists
+        
+        Args:
+            content: Text content to parse
+            
+        Returns:
+            List of asset dicts, or empty list if parsing fails
+        """
+        import re
+        
+        # Try JSON
+        try:
+            data = json.loads(content)
+            if isinstance(data, list):
+                return data
+            if isinstance(data, dict):
+                for key in ["items", "assets", "list", "data"]:
+                    if key in data and isinstance(data[key], list):
+                        return data[key]
+        except (json.JSONDecodeError, ValueError):
+            pass
+        
+        # Try to find JSON array in content
+        json_match = re.search(r'\[\s*\{.*?\}\s*\]', content, re.DOTALL)
+        if json_match:
+            try:
+                data = json.loads(json_match.group())
+                if isinstance(data, list):
+                    return data
+            except (json.JSONDecodeError, ValueError):
+                pass
+        
+        # Try YAML
+        try:
+            import yaml
+            data = yaml.safe_load(content)
+            if isinstance(data, list):
+                return data
+        except:
+            pass
+        
+        # Try parsing numbered list (1. Name - Description)
+        lines = content.strip().split('\n')
+        items = []
+        current_item = None
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            
+            # Match patterns like "1. Name" or "- Name" or "* Name"
+            numbered_match = re.match(r'^(?:\d+\.|\-|\*)\s*(.+?)(?:\s*[-:]\s*(.+))?$', line)
+            if numbered_match:
+                name = numbered_match.group(1).strip()
+                desc = numbered_match.group(2).strip() if numbered_match.group(2) else ""
+                items.append({"name": name, "description": desc})
+        
+        return items
     
     async def _execute_per_asset(
         self,
@@ -725,31 +1044,36 @@ class PipelineExecutor:
         base_path: Path,
         state_dir: Path,
         cache_setting: bool | str,
+        step_assets: list[dict[str, Any]] | None = None,
     ) -> StepResult:
         """Execute a per-asset step with parallel processing."""
         
+        # Use provided assets or fall back to self.assets
+        assets_to_process = step_assets if step_assets is not None else self.assets
+        
         # Generate descriptive action text
         action_text = self._get_step_action_text(step)
-        asset_count = len(self.assets)
+        asset_count = len(assets_to_process)
         asset_label = "asset" if asset_count == 1 else "assets"
+        collection_name = step.for_each or "assets"
         
-        console.print(f"  [cyan]{step.id}[/cyan] - {action_text} ({asset_count} {asset_label})")
+        console.print(f"  [cyan]{step.id}[/cyan] - {action_text} ({asset_count} {collection_name})")
         self._update_web_progress(current_step=step.id, message=f"{action_text}...")
         
         # Get pending assets (for skip_existing)
         if cache_setting == "skip_existing":
-            all_ids = [a.get("id", f"asset-{i}") for i, a in enumerate(self.assets)]
+            all_ids = [a.get("id", f"asset-{i}") for i, a in enumerate(assets_to_process)]
             pending_ids = self.cache.get_pending_assets(step.id, all_ids)
             pending_assets = [
-                (i, a) for i, a in enumerate(self.assets)
+                (i, a) for i, a in enumerate(assets_to_process)
                 if a.get("id", f"asset-{i}") in pending_ids
             ]
             
-            skipped = len(self.assets) - len(pending_assets)
+            skipped = len(assets_to_process) - len(pending_assets)
             if skipped > 0:
                 console.print(f"    [dim]Skipping {skipped} cached assets[/dim]")
         else:
-            pending_assets = list(enumerate(self.assets))
+            pending_assets = list(enumerate(assets_to_process))
         
         if not pending_assets:
             return StepResult(success=True, cached=True)
@@ -815,6 +1139,9 @@ class PipelineExecutor:
                     asset,
                 )
                 
+                # Get resolved providers for this step
+                text_provider, image_provider, text_model, image_model = self._get_step_providers(step)
+                
                 # Build context
                 ctx = ExecutorContext(
                     pipeline_name=self.spec.name,
@@ -824,8 +1151,12 @@ class PipelineExecutor:
                     step_outputs=asset_aware_outputs,  # Use asset-aware outputs
                     asset=asset,
                     asset_index=asset_idx,
-                    total_assets=len(self.assets),
+                    total_assets=len(assets_to_process),
                     providers=self.providers,
+                    text_provider=text_provider,
+                    image_provider=image_provider,
+                    text_model=text_model,
+                    image_model=image_model,
                 )
                 
                 # Substitute templates in config (using asset-aware outputs)
@@ -877,12 +1208,13 @@ class PipelineExecutor:
                                 )
                 
                 if result.success:
-                    # Cache the output
+                    # Cache the output (include prompt for history display)
                     self.cache.cache_step_output(
                         step.id,
                         result.output,
                         asset_id=asset_id,
                         output_paths=result.output_paths,
+                        prompt=result.prompt,
                     )
                     
                     # Store per-asset output (with lock for thread safety)
@@ -890,6 +1222,14 @@ class PipelineExecutor:
                         if step.id not in self.step_outputs:
                             self.step_outputs[step.id] = {"assets": {}}
                         self.step_outputs[step.id]["assets"][asset_id] = result.output
+                    
+                    # Update asset data if step writes to a specific field
+                    if step.output:
+                        # Extract the text content from the output
+                        output_value = result.output
+                        if isinstance(output_value, dict):
+                            output_value = output_value.get("content", output_value)
+                        self._update_asset_data(asset_id, step.output, output_value)
                     
                     # Mark asset as complete
                     self._update_asset_status(asset_id, "complete")
@@ -980,6 +1320,10 @@ class PipelineExecutor:
                 asset_index=ctx.asset_index,
                 total_assets=ctx.total_assets,
                 providers=ctx.providers,
+                text_provider=ctx.text_provider,
+                image_provider=ctx.image_provider,
+                text_model=ctx.text_model,
+                image_model=ctx.image_model,
             )
             
             approve_result = await approve_executor.execute(
@@ -1045,6 +1389,10 @@ class PipelineExecutor:
                 asset_index=ctx.asset_index,
                 total_assets=ctx.total_assets,
                 providers=ctx.providers,
+                text_provider=ctx.text_provider,
+                image_provider=ctx.image_provider,
+                text_model=ctx.text_model,
+                image_model=ctx.image_model,
             )
             
             select_result = await select_executor.execute(

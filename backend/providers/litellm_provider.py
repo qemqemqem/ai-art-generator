@@ -107,9 +107,15 @@ class LiteLLMTextProvider(BaseTextProvider):
         self,
         prompt: str,
         system_prompt: Optional[str] = None,
-        max_tokens: int = 1024,
+        max_tokens: int | None = None,
     ) -> str:
-        """Generate text using litellm (falls back to unstructured for simple cases)."""
+        """Generate text using litellm (falls back to unstructured for simple cases).
+        
+        Args:
+            prompt: The prompt to generate from
+            system_prompt: Optional system context
+            max_tokens: Maximum output tokens. If None, uses model's default (no limit imposed).
+        """
         import litellm
         self._ensure_init()
         
@@ -118,11 +124,15 @@ class LiteLLMTextProvider(BaseTextProvider):
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
         
-        response = await litellm.acompletion(
-            model=self.model,
-            messages=messages,
-            max_tokens=max_tokens,
-        )
+        # Build completion kwargs - only include max_tokens if specified
+        kwargs = {
+            "model": self.model,
+            "messages": messages,
+        }
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+        
+        response = await litellm.acompletion(**kwargs)
         
         return response.choices[0].message.content or ""
     

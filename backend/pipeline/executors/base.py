@@ -38,6 +38,13 @@ class ExecutorContext:
     
     # Provider registry
     providers: Any = None
+    
+    # Provider configuration for this step
+    # These are resolved from step-level override OR pipeline defaults
+    text_provider: str = "litellm"  # Provider for text generation
+    image_provider: str = "gemini"  # Provider for image generation
+    text_model: str | None = None  # Optional model override
+    image_model: str | None = None  # Optional model override
 
 
 @dataclass
@@ -55,6 +62,9 @@ class StepResult:
     
     # File paths produced
     output_paths: list[Path] = field(default_factory=list)
+    
+    # The prompt used to generate this output (for display/debugging)
+    prompt: str | None = None
 
 
 class StepExecutor(ABC):

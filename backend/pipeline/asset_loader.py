@@ -9,6 +9,8 @@ Loads assets from various sources:
   - External JSONL files (one JSON object per line)
   - Text files (one item per line for simple types)
 
+Supports named asset collections where each collection can have its own source.
+
 Each asset gets a unique ID and is validated against the pipeline's type definition.
 """
 
@@ -19,7 +21,7 @@ from typing import Any
 
 import yaml
 
-from .spec_parser import AssetSpec, PipelineSpec, TypeDef
+from .spec_parser import AssetCollectionSpec, AssetSpec, PipelineSpec, TypeDef
 
 
 class AssetLoadError(Exception):
@@ -27,9 +29,97 @@ class AssetLoadError(Exception):
     pass
 
 
+def load_asset_collections(spec: PipelineSpec, base_path: Path) -> dict[str, list[dict[str, Any]]]:
+    """
+    Load all asset collections from the pipeline specification.
+    
+    Collections with generated_by are returned as empty lists (will be populated by steps).
+    Collections with from_file or items are loaded immediately.
+    
+    Args:
+        spec: The parsed pipeline specification
+        base_path: Base path for resolving relative file paths
+        
+    Returns:
+        Dict mapping collection name -> list of asset dicts
+        
+    Raises:
+        AssetLoadError: If assets cannot be loaded
+    """
+    collections: dict[str, list[dict[str, Any]]] = {}
+    
+    for name, collection_spec in spec.asset_collections.items():
+        collections[name] = load_collection(collection_spec, spec.types, base_path)
+    
+    return collections
+
+
+def load_collection(
+    collection: AssetCollectionSpec, 
+    types: dict[str, TypeDef], 
+    base_path: Path
+) -> list[dict[str, Any]]:
+    """
+    Load a single asset collection.
+    
+    Args:
+        collection: The collection specification
+        types: Type definitions from the pipeline
+        base_path: Base path for resolving relative file paths
+        
+    Returns:
+        List of asset dictionaries (empty if generated_by is set)
+    """
+    # If generated_by is set, return empty list - will be populated by step
+    if collection.generated_by:
+        return []
+    
+    # Load items from source
+    if collection.from_file:
+        file_path = base_path / collection.from_file
+        items = load_from_file(file_path)
+    elif collection.items:
+        items = list(collection.items)  # Copy to avoid mutation
+    elif collection.count:
+        # Generate placeholder assets
+        count = collection.count if isinstance(collection.count, int) else 0
+        items = [{"id": f"item-{i+1:03d}"} for i in range(count)]
+    else:
+        return []
+    
+    # Validate and normalize assets
+    type_def = types.get(collection.type) if collection.type else None
+    normalized = []
+    
+    for i, item in enumerate(items):
+        # Make a copy to avoid mutation
+        item = dict(item)
+        
+        # Ensure each asset has an ID
+        if "id" not in item:
+            # Use name field if available, otherwise generate
+            if "name" in item:
+                # Create slug from name
+                name_slug = item["name"].lower().replace(" ", "-")
+                item["id"] = name_slug
+            else:
+                item["id"] = f"item-{i+1:03d}"
+        
+        # Validate against type definition if available
+        if type_def:
+            item = validate_asset(item, type_def)
+        
+        normalized.append(item)
+    
+    return normalized
+
+
 def load_assets(spec: PipelineSpec, base_path: Path) -> list[dict[str, Any]]:
     """
-    Load assets from the pipeline specification.
+    Load assets from the pipeline specification (legacy single-collection API).
+    
+    This function is kept for backward compatibility.
+    For new code, use load_asset_collections() instead.
     
     Args:
         spec: The parsed pipeline specification
@@ -41,6 +131,20 @@ def load_assets(spec: PipelineSpec, base_path: Path) -> list[dict[str, Any]]:
     Raises:
         AssetLoadError: If assets cannot be loaded
     """
+    # If using new named collections, return the default "assets" collection
+    if spec.asset_collections:
+        # Try "assets" first (default name for legacy format)
+        if "assets" in spec.asset_collections:
+            collections = load_asset_collections(spec, base_path)
+            return collections.get("assets", [])
+        # Otherwise return the first non-empty collection
+        collections = load_asset_collections(spec, base_path)
+        for items in collections.values():
+            if items:
+                return items
+        return []
+    
+    # Legacy path - use spec.assets directly
     if not spec.assets:
         return []
     

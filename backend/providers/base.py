@@ -79,14 +79,14 @@ class BaseTextProvider(ABC):
         self,
         prompt: str,
         system_prompt: Optional[str] = None,
-        max_tokens: int = 1024,
+        max_tokens: Optional[int] = None,
     ) -> str:
         """Generate text from a prompt.
         
         Args:
             prompt: The text prompt
             system_prompt: Optional system/context prompt
-            max_tokens: Maximum tokens to generate
+            max_tokens: Maximum tokens to generate. If None, uses model's default (no limit imposed).
             
         Returns:
             Generated text string

@@ -156,18 +156,34 @@ class GeminiTextProvider(BaseTextProvider):
         self,
         prompt: str,
         system_prompt: Optional[str] = None,
-        max_tokens: int = 1024,
+        max_tokens: int | None = None,
     ) -> str:
-        """Generate text using Gemini."""
+        """Generate text using Gemini.
+        
+        Args:
+            prompt: The prompt to generate from
+            system_prompt: Optional system context
+            max_tokens: Maximum output tokens. If None, uses model's default (no limit imposed).
+        """
+        from google.genai import types
+        
         # Build the full prompt with optional system context
         if system_prompt:
             full_prompt = f"{system_prompt}\n\n{prompt}"
         else:
             full_prompt = prompt
         
+        # Configure generation - only set max_output_tokens if specified
+        config = None
+        if max_tokens is not None:
+            config = types.GenerateContentConfig(
+                max_output_tokens=max_tokens,
+            )
+        
         response = self.client.models.generate_content(
             model="gemini-2.5-flash",
             contents=[full_prompt],
+            config=config,
         )
         
         # Get text from response

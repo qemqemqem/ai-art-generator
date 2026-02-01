@@ -154,8 +154,33 @@ def substitute_template(
                 return ""
             return format_value(value)
         
+        elif namespace == "step_outputs":
+            # {step_outputs.step_id} or {step_outputs.step_id.field}
+            # The first part of field is the step ID
+            parts = field.split('.', 1)
+            step_id = parts[0]
+            subfield = parts[1] if len(parts) > 1 else None
+            
+            if step_id not in step_outputs:
+                raise TemplateError(f"Step output not found: step_outputs.{step_id}")
+            
+            step_output = step_outputs[step_id]
+            
+            if subfield:
+                value = get_nested_value(step_output, subfield)
+            else:
+                # Get the primary content from the step output
+                if isinstance(step_output, dict):
+                    value = step_output.get("content") or step_output.get("output") or step_output
+                else:
+                    value = step_output
+            
+            if value is None:
+                return ""
+            return format_value(value)
+        
         else:
-            # Step output reference
+            # Direct step output reference: {step_id.field}
             if namespace not in step_outputs:
                 raise TemplateError(f"Step output not found: {namespace}")
             

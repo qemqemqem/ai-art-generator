@@ -109,7 +109,19 @@ def validate_external_files(spec: PipelineSpec, base_path: Path) -> ValidationRe
     """
     result = ValidationResult(valid=True)
     
-    # Check assets from_file
+    # Check named asset collections
+    for name, collection in spec.asset_collections.items():
+        if collection.from_file:
+            file_path = base_path / collection.from_file
+            if not file_path.exists():
+                result.add_error(
+                    f"Collection '{name}' from_file not found: {collection.from_file}\n"
+                    f"  Expected at: {file_path}"
+                )
+            elif file_path.stat().st_size == 0:
+                result.add_error(f"Collection '{name}' file is empty: {collection.from_file}")
+    
+    # Legacy: Check assets from_file
     if spec.assets and spec.assets.from_file:
         file_path = base_path / spec.assets.from_file
         if not file_path.exists():
@@ -129,12 +141,54 @@ def validate_assets(spec: PipelineSpec, base_path: Path) -> ValidationResult:
     """
     result = ValidationResult(valid=True)
     
-    if not spec.assets:
+    # Check named asset collections
+    if not spec.asset_collections and not spec.assets:
         result.add_warning("No assets defined in pipeline")
         return result
     
-    # Check inline items
-    if spec.assets.items:
+    for name, collection in spec.asset_collections.items():
+        # Each collection must have exactly one source
+        sources = []
+        if collection.from_file:
+            sources.append("from_file")
+        if collection.generated_by:
+            sources.append("generated_by")
+        if collection.items:
+            sources.append("items")
+        
+        if not sources:
+            result.add_warning(
+                f"Collection '{name}' has no source (from_file, generated_by, or items)"
+            )
+        elif len(sources) > 1:
+            result.add_warning(
+                f"Collection '{name}' has multiple sources ({', '.join(sources)}), "
+                f"only one will be used"
+            )
+        
+        # Validate inline items
+        if collection.items:
+            seen_ids: set[str] = set()
+            for i, item in enumerate(collection.items):
+                if not isinstance(item, dict):
+                    result.add_error(f"Collection '{name}' item {i} is not a mapping")
+                    continue
+                
+                item_id = item.get("id")
+                if item_id and item_id in seen_ids:
+                    result.add_error(f"Collection '{name}' has duplicate id: '{item_id}'")
+                elif item_id:
+                    seen_ids.add(item_id)
+        
+        # Validate count if specified
+        if collection.count is not None:
+            if isinstance(collection.count, int) and collection.count < 1:
+                result.add_error(
+                    f"Collection '{name}' count must be positive, got {collection.count}"
+                )
+    
+    # Legacy: Check assets
+    if spec.assets and spec.assets.items:
         seen_ids: set[str] = set()
         for i, item in enumerate(spec.assets.items):
             if not isinstance(item, dict):
@@ -156,8 +210,8 @@ def validate_assets(spec: PipelineSpec, base_path: Path) -> ValidationResult:
                     f"Asset '{item_id or i}' has no name, description, or prompt"
                 )
     
-    # Check count
-    if spec.assets.count is not None and spec.assets.count < 1:
+    # Legacy: Check count
+    if spec.assets and spec.assets.count is not None and spec.assets.count < 1:
         result.add_error(f"Asset count must be positive, got {spec.assets.count}")
     
     return result
@@ -175,11 +229,67 @@ def validate_template_references(
     # Collect available namespaces
     context_keys = set(spec.context.keys())
     
-    # Asset fields (from first item or type definition)
+    # Asset fields (from all collections)
     asset_fields: set[str] = {"id", "name", "description", "prompt"}
-    if spec.assets and spec.assets.items:
-        for item in spec.assets.items:
-            asset_fields.update(item.keys())
+    
+    # Helper to load fields from a file
+    def load_fields_from_file(file_path: Path) -> set[str]:
+        fields = set()
+        try:
+            import json
+            import yaml as yaml_lib
+            if file_path.exists():
+                suffix = file_path.suffix.lower()
+                with open(file_path) as f:
+                    if suffix in ('.yaml', '.yml'):
+                        items = yaml_lib.safe_load(f)
+                    elif suffix == '.json':
+                        items = json.load(f)
+                    else:
+                        items = None
+                
+                if isinstance(items, list) and items:
+                    for item in items:
+                        if isinstance(item, dict):
+                            fields.update(item.keys())
+        except Exception:
+            pass
+        return fields
+    
+    # Collect from named asset collections
+    for name, collection in spec.asset_collections.items():
+        # From inline items
+        if collection.items:
+            for item in collection.items:
+                if isinstance(item, dict):
+                    asset_fields.update(item.keys())
+        
+        # From external file
+        if collection.from_file:
+            asset_file = base_path / collection.from_file
+            asset_fields.update(load_fields_from_file(asset_file))
+        
+        # From type definition
+        if collection.type and collection.type in spec.types:
+            type_def = spec.types[collection.type]
+            asset_fields.update(type_def.fields.keys())
+    
+    # Legacy: collect from spec.assets
+    if spec.assets:
+        # From inline items
+        if spec.assets.items:
+            for item in spec.assets.items:
+                asset_fields.update(item.keys())
+        
+        # From external file
+        if spec.assets.from_file:
+            asset_file = base_path / spec.assets.from_file
+            asset_fields.update(load_fields_from_file(asset_file))
+        
+        # From type definition
+        if spec.assets.type and spec.assets.type in spec.types:
+            type_def = spec.types[spec.assets.type]
+            asset_fields.update(type_def.fields.keys())
     
     # Track step outputs that become available
     available_steps: set[str] = set()
@@ -205,8 +315,16 @@ def validate_template_references(
                         result.add_warning(
                             f"Step '{step_id}' references unknown asset.{root_field}"
                         )
+                elif namespace == "step_outputs":
+                    # step_outputs.{step_id} references a previous step's output
+                    referenced_step = field.split('.')[0]
+                    if referenced_step not in available_steps:
+                        result.add_error(
+                            f"Step '{step_id}' references step_outputs.{referenced_step} which "
+                            f"hasn't been defined yet. Check step ordering."
+                        )
                 else:
-                    # Assume it's a step reference
+                    # Assume it's a direct step reference (e.g., {research.content})
                     if namespace not in available_steps:
                         result.add_error(
                             f"Step '{step_id}' references '{namespace}' which "
@@ -230,6 +348,12 @@ def validate_template_references(
         
         # This step's output is now available
         available_steps.add(step.id)
+        
+        # If this step writes to a field, also make it available as a step output alias
+        # This allows {step_outputs.field_name} as shorthand for {step_outputs.step_id}
+        if step.output:
+            available_steps.add(step.output)
+            asset_fields.add(step.output)
     
     return result
 

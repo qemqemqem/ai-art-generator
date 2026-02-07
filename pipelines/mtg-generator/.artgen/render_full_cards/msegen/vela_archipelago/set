@@ -15,8 +15,8 @@ styling:
 		overlay:
 card:
 	has_styling: false
-	time_created: 2026-02-01 11:15:34
-	time_modified: 2026-02-01 11:15:34
+	time_created: 2026-02-01 21:27:55
+	time_modified: 2026-02-01 21:27:55
 	name: Ancestral Star-Whisperer
 	image: image0
 	super_type: <word-list-type>Creature</word-list-type>
@@ -24,99 +24,104 @@ card:
 	casting_cost: 2U
 	rule_text:
 		Flying
+		You may look at the top card of your library at any time.
 		At the beginning of your upkeep, scry 1.
-		Spells with flashback in your graveyard cost <sym>1</sym> less to cast.
-	flavor_text: <i-flavor>"Their luminous forms chart cosmic currents unseen by mortal eyes, their whispers guiding the living through the darkest passages."</i-flavor>
+	flavor_text: <i-flavor>Their ethereal whispers trace routes across unseen stars, guiding living navigators through the nebula's shifting heart.</i-flavor>
 	power: 1
 	toughness: 3
 	loyalty: 
-	illustrator: inspired by Julie Dillon
+	illustrator: AI Generated
 	rarity: uncommon
 card:
 	has_styling: false
-	time_created: 2026-02-01 11:15:34
-	time_modified: 2026-02-01 11:15:34
+	time_created: 2026-02-01 21:27:55
+	time_modified: 2026-02-01 21:27:55
 	name: Mana-Core Eruption
 	image: image1
 	super_type: <word-list-type>Sorcery</word-list-type>
 	sub_type: <word-list-type></word-list-type>
-	casting_cost: 3RR
+	casting_cost: 2RR
 	rule_text:
-		Mana-Core Eruption deals 4 damage to each creature and 2 damage to each opponent. You may put a land card from your hand onto the battlefield. If you do, scry 2.
-	flavor_text: <i-flavor>The island-world's heart can break, but from its fury, Wayfinders see a new path charted in the stars.</i-flavor>
+		As an additional cost to cast this spell, sacrifice a land.
+		Mana-Core Eruption deals 4 damage to each creature and each planeswalker.
+		Add <sym>R</sym><sym>R</sym> to your mana pool.
+	flavor_text: <i-flavor>The island-world screamed as its heart tore open, a cosmic geyser of raw mana scorching sky and sea alike.</i-flavor>
 	power: 
 	toughness: 
 	loyalty: 
-	illustrator: inspired by Frank Frazetta
+	illustrator: inspired by Tyler Jacobson
 	rarity: rare
 card:
 	has_styling: false
-	time_created: 2026-02-01 11:15:34
-	time_modified: 2026-02-01 11:15:34
+	time_created: 2026-02-01 21:27:55
+	time_modified: 2026-02-01 21:27:55
 	name: Nebula Coral Sanctuary
 	image: image2
 	super_type: <word-list-type>Enchantment</word-list-type>
 	sub_type: <word-list-type></word-list-type>
 	casting_cost: 2G
 	rule_text:
-		Whenever a land enters the battlefield under your control, put a +1/+1 counter on target creature you control and you gain 1 life.
-	flavor_text: <i-flavor>"The Living Reef of Lumina is where hope still blooms," Kaelen whispered, "a verdant star-garden untouched by the void's hungry tendrils."</i-flavor>
-	power: None
-	toughness: None
+		You may play an additional land on each of your turns.
+		Whenever a land enters the battlefield under your control, put a +1/+1 counter on target creature you control.
+	flavor_text: <i-flavor>"The Blight fears these places most, for within their vibrant depths, new life always surges forth."
+—Kaelen, Speaker to the Leviathans</i-flavor>
+	power: 
+	toughness: 
 	loyalty: 
-	illustrator: inspired by Jesper Ejsing
+	illustrator: inspired by Julie Dillon
 	rarity: uncommon
 card:
 	has_styling: false
-	time_created: 2026-02-01 11:15:34
-	time_modified: 2026-02-01 11:15:34
+	time_created: 2026-02-01 21:27:55
+	time_modified: 2026-02-01 21:27:55
 	name: Obsidian Crag Siphoner
 	image: image3
 	super_type: <word-list-type>Creature</word-list-type>
 	sub_type: <word-list-type>Human Shaman</word-list-type>
 	casting_cost: 1B
 	rule_text:
-		<sym>T</sym>: Add <sym>B</sym>. You lose 1 life.
-	flavor_text: <i-flavor>The Obsidian Crag is not merely Xylara's stronghold, but her altar, constantly bled for the Blight's advance.</i-flavor>
+		When Obsidian Crag Siphoner enters the battlefield, put a +1/+1 counter on it.
+		As long as Obsidian Crag Siphoner has one or more +1/+1 counters on it, it has "<sym>T</sym>: Pay 1 life: Add <sym>B</sym>."
+	flavor_text: <i-flavor>Their corrupting tatau draws mana from the world’s deep heart, bleeding it dry for the Void Blight.</i-flavor>
 	power: 1
 	toughness: 1
 	loyalty: 
-	illustrator: inspired by Raymond Swanland
+	illustrator: inspired by Karl Kopinski
 	rarity: common
 card:
 	has_styling: false
-	time_created: 2026-02-01 11:15:34
-	time_modified: 2026-02-01 11:15:34
+	time_created: 2026-02-01 21:27:55
+	time_modified: 2026-02-01 21:27:55
 	name: Outrigger Star-Skiff
 	image: image4
 	super_type: <word-list-type>Artifact</word-list-type>
 	sub_type: <word-list-type>Vehicle</word-list-type>
-	casting_cost: 3
+	casting_cost: 2
 	rule_text:
 		Flying
+		Whenever Outrigger Star-Skiff becomes crewed, scry 1.
 		Crew 1
-		When you crew Outrigger Star-Skiff, Scry 1.
-	flavor_text: <i-flavor>The cosmic currents are treacherous, but a Wayfinder's skiff is always guided by ancestral whispers.</i-flavor>
-	power: 2
-	toughness: 2
+	flavor_text: <i-flavor>Nimble and swift, these vessels are the Wayfinders' eyes, scouting ahead for both new horizons and encroaching blight.</i-flavor>
+	power: 1
+	toughness: 3
 	loyalty: 
-	illustrator: inspired by Kekai Kotaki
+	illustrator: inspired by John Avon
 	rarity: common
 card:
 	has_styling: false
-	time_created: 2026-02-01 11:15:34
-	time_modified: 2026-02-01 11:15:34
+	time_created: 2026-02-01 21:27:55
+	time_modified: 2026-02-01 21:27:55
 	name: Vela Wayfinder Initiate
 	image: image5
 	super_type: <word-list-type>Creature</word-list-type>
 	sub_type: <word-list-type>Human Warrior</word-list-type>
 	casting_cost: 1W
 	rule_text:
-		When Vela Wayfinder Initiate enters the battlefield, scry 1.
-		If you control a Vehicle, put a +1/+1 counter on Vela Wayfinder Initiate.
-	flavor_text: <i-flavor>"With their first star-chart in hand and the hum of a starship nearby, their journey truly begins."</i-flavor>
+		Vigilance
+		Whenever Vela Wayfinder Initiate attacks, scry 1.
+	flavor_text: <i-flavor>A small canoe, a vast nebula, and an eager heart. The Great Voyage begins anew with every initiate.</i-flavor>
 	power: 1
 	toughness: 2
 	loyalty: 
-	illustrator: inspired by Julie Dillon
+	illustrator: inspired by Kekai Kotaki
 	rarity: common

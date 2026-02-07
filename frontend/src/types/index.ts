@@ -142,6 +142,32 @@ export interface ApprovalDecision {
   regenerate?: boolean;
 }
 
+// Fin (completion) stage types
+export interface FinDisplayImageItem {
+  path: string;
+  asset_id?: string;
+}
+
+export interface FinDisplayTextItem {
+  content: string;
+  asset_id?: string;
+}
+
+export interface FinDisplayItem {
+  type: "images" | "text";
+  label: string;
+  step: string;
+  items: FinDisplayImageItem[] | FinDisplayTextItem[];
+}
+
+export interface FinInfo {
+  title: string;
+  message: string;
+  display_items: FinDisplayItem[];
+  total_images?: number;
+  total_text_items?: number;
+}
+
 // WebSocket message types
 export type WSMessageType =
   | "connected"
@@ -149,7 +175,9 @@ export type WSMessageType =
   | "new_approval"
   | "generation_progress"
   | "generation_complete"
-  | "generation_error";
+  | "generation_error"
+  | "progress"
+  | "fin_data";
 
 export interface WSMessage {
   type: WSMessageType;
@@ -160,4 +188,5 @@ export interface WSMessage {
   step_id?: string;
   progress?: number;
   error?: string;
+  data?: FinInfo | Record<string, unknown>;
 }

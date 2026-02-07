@@ -1,6 +1,6 @@
 {
   "pipeline_hash": "62d365a0d28cbfe3",
-  "updated_at": "2026-02-01T19:15:36.124776",
+  "updated_at": "2026-02-02T05:27:57.478319",
   "steps": {
     "design_set_mechanics": {
       "completed": true,
@@ -22,45 +22,45 @@
     },
     "generate_card_concepts:vela-wayfinder-initiate": {
       "completed": true,
-      "completed_at": "2026-02-01T19:12:04.804100",
+      "completed_at": "2026-02-02T05:24:39.376083",
       "output_path": "generate_card_concepts/vela-wayfinder-initiate/output.json",
       "output_files": [],
-      "cost_usd": 0.0029121
+      "cost_usd": 0.0030321000000000002
     },
     "generate_card_concepts:ancestral-star-whisperer": {
       "completed": true,
-      "completed_at": "2026-02-01T19:12:04.962558",
+      "completed_at": "2026-02-02T05:24:38.354201",
       "output_path": "generate_card_concepts/ancestral-star-whisperer/output.json",
       "output_files": [],
-      "cost_usd": 0.0029339
+      "cost_usd": 0.0026289
     },
     "generate_card_concepts:nebula-coral-sanctuary": {
       "completed": true,
-      "completed_at": "2026-02-01T19:12:05.980600",
+      "completed_at": "2026-02-02T05:24:38.356903",
       "output_path": "generate_card_concepts/nebula-coral-sanctuary/output.json",
       "output_files": [],
-      "cost_usd": 0.0036303000000000004
+      "cost_usd": 0.0028103
     },
     "generate_card_concepts:outrigger-star-skiff": {
       "completed": true,
-      "completed_at": "2026-02-01T19:12:10.216188",
+      "completed_at": "2026-02-02T05:24:42.244066",
       "output_path": "generate_card_concepts/outrigger-star-skiff/output.json",
       "output_files": [],
-      "cost_usd": 0.0035639
+      "cost_usd": 0.0029239
     },
     "generate_card_concepts:mana-core-eruption": {
       "completed": true,
-      "completed_at": "2026-02-01T19:12:13.588598",
+      "completed_at": "2026-02-02T05:24:44.659477",
       "output_path": "generate_card_concepts/mana-core-eruption/output.json",
       "output_files": [],
-      "cost_usd": 0.0045365
+      "cost_usd": 0.0036815
     },
     "generate_card_concepts:obsidian-crag-siphoner": {
       "completed": true,
-      "completed_at": "2026-02-01T19:12:08.113442",
+      "completed_at": "2026-02-02T05:24:45.133713",
       "output_path": "generate_card_concepts/obsidian-crag-siphoner/output.json",
       "output_files": [],
-      "cost_usd": 0.0024764
+      "cost_usd": 0.0042614
     },
     "review_set_design": {
       "completed": true,
@@ -70,217 +70,217 @@
     },
     "brainstorm_mechanics:vela-wayfinder-initiate": {
       "completed": true,
-      "completed_at": "2026-02-01T19:12:41.959500",
+      "completed_at": "2026-02-02T05:25:08.240711",
       "output_path": "brainstorm_mechanics/vela-wayfinder-initiate/output.json",
       "output_files": [],
-      "cost_usd": 0.0172891
+      "cost_usd": 0.013671200000000001
     },
     "brainstorm_mechanics:ancestral-star-whisperer": {
       "completed": true,
-      "completed_at": "2026-02-01T19:12:44.295545",
+      "completed_at": "2026-02-02T05:25:13.554260",
       "output_path": "brainstorm_mechanics/ancestral-star-whisperer/output.json",
       "output_files": [],
-      "cost_usd": 0.018126700000000003
+      "cost_usd": 0.017748700000000003
     },
     "brainstorm_mechanics:nebula-coral-sanctuary": {
       "completed": true,
-      "completed_at": "2026-02-01T19:12:47.919326",
+      "completed_at": "2026-02-02T05:25:15.351444",
       "output_path": "brainstorm_mechanics/nebula-coral-sanctuary/output.json",
       "output_files": [],
-      "cost_usd": 0.0204791
+      "cost_usd": 0.0177812
     },
     "brainstorm_mechanics:obsidian-crag-siphoner": {
       "completed": true,
-      "completed_at": "2026-02-01T19:13:15.890410",
+      "completed_at": "2026-02-02T05:25:31.067157",
       "output_path": "brainstorm_mechanics/obsidian-crag-siphoner/output.json",
       "output_files": [],
-      "cost_usd": 0.020125300000000002
+      "cost_usd": 0.013966300000000001
     },
     "brainstorm_mechanics:outrigger-star-skiff": {
       "completed": true,
-      "completed_at": "2026-02-01T19:13:09.870596",
+      "completed_at": "2026-02-02T05:25:39.493183",
       "output_path": "brainstorm_mechanics/outrigger-star-skiff/output.json",
       "output_files": [],
-      "cost_usd": 0.016668000000000002
+      "cost_usd": 0.015824900000000003
     },
     "brainstorm_mechanics:mana-core-eruption": {
       "completed": true,
-      "completed_at": "2026-02-01T19:13:25.497228",
+      "completed_at": "2026-02-02T05:25:46.248415",
       "output_path": "brainstorm_mechanics/mana-core-eruption/output.json",
       "output_files": [],
-      "cost_usd": 0.021314800000000002
+      "cost_usd": 0.018685
     },
     "design_full_card:vela-wayfinder-initiate": {
       "completed": true,
-      "completed_at": "2026-02-01T19:13:36.404315",
+      "completed_at": "2026-02-02T05:25:58.038096",
       "output_path": "design_full_card/vela-wayfinder-initiate/output.json",
       "output_files": [],
-      "cost_usd": 0.007013500000000001
+      "cost_usd": 0.007039
     },
     "design_full_card:ancestral-star-whisperer": {
       "completed": true,
-      "completed_at": "2026-02-01T19:13:37.042093",
+      "completed_at": "2026-02-02T05:26:02.908791",
       "output_path": "design_full_card/ancestral-star-whisperer/output.json",
       "output_files": [],
-      "cost_usd": 0.0077199
+      "cost_usd": 0.0097438
     },
     "design_full_card:nebula-coral-sanctuary": {
       "completed": true,
-      "completed_at": "2026-02-01T19:13:50.096402",
+      "completed_at": "2026-02-02T05:25:58.496451",
       "output_path": "design_full_card/nebula-coral-sanctuary/output.json",
       "output_files": [],
-      "cost_usd": 0.0150473
+      "cost_usd": 0.0077679
     },
     "design_full_card:obsidian-crag-siphoner": {
       "completed": true,
-      "completed_at": "2026-02-01T19:13:50.973379",
+      "completed_at": "2026-02-02T05:26:17.160772",
       "output_path": "design_full_card/obsidian-crag-siphoner/output.json",
       "output_files": [],
-      "cost_usd": 0.009352000000000001
+      "cost_usd": 0.0122062
     },
     "design_full_card:outrigger-star-skiff": {
       "completed": true,
-      "completed_at": "2026-02-01T19:13:47.347929",
+      "completed_at": "2026-02-02T05:26:04.991530",
       "output_path": "design_full_card/outrigger-star-skiff/output.json",
       "output_files": [],
-      "cost_usd": 0.0070435
+      "cost_usd": 0.0046404
     },
     "design_full_card:mana-core-eruption": {
       "completed": true,
-      "completed_at": "2026-02-01T19:13:59.956539",
+      "completed_at": "2026-02-02T05:26:26.168549",
       "output_path": "design_full_card/mana-core-eruption/output.json",
       "output_files": [],
-      "cost_usd": 0.0087901
+      "cost_usd": 0.0145359
     },
     "critique_and_refine:nebula-coral-sanctuary": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:05.967359",
+      "completed_at": "2026-02-02T05:26:42.468980",
       "output_path": "critique_and_refine/nebula-coral-sanctuary/output.json",
       "output_files": [],
-      "cost_usd": 0.0037234800000000004
+      "cost_usd": 0.00932505
     },
     "critique_and_refine:vela-wayfinder-initiate": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:19.408395",
+      "completed_at": "2026-02-02T05:26:32.724879",
       "output_path": "critique_and_refine/vela-wayfinder-initiate/output.json",
       "output_files": [],
-      "cost_usd": 0.011749450000000002
+      "cost_usd": 0.00398855
     },
     "critique_and_refine:obsidian-crag-siphoner": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:30.966808",
+      "completed_at": "2026-02-02T05:26:57.572129",
       "output_path": "critique_and_refine/obsidian-crag-siphoner/output.json",
       "output_files": [],
-      "cost_usd": 0.013439680000000002
+      "cost_usd": 0.014363850000000001
     },
     "critique_and_refine:outrigger-star-skiff": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:23.036324",
+      "completed_at": "2026-02-02T05:26:42.248351",
       "output_path": "critique_and_refine/outrigger-star-skiff/output.json",
       "output_files": [],
-      "cost_usd": 0.00520225
+      "cost_usd": 0.0047275500000000005
     },
     "critique_and_refine:ancestral-star-whisperer": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:14.048206",
+      "completed_at": "2026-02-02T05:26:33.646922",
       "output_path": "critique_and_refine/ancestral-star-whisperer/output.json",
       "output_files": [],
-      "cost_usd": 0.00782375
+      "cost_usd": 0.0045101
     },
     "critique_and_refine:mana-core-eruption": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:30.271370",
+      "completed_at": "2026-02-02T05:26:52.747047",
       "output_path": "critique_and_refine/mana-core-eruption/output.json",
       "output_files": [],
-      "cost_usd": 0.006166650000000001
+      "cost_usd": 0.005550820000000001
     },
     "write_flavor_text:nebula-coral-sanctuary": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:36.043603",
+      "completed_at": "2026-02-02T05:27:03.372599",
       "output_path": "write_flavor_text/nebula-coral-sanctuary/output.json",
       "output_files": [],
-      "cost_usd": 0.00375067
+      "cost_usd": 0.00381557
     },
     "write_flavor_text:vela-wayfinder-initiate": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:37.803375",
+      "completed_at": "2026-02-02T05:27:03.959811",
       "output_path": "write_flavor_text/vela-wayfinder-initiate/output.json",
       "output_files": [],
-      "cost_usd": 0.004701169999999999
+      "cost_usd": 0.00412977
     },
     "write_flavor_text:ancestral-star-whisperer": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:35.770247",
+      "completed_at": "2026-02-02T05:27:06.096024",
       "output_path": "write_flavor_text/ancestral-star-whisperer/output.json",
       "output_files": [],
-      "cost_usd": 0.00347907
+      "cost_usd": 0.00502317
     },
     "generate_art_direction:ancestral-star-whisperer": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:39.792967",
+      "completed_at": "2026-02-02T05:27:03.926853",
       "output_path": "generate_art_direction/ancestral-star-whisperer/output.json",
       "output_files": [],
-      "cost_usd": 0.00473727
+      "cost_usd": 0.0038817699999999997
     },
     "generate_art_direction:vela-wayfinder-initiate": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:38.518713",
+      "completed_at": "2026-02-02T05:27:07.942389",
       "output_path": "generate_art_direction/vela-wayfinder-initiate/output.json",
       "output_files": [],
-      "cost_usd": 0.004394640000000001
+      "cost_usd": 0.005835870000000001
     },
     "generate_art_direction:nebula-coral-sanctuary": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:37.832844",
+      "completed_at": "2026-02-02T05:27:07.566142",
       "output_path": "generate_art_direction/nebula-coral-sanctuary/output.json",
       "output_files": [],
-      "cost_usd": 0.004018870000000001
+      "cost_usd": 0.006126670000000001
     },
     "write_flavor_text:outrigger-star-skiff": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:42.099905",
+      "completed_at": "2026-02-02T05:27:09.914256",
       "output_path": "write_flavor_text/outrigger-star-skiff/output.json",
       "output_files": [],
-      "cost_usd": 0.00431837
+      "cost_usd": 0.003988670000000001
     },
     "write_flavor_text:obsidian-crag-siphoner": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:41.713015",
+      "completed_at": "2026-02-02T05:27:09.347169",
       "output_path": "write_flavor_text/obsidian-crag-siphoner/output.json",
       "output_files": [],
-      "cost_usd": 0.00443417
+      "cost_usd": 0.00432087
     },
     "write_flavor_text:mana-core-eruption": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:46.027162",
+      "completed_at": "2026-02-02T05:27:10.360440",
       "output_path": "write_flavor_text/mana-core-eruption/output.json",
       "output_files": [],
-      "cost_usd": 0.0051246
+      "cost_usd": 0.00322667
     },
     "generate_art_direction:obsidian-crag-siphoner": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:45.814807",
+      "completed_at": "2026-02-02T05:27:14.816636",
       "output_path": "generate_art_direction/obsidian-crag-siphoner/output.json",
       "output_files": [],
-      "cost_usd": 0.00505487
+      "cost_usd": 0.00643907
     },
     "generate_art_direction:outrigger-star-skiff": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:45.177670",
+      "completed_at": "2026-02-02T05:27:15.184420",
       "output_path": "generate_art_direction/outrigger-star-skiff/output.json",
       "output_files": [],
-      "cost_usd": 0.004091570000000001
+      "cost_usd": 0.00449964
     },
     "generate_art_direction:mana-core-eruption": {
       "completed": true,
-      "completed_at": "2026-02-01T19:14:52.195854",
+      "completed_at": "2026-02-02T05:27:15.517128",
       "output_path": "generate_art_direction/mana-core-eruption/output.json",
       "output_files": [],
-      "cost_usd": 0.007150300000000001
+      "cost_usd": 0.0051479
     },
     "generate_art:vela-wayfinder-initiate": {
       "completed": true,
-      "completed_at": "2026-02-01T19:15:00.048911",
+      "completed_at": "2026-02-02T05:27:23.725792",
       "output_path": "generate_art/vela-wayfinder-initiate/output.json",
       "output_files": [
         "../pipelines/mtg-generator/.artgen/generate_image/vela-wayfinder-initiate/v1.png"
@@ -289,7 +289,7 @@
     },
     "generate_art:nebula-coral-sanctuary": {
       "completed": true,
-      "completed_at": "2026-02-01T19:15:06.767337",
+      "completed_at": "2026-02-02T05:27:29.647793",
       "output_path": "generate_art/nebula-coral-sanctuary/output.json",
       "output_files": [
         "../pipelines/mtg-generator/.artgen/generate_image/nebula-coral-sanctuary/v1.png"
@@ -298,7 +298,7 @@
     },
     "generate_art:ancestral-star-whisperer": {
       "completed": true,
-      "completed_at": "2026-02-01T19:15:13.384327",
+      "completed_at": "2026-02-02T05:27:36.147646",
       "output_path": "generate_art/ancestral-star-whisperer/output.json",
       "output_files": [
         "../pipelines/mtg-generator/.artgen/generate_image/ancestral-star-whisperer/v1.png"
@@ -307,7 +307,7 @@
     },
     "generate_art:obsidian-crag-siphoner": {
       "completed": true,
-      "completed_at": "2026-02-01T19:15:20.154098",
+      "completed_at": "2026-02-02T05:27:43.335226",
       "output_path": "generate_art/obsidian-crag-siphoner/output.json",
       "output_files": [
         "../pipelines/mtg-generator/.artgen/generate_image/obsidian-crag-siphoner/v1.png"
@@ -316,7 +316,7 @@
     },
     "generate_art:outrigger-star-skiff": {
       "completed": true,
-      "completed_at": "2026-02-01T19:15:27.754923",
+      "completed_at": "2026-02-02T05:27:49.917598",
       "output_path": "generate_art/outrigger-star-skiff/output.json",
       "output_files": [
         "../pipelines/mtg-generator/.artgen/generate_image/outrigger-star-skiff/v1.png"
@@ -325,7 +325,7 @@
     },
     "generate_art:mana-core-eruption": {
       "completed": true,
-      "completed_at": "2026-02-01T19:15:34.227483",
+      "completed_at": "2026-02-02T05:27:55.630242",
       "output_path": "generate_art/mana-core-eruption/output.json",
       "output_files": [
         "../pipelines/mtg-generator/.artgen/generate_image/mana-core-eruption/v1.png"
@@ -334,7 +334,7 @@
     },
     "render_full_cards": {
       "completed": true,
-      "completed_at": "2026-02-01T19:15:36.124759",
+      "completed_at": "2026-02-02T05:27:57.478295",
       "output_path": "render_full_cards/output.json",
       "output_files": [],
       "cost_usd": 0.0

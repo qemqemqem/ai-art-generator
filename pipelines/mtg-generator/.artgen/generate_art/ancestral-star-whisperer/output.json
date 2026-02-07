@@ -1,12 +1,12 @@
 {
   "step_id": "generate_art",
   "asset_id": "ancestral-star-whisperer",
-  "timestamp": "2026-02-01T19:15:13.384195",
+  "timestamp": "2026-02-02T05:27:36.147447",
   "data": {
-    "prompt": "Magic: The Gathering card art.\n\nFinal Prompt: An ethereal, luminous spirit of an ancient Polynesian Wayfinder, translucent and shimmering with faint, glowing cosmic *tatau* patterns, gently drifts through a vibrant, swirling coral nebula. The spirit's serene gaze is fixed on distant, intricate star-charts woven into the fabric of space, one hand subtly gesturing a guiding path along glowing cosmic currents, bathed in soft blues, purples, and radiant white light.\n\nArtist Credit: inspired by Julie Dillon\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n",
+    "prompt": "Magic: The Gathering card art.\n\nFinal Prompt: \"An ethereal, translucent Ancestral Star-Whisperer spirit, shimmering with starlight and faint glowing tribal tattoos, floats majestically in the cosmic nebula-sea. Its wise, serene expression and outstretched hand guide a small, distant outrigger starship navigating treacherous cosmic currents, with vibrant coral nebulae and hints of encroaching Void Blight in the background. The scene is bathed in deep blues, purples, and bioluminescent greens, conveying ancient wisdom and foresight.\"\n\nArtist Credit:\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n",
     "paths": [
       "../pipelines/mtg-generator/.artgen/generate_image/ancestral-star-whisperer/v1.png"
     ]
   },
-  "prompt": "Magic: The Gathering card art.\n\nFinal Prompt: An ethereal, luminous spirit of an ancient Polynesian Wayfinder, translucent and shimmering with faint, glowing cosmic *tatau* patterns, gently drifts through a vibrant, swirling coral nebula. The spirit's serene gaze is fixed on distant, intricate star-charts woven into the fabric of space, one hand subtly gesturing a guiding path along glowing cosmic currents, bathed in soft blues, purples, and radiant white light.\n\nArtist Credit: inspired by Julie Dillon\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n"
+  "prompt": "Magic: The Gathering card art.\n\nFinal Prompt: \"An ethereal, translucent Ancestral Star-Whisperer spirit, shimmering with starlight and faint glowing tribal tattoos, floats majestically in the cosmic nebula-sea. Its wise, serene expression and outstretched hand guide a small, distant outrigger starship navigating treacherous cosmic currents, with vibrant coral nebulae and hints of encroaching Void Blight in the background. The scene is bathed in deep blues, purples, and bioluminescent greens, conveying ancient wisdom and foresight.\"\n\nArtist Credit:\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n"
 }

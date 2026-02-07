@@ -4,6 +4,7 @@ import type {
   GeneratedOption,
   QueueStatus,
   GeneratingItem,
+  FinInfo,
 } from "../types";
 import {
   getInteractiveStatus,
@@ -21,7 +22,7 @@ import {
 import { useWebSocket } from "../hooks/useWebSocket";
 
 interface InteractiveQueueProps {
-  onComplete?: () => void;
+  onComplete?: (finInfo?: FinInfo) => void;
 }
 
 export function InteractiveQueue({ onComplete }: InteractiveQueueProps) {
@@ -33,6 +34,7 @@ export function InteractiveQueue({ onComplete }: InteractiveQueueProps) {
   const [loading, setLoading] = useState(false);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [finInfo, setFinInfo] = useState<FinInfo | null>(null);
 
   // WebSocket for real-time updates
   const { connected: wsConnected, lastStatus } = useWebSocket({
@@ -51,6 +53,9 @@ export function InteractiveQueue({ onComplete }: InteractiveQueueProps) {
             : item
         )
       );
+    },
+    onFinData: (data) => {
+      setFinInfo(data);
     },
   });
 
@@ -464,7 +469,7 @@ export function InteractiveQueue({ onComplete }: InteractiveQueueProps) {
                           )}
                         </p>
                         <button
-                          onClick={onComplete}
+                          onClick={() => onComplete?.(finInfo || undefined)}
                           className="mt-4 px-6 py-2 bg-green-600 hover:bg-green-500 rounded-lg"
                         >
                           View Results

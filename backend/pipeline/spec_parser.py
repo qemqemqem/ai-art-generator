@@ -141,6 +141,7 @@ class StepType(str, Enum):
     LOOP = "loop"
     BRANCH = "branch"
     CUSTOM = "custom"
+    FIN = "fin"  # Final display stage - shows configured outputs
 
 
 @dataclass

@@ -1,12 +1,12 @@
 {
   "step_id": "generate_art",
   "asset_id": "mana-core-eruption",
-  "timestamp": "2026-02-01T19:15:34.227358",
+  "timestamp": "2026-02-02T05:27:55.630104",
   "data": {
-    "prompt": "Magic: The Gathering card art.\n\nA colossal island-world in the Vela Archipelago is tearing itself apart in a Mana-Core Eruption, a maelstrom of raw, volcanic mana and cosmic energy bursting from its core into the star-dusted nebula-sea. Towering plumes of brilliant red and violet light rip through the surrounding space, disintegrating smaller floating islands into glowing debris, as a lone, silhouetted Wayfinder starship navigates away from the cataclysm, framed against the overwhelming destruction.\n\nArtist Credit: inspired by Frank Frazetta\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n",
+    "prompt": "Magic: The Gathering card art.\n\nA massive, volcanic island-world floats amidst a vibrant cosmic nebula, its core erupting in a catastrophic release of raw, glowing red and orange mana that tears the land apart. Jagged cracks spread across the island, spewing arcs of brilliant, tribal-patterned energy into the star-swept void, as a tiny outrigger starship attempts a desperate escape from the devastating cosmic surge.\n\nArtist Credit: inspired by Tyler Jacobson\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n",
     "paths": [
       "../pipelines/mtg-generator/.artgen/generate_image/mana-core-eruption/v1.png"
     ]
   },
-  "prompt": "Magic: The Gathering card art.\n\nA colossal island-world in the Vela Archipelago is tearing itself apart in a Mana-Core Eruption, a maelstrom of raw, volcanic mana and cosmic energy bursting from its core into the star-dusted nebula-sea. Towering plumes of brilliant red and violet light rip through the surrounding space, disintegrating smaller floating islands into glowing debris, as a lone, silhouetted Wayfinder starship navigates away from the cataclysm, framed against the overwhelming destruction.\n\nArtist Credit: inspired by Frank Frazetta\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n"
+  "prompt": "Magic: The Gathering card art.\n\nA massive, volcanic island-world floats amidst a vibrant cosmic nebula, its core erupting in a catastrophic release of raw, glowing red and orange mana that tears the land apart. Jagged cracks spread across the island, spewing arcs of brilliant, tribal-patterned energy into the star-swept void, as a tiny outrigger starship attempts a desperate escape from the devastating cosmic surge.\n\nArtist Credit: inspired by Tyler Jacobson\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n"
 }

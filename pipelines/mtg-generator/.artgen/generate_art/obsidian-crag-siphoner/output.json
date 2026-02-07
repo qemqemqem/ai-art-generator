@@ -1,12 +1,12 @@
 {
   "step_id": "generate_art",
   "asset_id": "obsidian-crag-siphoner",
-  "timestamp": "2026-02-01T19:15:20.153944",
+  "timestamp": "2026-02-02T05:27:43.334745",
   "data": {
-    "prompt": "Magic: The Gathering card art.\n\nA Human Shaman, their body covered in stark, dark tattoos that shimmer with corrupted energy, stands on the scarred, obsidian slopes of the Obsidian Crag. With hands outstretched, they forcefully draw tendrils of shadowy, black mana from the cracked earth, their face grimacing in a display of dark power, under a bleak, star-dusted cosmic twilight.\n\nArtist Credit: inspired by Raymond Swanland\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n",
+    "prompt": "Magic: The Gathering card art.\n\nA human shaman from the Obsidian Crag, cloaked in dark, volcanic-themed tribal garb, stands on a jagged cliff overlooking a corrupted, mana-drained volcanic island-world adrift in a sickly purple cosmic nebula. Their intricate black tattoos glow ominously, veins of dark light visibly spreading across their skin as they extend a hand, siphoning dark mana that coalesces from the blighted landscape into a swirling orb, showing the painful, self-sacrificial cost of their power.\n\nArtist Credit: inspired by Karl Kopinski\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n",
     "paths": [
       "../pipelines/mtg-generator/.artgen/generate_image/obsidian-crag-siphoner/v1.png"
     ]
   },
-  "prompt": "Magic: The Gathering card art.\n\nA Human Shaman, their body covered in stark, dark tattoos that shimmer with corrupted energy, stands on the scarred, obsidian slopes of the Obsidian Crag. With hands outstretched, they forcefully draw tendrils of shadowy, black mana from the cracked earth, their face grimacing in a display of dark power, under a bleak, star-dusted cosmic twilight.\n\nArtist Credit: inspired by Raymond Swanland\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n"
+  "prompt": "Magic: The Gathering card art.\n\nA human shaman from the Obsidian Crag, cloaked in dark, volcanic-themed tribal garb, stands on a jagged cliff overlooking a corrupted, mana-drained volcanic island-world adrift in a sickly purple cosmic nebula. Their intricate black tattoos glow ominously, veins of dark light visibly spreading across their skin as they extend a hand, siphoning dark mana that coalesces from the blighted landscape into a swirling orb, showing the painful, self-sacrificial cost of their power.\n\nArtist Credit: inspired by Karl Kopinski\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n"
 }

@@ -127,6 +127,38 @@ class AssetInfo:
 
 
 @dataclass
+class FinDisplayItem:
+    """A display item for the fin stage."""
+    type: str  # "images" or "text"
+    label: str
+    step: str
+    items: list[dict[str, Any]] = field(default_factory=list)
+    
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "type": self.type,
+            "label": self.label,
+            "step": self.step,
+            "items": self.items,
+        }
+
+
+@dataclass
+class FinInfo:
+    """Information for the fin (completion) stage."""
+    title: str = "Pipeline Complete!"
+    message: str = ""
+    display_items: list[FinDisplayItem] = field(default_factory=list)
+    
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "title": self.title,
+            "message": self.message,
+            "display_items": [item.to_dict() for item in self.display_items],
+        }
+
+
+@dataclass
 class PipelineProgress:
     """Current pipeline progress state."""
     phase: PipelinePhase = PipelinePhase.LOADING
@@ -154,6 +186,9 @@ class PipelineProgress:
     total_cost_usd: float = 0.0
     cost_by_step: dict[str, float] = field(default_factory=dict)
     
+    # Fin stage info (populated when a fin step is executed)
+    fin_info: FinInfo | None = None
+    
     def to_dict(self) -> dict[str, Any]:
         return {
             "phase": self.phase.value,
@@ -179,6 +214,7 @@ class PipelineProgress:
             "assets": [a.to_dict() for a in self.assets],
             "total_cost_usd": self.total_cost_usd,
             "cost_by_step": self.cost_by_step,
+            "fin_info": self.fin_info.to_dict() if self.fin_info else None,
         }
     
     def _calc_percent(self) -> int:

@@ -36,7 +36,7 @@ from .spec_parser import PipelineSpec, StepSpec, StepType, get_execution_order, 
 from .templates import substitute_all
 
 # Import all executors to register them
-from .executors import assess, image, mse, text, user
+from .executors import assess, fin, image, mse, text, user
 
 console = Console()
 

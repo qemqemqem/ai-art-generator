@@ -6,13 +6,14 @@ import { ContentInput } from "./pages/ContentInput";
 import { FlowSetup } from "./pages/FlowSetup";
 import { ArtDirection } from "./pages/ArtDirection";
 import { InteractiveQueue } from "./pages/InteractiveQueue";
-import type { QueueItem, Asset, PipelineStep, StyleConfig, Project } from "./types";
+import type { QueueItem, Asset, PipelineStep, StyleConfig, Project, FinInfo } from "./types";
 import {
   getApprovalQueue,
   listAssets,
   getHealth,
   getProject,
   startInteractive,
+  getFileUrl,
 } from "./api/client";
 
 type Mode = "classic" | "interactive";
@@ -31,6 +32,7 @@ function App() {
   const [interactiveStep, setInteractiveStep] = useState<InteractiveStep>("content");
   const [pipeline, setPipeline] = useState<PipelineStep[]>([]);
   const [style, setStyle] = useState<StyleConfig | null>(null);
+  const [finInfo, setFinInfo] = useState<FinInfo | null>(null);
 
   // Classic mode state
   const [activeTab, setActiveTab] = useState<ClassicTab>("queue");
@@ -107,7 +109,10 @@ function App() {
     }
   };
 
-  const handleInteractiveComplete = () => {
+  const handleInteractiveComplete = (finData?: FinInfo) => {
+    if (finData) {
+      setFinInfo(finData);
+    }
     setInteractiveStep("results");
   };
 
@@ -278,21 +283,87 @@ function App() {
           )}
 
           {interactiveStep === "results" && (
-            <div className="max-w-4xl mx-auto text-center">
-              <div className="text-6xl mb-4">🎉</div>
-              <h2 className="text-2xl font-bold mb-4">Generation Complete!</h2>
-              <p className="text-gray-400 mb-8">
-                Your assets have been generated. Check the outputs folder for results.
-              </p>
-              <div className="flex gap-4 justify-center">
+            <div className="max-w-6xl mx-auto px-6 py-8">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <div className="text-6xl mb-4">🎉</div>
+                <h2 className="text-3xl font-bold mb-2">
+                  {finInfo?.title || "Generation Complete!"}
+                </h2>
+                {finInfo?.message && (
+                  <p className="text-gray-400 text-lg">{finInfo.message}</p>
+                )}
+              </div>
+
+              {/* Display Items Gallery */}
+              {finInfo?.display_items && finInfo.display_items.length > 0 ? (
+                <div className="space-y-8">
+                  {finInfo.display_items.map((displayItem, groupIndex) => (
+                    <div key={groupIndex}>
+                      <h3 className="text-xl font-semibold mb-4 text-gray-200">
+                        {displayItem.label}
+                      </h3>
+                      
+                      {displayItem.type === "images" && (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                          {(displayItem.items as { path: string; asset_id?: string }[]).map((img, imgIndex) => (
+                            <div
+                              key={imgIndex}
+                              className="relative group rounded-lg overflow-hidden bg-gray-800 aspect-[3/4]"
+                            >
+                              <img
+                                src={getFileUrl(img.path)}
+                                alt={img.asset_id || `Image ${imgIndex + 1}`}
+                                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                              />
+                              {img.asset_id && (
+                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                                  <p className="text-sm text-white truncate">
+                                    {img.asset_id}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {displayItem.type === "text" && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {(displayItem.items as { content: string; asset_id?: string }[]).map((txt, txtIndex) => (
+                            <div
+                              key={txtIndex}
+                              className="bg-gray-800 rounded-lg p-4"
+                            >
+                              {txt.asset_id && (
+                                <p className="text-sm text-blue-400 mb-2">
+                                  {txt.asset_id}
+                                </p>
+                              )}
+                              <p className="text-gray-300">{txt.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-gray-400 mb-8">
+                  Your assets have been generated. Check the outputs folder for results.
+                </p>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-4 justify-center mt-12">
                 <button
                   onClick={() => {
                     setMode("classic");
                     setActiveTab("assets");
                   }}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg"
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium"
                 >
-                  View Assets
+                  View All Assets
                 </button>
                 <button
                   onClick={() => setMode(null)}

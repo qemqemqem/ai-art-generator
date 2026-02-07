@@ -521,3 +521,22 @@ steps:
       art_direction_step: generate_art_direction
       art_step: generate_art
     cache: true
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # FINAL: Display completion with generated cards
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - id: finish
+    type: fin
+    requires: [render_full_cards]
+    description: "Display the generated cards"
+    config:
+      title: "Your Magic Set is Complete!"
+      message: "Here are the cards generated for the Vela Archipelago set."
+      display:
+        - step: render_full_cards
+          type: images
+          label: "Rendered Cards"
+        - step: generate_art
+          type: images
+          label: "Card Art"

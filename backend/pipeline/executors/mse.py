@@ -299,32 +299,36 @@ class RenderMSECardsExecutor(StepExecutor):
                     art_output = json.load(f)
                 paths = art_output.get("data", {}).get("paths", [])
                 if paths:
-                    art_path = Path(paths[0])
+                    art_path_str = paths[0]
+                    art_path = Path(art_path_str)
                     
-                    # Try multiple path resolution strategies
-                    resolved_path = None
+                    # Build list of candidate paths to try
                     candidates = [
-                        art_path,  # Absolute or as-is
-                        ctx.base_path / art_path,  # Relative to pipeline dir
-                        ctx.base_path.parent / art_path,  # Relative to parent (for ../pipelines/... paths)
-                        state_dir / art_path,  # Relative to state dir
-                        ctx.base_path / ".artgen" / art_path.name if art_path.name else None,  # Just filename in state
+                        art_path if art_path.is_absolute() else None,
+                        art_path,  # Try as-is (relative to cwd)
                     ]
                     
-                    # Also try direct path from generate_image step if paths look like state paths
-                    if ".artgen" in str(art_path) or "generate_image" in str(art_path):
-                        # Extract just the relative state path
-                        path_parts = str(art_path).split(".artgen/")
+                    # If path contains .artgen, extract the state-relative portion
+                    if ".artgen/" in art_path_str:
+                        path_parts = art_path_str.split(".artgen/")
                         if len(path_parts) > 1:
                             candidates.append(state_dir / path_parts[1])
                     
+                    # Also try relative to generate_image step directory
+                    if "generate_image" in art_path_str:
+                        # Extract just the asset/filename part
+                        parts = art_path_str.split("generate_image/")
+                        if len(parts) > 1:
+                            candidates.append(state_dir / "generate_image" / parts[1])
+                    
+                    # Try finding via the actual step output location
+                    # The image should be in state_dir/generate_image/asset_id/
+                    candidates.append(state_dir / "generate_image" / asset_id / "v1.png")
+                    
                     for candidate in candidates:
                         if candidate and candidate.exists():
-                            resolved_path = candidate
+                            card_data["image_path"] = str(candidate.resolve())
                             break
-                    
-                    if resolved_path:
-                        card_data["image_path"] = str(resolved_path)
             
             cards.append(card_data)
         
@@ -353,7 +357,7 @@ class RenderMSECardsExecutor(StepExecutor):
                 output={
                     "mse_set": str(mse_set_path),
                     "cards_rendered": len(exported_images),
-                    "card_paths": [str(p) for p in exported_images],
+                    "paths": [str(p) for p in exported_images],  # Use "paths" for web UI compatibility
                 },
                 output_paths=exported_images,
                 duration_ms=duration,

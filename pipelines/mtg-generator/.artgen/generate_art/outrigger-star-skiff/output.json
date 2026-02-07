@@ -1,12 +1,12 @@
 {
   "step_id": "generate_art",
   "asset_id": "outrigger-star-skiff",
-  "timestamp": "2026-02-01T19:15:27.754785",
+  "timestamp": "2026-02-02T05:27:49.917435",
   "data": {
-    "prompt": "Magic: The Gathering card art.\n\nFinal Prompt: \"A sleek, nimble outrigger star-skiff, carved from cosmic wood and embellished with intricate tribal designs, glides gracefully through a swirling, bioluminescent coral nebula. A lone Wayfinder, their glowing tattoos hinting at ancestral guidance, stands at the helm, intently scanning the vast expanse of stars and distant volcanic island-worlds ahead. The aesthetic is a vibrant fusion of ancient Polynesian culture and interstellar exploration.\"\n\nArtist Credit: inspired by Kekai Kotaki\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n",
+    "prompt": "Magic: The Gathering card art.\n\nA nimble, single-person outrigger star-skiff, its solar sail unfurled and hull etched with glowing tribal patterns, gracefully glides through a vibrant, swirling cosmic nebula. A lone Wayfinder, focused and determined, steers the vessel, gazing out into the vast nebula-sea with distant island-worlds shimmering on the horizon, evoking swift travel and diligent reconnaissance.\n\nArtist Credit: inspired by John Avon\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n",
     "paths": [
       "../pipelines/mtg-generator/.artgen/generate_image/outrigger-star-skiff/v1.png"
     ]
   },
-  "prompt": "Magic: The Gathering card art.\n\nFinal Prompt: \"A sleek, nimble outrigger star-skiff, carved from cosmic wood and embellished with intricate tribal designs, glides gracefully through a swirling, bioluminescent coral nebula. A lone Wayfinder, their glowing tattoos hinting at ancestral guidance, stands at the helm, intently scanning the vast expanse of stars and distant volcanic island-worlds ahead. The aesthetic is a vibrant fusion of ancient Polynesian culture and interstellar exploration.\"\n\nArtist Credit: inspired by Kekai Kotaki\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n"
+  "prompt": "Magic: The Gathering card art.\n\nA nimble, single-person outrigger star-skiff, its solar sail unfurled and hull etched with glowing tribal patterns, gracefully glides through a vibrant, swirling cosmic nebula. A lone Wayfinder, focused and determined, steers the vessel, gazing out into the vast nebula-sea with distant island-worlds shimmering on the horizon, evoking swift travel and diligent reconnaissance.\n\nArtist Credit: inspired by John Avon\n\nStyle: Fantasy illustration, detailed, painterly, dramatic lighting.\nDo NOT include any text, card frames, or UI elements.\nFocus on the subject matter only.\n"
 }

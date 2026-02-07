@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { getWebSocketUrl } from "../api/client";
-import type { WSMessage, QueueStatus, ApprovalItem } from "../types";
+import type { WSMessage, QueueStatus, ApprovalItem, FinInfo } from "../types";
 
 interface UseWebSocketOptions {
   onStatusUpdate?: (status: QueueStatus) => void;
@@ -8,6 +8,7 @@ interface UseWebSocketOptions {
   onProgress?: (assetId: string, stepId: string, progress: number) => void;
   onComplete?: (assetId: string, stepId: string) => void;
   onError?: (assetId: string, stepId: string, error: string) => void;
+  onFinData?: (finInfo: FinInfo) => void;
   reconnectInterval?: number;
 }
 
@@ -18,6 +19,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     onProgress,
     onComplete,
     onError,
+    onFinData,
     reconnectInterval = 3000,
   } = options;
 
@@ -91,6 +93,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
               onError?.(message.asset_id, message.step_id, message.error);
             }
             break;
+
+          case "fin_data":
+            if (message.data) {
+              onFinData?.(message.data as FinInfo);
+            }
+            break;
         }
       } catch (e) {
         console.error("Failed to parse WebSocket message:", e);
@@ -98,7 +106,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     };
 
     wsRef.current = ws;
-  }, [onStatusUpdate, onNewApproval, onProgress, onComplete, onError, reconnectInterval]);
+  }, [onStatusUpdate, onNewApproval, onProgress, onComplete, onError, onFinData, reconnectInterval]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {

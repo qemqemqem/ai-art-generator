@@ -138,38 +138,32 @@ Provide:
 
 Be thorough but concise. Focus on details that would help create visual art."""
         
-        try:
-            # Use generate_with_cost if available for cost tracking
-            cost_usd = 0.0
-            tokens_used = None
-            
-            if hasattr(provider, 'generate_with_cost'):
-                gen_result = await provider.generate_with_cost(prompt, max_tokens=max_tokens)
-                result = gen_result.content
-                cost_usd = gen_result.cost_usd
-                tokens_used = {
-                    "prompt_tokens": gen_result.prompt_tokens,
-                    "completion_tokens": gen_result.completion_tokens,
-                    "total_tokens": gen_result.total_tokens,
-                }
-            else:
-                result = await provider.generate(prompt, max_tokens=max_tokens)
-            
-            duration = int((time.time() - start) * 1000)
-            
-            return StepResult(
-                success=True,
-                output={"content": result, "query": query},
-                duration_ms=duration,
-                prompt=prompt,
-                cost_usd=cost_usd,
-                tokens_used=tokens_used,
-            )
-        except Exception as e:
-            return StepResult(
-                success=False,
-                error=str(e),
-            )
+        # Use generate_with_cost if available for cost tracking
+        cost_usd = 0.0
+        tokens_used = None
+        
+        if hasattr(provider, 'generate_with_cost'):
+            gen_result = await provider.generate_with_cost(prompt, max_tokens=max_tokens)
+            result = gen_result.content
+            cost_usd = gen_result.cost_usd
+            tokens_used = {
+                "prompt_tokens": gen_result.prompt_tokens,
+                "completion_tokens": gen_result.completion_tokens,
+                "total_tokens": gen_result.total_tokens,
+            }
+        else:
+            result = await provider.generate(prompt, max_tokens=max_tokens)
+        
+        duration = int((time.time() - start) * 1000)
+        
+        return StepResult(
+            success=True,
+            output={"content": result, "query": query},
+            duration_ms=duration,
+            prompt=prompt,
+            cost_usd=cost_usd,
+            tokens_used=tokens_used,
+        )
 
 
 @register_executor("generate_text")
@@ -223,39 +217,33 @@ Task:
         # Get text provider (use context's configured provider)
         provider = ctx.providers.get_text_provider(ctx.text_provider)
         
-        try:
-            results = []
-            total_cost = 0.0
-            total_tokens = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
-            
-            for i in range(variations):
-                if hasattr(provider, 'generate_with_cost'):
-                    gen_result = await provider.generate_with_cost(full_prompt, max_tokens=max_tokens)
-                    results.append(gen_result.content)
-                    total_cost += gen_result.cost_usd
-                    total_tokens["prompt_tokens"] += gen_result.prompt_tokens
-                    total_tokens["completion_tokens"] += gen_result.completion_tokens
-                    total_tokens["total_tokens"] += gen_result.total_tokens
-                else:
-                    result = await provider.generate(full_prompt, max_tokens=max_tokens)
-                    results.append(result)
-            
-            duration = int((time.time() - start) * 1000)
-            
-            return StepResult(
-                success=True,
-                output={"content": results[0]},
-                variations=results,
-                duration_ms=duration,
-                prompt=full_prompt,
-                cost_usd=total_cost,
-                tokens_used=total_tokens if total_cost > 0 else None,
-            )
-        except Exception as e:
-            return StepResult(
-                success=False,
-                error=str(e),
-            )
+        results = []
+        total_cost = 0.0
+        total_tokens = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        
+        for i in range(variations):
+            if hasattr(provider, 'generate_with_cost'):
+                gen_result = await provider.generate_with_cost(full_prompt, max_tokens=max_tokens)
+                results.append(gen_result.content)
+                total_cost += gen_result.cost_usd
+                total_tokens["prompt_tokens"] += gen_result.prompt_tokens
+                total_tokens["completion_tokens"] += gen_result.completion_tokens
+                total_tokens["total_tokens"] += gen_result.total_tokens
+            else:
+                result = await provider.generate(full_prompt, max_tokens=max_tokens)
+                results.append(result)
+        
+        duration = int((time.time() - start) * 1000)
+        
+        return StepResult(
+            success=True,
+            output={"content": results[0]},
+            variations=results,
+            duration_ms=duration,
+            prompt=full_prompt,
+            cost_usd=total_cost,
+            tokens_used=total_tokens if total_cost > 0 else None,
+        )
 
 
 @register_executor("generate_name")
@@ -302,39 +290,33 @@ Respond with just the name, nothing else."""
         # Get text provider (use context's configured provider)
         provider = ctx.providers.get_text_provider(ctx.text_provider)
         
-        try:
-            results = []
-            total_cost = 0.0
-            total_tokens = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
-            
-            for i in range(variations):
-                if hasattr(provider, 'generate_with_cost'):
-                    gen_result = await provider.generate_with_cost(prompt)
-                    results.append(gen_result.content.strip())
-                    total_cost += gen_result.cost_usd
-                    total_tokens["prompt_tokens"] += gen_result.prompt_tokens
-                    total_tokens["completion_tokens"] += gen_result.completion_tokens
-                    total_tokens["total_tokens"] += gen_result.total_tokens
-                else:
-                    result = await provider.generate(prompt)
-                    results.append(result.strip())
-            
-            duration = int((time.time() - start) * 1000)
-            
-            return StepResult(
-                success=True,
-                output={"names": results},
-                variations=results,
-                duration_ms=duration,
-                prompt=prompt,
-                cost_usd=total_cost,
-                tokens_used=total_tokens if total_cost > 0 else None,
-            )
-        except Exception as e:
-            return StepResult(
-                success=False,
-                error=str(e),
-            )
+        results = []
+        total_cost = 0.0
+        total_tokens = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        
+        for i in range(variations):
+            if hasattr(provider, 'generate_with_cost'):
+                gen_result = await provider.generate_with_cost(prompt)
+                results.append(gen_result.content.strip())
+                total_cost += gen_result.cost_usd
+                total_tokens["prompt_tokens"] += gen_result.prompt_tokens
+                total_tokens["completion_tokens"] += gen_result.completion_tokens
+                total_tokens["total_tokens"] += gen_result.total_tokens
+            else:
+                result = await provider.generate(prompt)
+                results.append(result.strip())
+        
+        duration = int((time.time() - start) * 1000)
+        
+        return StepResult(
+            success=True,
+            output={"names": results},
+            variations=results,
+            duration_ms=duration,
+            prompt=prompt,
+            cost_usd=total_cost,
+            tokens_used=total_tokens if total_cost > 0 else None,
+        )
 
 
 @register_executor("generate_prompt")
@@ -356,7 +338,10 @@ class GeneratePromptExecutor(StepExecutor):
         import time
         start = time.time()
         
-        template = config.get("template", "")
+        template = config.get("prompt") or config.get("template", "")
+        variations = config.get("variations", 1)
+        include_context = config.get("include_context", False)
+        max_tokens = config.get("max_tokens")
         
         # Substitute template variables
         prompt_template = substitute_template(
@@ -384,12 +369,58 @@ class GeneratePromptExecutor(StepExecutor):
                     parts.insert(0, ctx.asset["name"])
             
             prompt_template = ", ".join(parts)
-        
+
+        # If we still don't have a template, just return the built prompt
+        if not prompt_template:
+            duration = int((time.time() - start) * 1000)
+            return StepResult(
+                success=True,
+                output={"prompt": "", "output": ""},
+                duration_ms=duration,
+                prompt="(no prompt template provided)",
+            )
+
+        # Optionally include rich context in the instruction prompt
+        if include_context:
+            context_section = _build_context_section(ctx)
+            if context_section:
+                full_prompt = f"""Background Context:
+{context_section}
+
+Task:
+{prompt_template}"""
+            else:
+                full_prompt = prompt_template
+        else:
+            full_prompt = prompt_template
+
+        # Get text provider (use context's configured provider)
+        provider = ctx.providers.get_text_provider(ctx.text_provider)
+
+        results = []
+        total_cost = 0.0
+        total_tokens = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+        for _ in range(variations):
+            if hasattr(provider, "generate_with_cost"):
+                gen_result = await provider.generate_with_cost(full_prompt, max_tokens=max_tokens)
+                results.append(gen_result.content)
+                total_cost += gen_result.cost_usd
+                total_tokens["prompt_tokens"] += gen_result.prompt_tokens
+                total_tokens["completion_tokens"] += gen_result.completion_tokens
+                total_tokens["total_tokens"] += gen_result.total_tokens
+            else:
+                result = await provider.generate(full_prompt, max_tokens=max_tokens)
+                results.append(result)
+
         duration = int((time.time() - start) * 1000)
-        
+
         return StepResult(
             success=True,
-            output={"prompt": prompt_template},
+            output={"prompt": results[0], "output": results[0]},
+            variations=results,
             duration_ms=duration,
-            prompt=template if template else "(built from context)",
+            prompt=full_prompt,
+            cost_usd=total_cost,
+            tokens_used=total_tokens if total_cost > 0 else None,
         )

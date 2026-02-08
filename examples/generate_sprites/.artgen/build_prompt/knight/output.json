@@ -1,0 +1,10 @@
+{
+  "step_id": "build_prompt",
+  "asset_id": "knight",
+  "timestamp": "2026-02-07T19:33:43.440540",
+  "data": {
+    "prompt": "pixel art sprite for a 2D game, A stout armored knight with a broad shield and a short sword",
+    "output": "pixel art sprite for a 2D game, A stout armored knight with a broad shield and a short sword"
+  },
+  "prompt": "(built from context)"
+}

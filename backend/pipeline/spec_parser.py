@@ -254,6 +254,7 @@ class PipelineSpec:
     description: str = ""
     types: dict[str, TypeDef] = field(default_factory=dict)
     context: dict[str, Any] = field(default_factory=dict)
+    context_files: dict[str, str] = field(default_factory=dict)
     providers: ProvidersConfig = field(default_factory=ProvidersConfig)  # AI provider defaults
     state: StateConfig = field(default_factory=StateConfig)
     output: OutputConfig | None = None  # Output collection configuration
@@ -465,6 +466,31 @@ def parse_types(data: dict[str, Any] | None) -> dict[str, TypeDef]:
     return types
 
 
+def parse_context(data: dict[str, Any] | None) -> dict[str, Any]:
+    """Parse context values."""
+    if not data:
+        return {}
+    if not isinstance(data, dict):
+        raise ParseError("Context must be a mapping")
+    return dict(data)
+
+
+def parse_context_files(data: dict[str, Any] | None) -> dict[str, str]:
+    """Parse context file mappings."""
+    if not data:
+        return {}
+    if not isinstance(data, dict):
+        raise ParseError("context_files must be a mapping of key -> file path")
+    parsed: dict[str, str] = {}
+    for key, value in data.items():
+        if not isinstance(value, str):
+            raise ParseError(
+                f"context_files.{key} must be a string path, got {type(value).__name__}"
+            )
+        parsed[key] = value
+    return parsed
+
+
 def parse_providers(data: dict[str, Any] | None) -> ProvidersConfig:
     """Parse providers configuration."""
     if not data:
@@ -501,12 +527,19 @@ def parse_pipeline(yaml_content: str) -> PipelineSpec:
     # Parse assets (supports both new named collections and legacy format)
     asset_collections, legacy_assets = parse_assets(data.get("assets"))
     
+    context = parse_context(data.get("context"))
+    context_files = parse_context_files(data.get("context_files"))
+    
+    for key in context_files:
+        context.setdefault(key, "")
+    
     spec = PipelineSpec(
         name=data["name"],
         version=data.get("version", "1.0"),
         description=data.get("description", ""),
         types=types,
-        context=data.get("context", {}),
+        context=context,
+        context_files=context_files,
         providers=parse_providers(data.get("providers")),
         state=parse_state(data.get("state")),
         output=parse_output(data.get("output")),
@@ -519,6 +552,20 @@ def parse_pipeline(yaml_content: str) -> PipelineSpec:
     spec.step_index = {s.id: s for s in steps}
     
     return spec
+
+
+def apply_context_files(spec: PipelineSpec, base_path: Path) -> None:
+    """Load context values from files and merge into spec.context."""
+    if not spec.context_files:
+        return
+    
+    for key, rel_path in spec.context_files.items():
+        file_path = base_path / rel_path
+        if not file_path.exists():
+            raise FileNotFoundError(
+                f"Context file not found for '{key}': {rel_path}"
+            )
+        spec.context[key] = file_path.read_text()
 
 
 def validate_pipeline(spec: PipelineSpec) -> list[str]:
@@ -641,7 +688,7 @@ def validate_pipeline(spec: PipelineSpec) -> list[str]:
     return warnings
 
 
-def load_pipeline(path: Path | str) -> PipelineSpec:
+def load_pipeline(path: Path | str, load_context_files: bool = False) -> PipelineSpec:
     """Load and validate a pipeline from a file."""
     path = Path(path)
     if not path.exists():
@@ -649,6 +696,9 @@ def load_pipeline(path: Path | str) -> PipelineSpec:
     
     content = path.read_text()
     spec = parse_pipeline(content)
+    
+    if load_context_files:
+        apply_context_files(spec, path.parent)
     
     # Validate (raises on fatal errors)
     warnings = validate_pipeline(spec)

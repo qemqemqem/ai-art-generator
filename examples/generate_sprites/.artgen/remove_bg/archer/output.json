@@ -1,0 +1,13 @@
+{
+  "step_id": "remove_bg",
+  "asset_id": "archer",
+  "timestamp": "2026-02-07T19:34:07.124901",
+  "data": {
+    "path": "/home/keenan/Dev/ai-art-generator/examples/generate_sprites/.artgen/remove_bg/archer/v1.png",
+    "source": "/home/keenan/Dev/ai-art-generator/examples/generate_sprites/.artgen/generate_image/archer/v1.png",
+    "transparent_pixels": 689325,
+    "total_pixels": 1048576,
+    "transparency_pct": 0.6573915481567383,
+    "opaque_pct": 0.3426084518432617
+  }
+}

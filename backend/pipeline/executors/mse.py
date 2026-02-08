@@ -342,29 +342,22 @@ class RenderMSECardsExecutor(StepExecutor):
         output_dir = state_dir / step_id
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        try:
-            # Create MSE set
-            mse_set_path = create_mse_set(cards, output_dir, set_name)
-            
-            # Export card images
-            cards_output_dir = output_dir / "cards"
-            exported_images = run_mse_export(mse_set_path, cards_output_dir, mse_path)
-            
-            duration = int((time.time() - start) * 1000)
-            
-            return StepResult(
-                success=True,
-                output={
-                    "mse_set": str(mse_set_path),
-                    "cards_rendered": len(exported_images),
-                    "paths": [str(p) for p in exported_images],  # Use "paths" for web UI compatibility
-                },
-                output_paths=exported_images,
-                duration_ms=duration,
-            )
-            
-        except Exception as e:
-            return StepResult(
-                success=False,
-                error=f"MSE rendering failed: {str(e)}",
-            )
+        # Create MSE set
+        mse_set_path = create_mse_set(cards, output_dir, set_name)
+        
+        # Export card images
+        cards_output_dir = output_dir / "cards"
+        exported_images = run_mse_export(mse_set_path, cards_output_dir, mse_path)
+        
+        duration = int((time.time() - start) * 1000)
+        
+        return StepResult(
+            success=True,
+            output={
+                "mse_set": str(mse_set_path),
+                "cards_rendered": len(exported_images),
+                "paths": [str(p) for p in exported_images],  # Use "paths" for web UI compatibility
+            },
+            output_paths=exported_images,
+            duration_ms=duration,
+        )

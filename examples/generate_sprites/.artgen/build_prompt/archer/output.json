@@ -1,0 +1,10 @@
+{
+  "step_id": "build_prompt",
+  "asset_id": "archer",
+  "timestamp": "2026-02-07T19:33:43.441015",
+  "data": {
+    "prompt": "pixel art sprite for a 2D game, A nimble archer with a hooded cloak and a drawn bow",
+    "output": "pixel art sprite for a 2D game, A nimble archer with a hooded cloak and a drawn bow"
+  },
+  "prompt": "(built from context)"
+}

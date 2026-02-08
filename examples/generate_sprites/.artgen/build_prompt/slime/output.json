@@ -1,0 +1,10 @@
+{
+  "step_id": "build_prompt",
+  "asset_id": "slime",
+  "timestamp": "2026-02-07T19:33:43.450780",
+  "data": {
+    "prompt": "pixel art sprite for a 2D game, A small translucent green slime with a cheerful face",
+    "output": "pixel art sprite for a 2D game, A small translucent green slime with a cheerful face"
+  },
+  "prompt": "(built from context)"
+}

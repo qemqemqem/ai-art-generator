@@ -71,56 +71,49 @@ class AssessImageExecutor(StepExecutor):
         # Build assessment prompt
         prompt = self._build_assessment_prompt(config, ctx, criteria, scoring)
         
-        try:
-            # Load the image
-            img = Image.open(image_path)
-            
-            # Use Gemini for vision assessment
-            from google import genai
-            from app.config import get_config
-            
-            app_config = get_config()
-            client = genai.Client(api_key=app_config.providers.google_api_key)
-            
-            # Send image + prompt to Gemini
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=[img, prompt],
-            )
-            
-            assessment_text = response.text if response.text else "No assessment returned"
-            
-            # Parse score if scoring enabled
-            score = None
-            passed = True
-            
-            if scoring:
-                score = self._extract_score(assessment_text)
-                passed = score >= threshold if score is not None else True
-            
-            # Display assessment to user
-            self._display_assessment(image_path, assessment_text, score, threshold, passed, ctx)
-            
-            duration = int((time.time() - start) * 1000)
-            
-            return StepResult(
-                success=True,
-                output={
-                    "assessment": assessment_text,
-                    "score": score,
-                    "passed": passed,
-                    "threshold": threshold,
-                    "image_path": str(image_path),
-                },
-                duration_ms=duration,
-                prompt=prompt,
-            )
-            
-        except Exception as e:
-            return StepResult(
-                success=False,
-                error=str(e),
-            )
+        # Load the image
+        img = Image.open(image_path)
+        
+        # Use Gemini for vision assessment
+        from google import genai
+        from app.config import get_config
+        
+        app_config = get_config()
+        client = genai.Client(api_key=app_config.providers.google_api_key)
+        
+        # Send image + prompt to Gemini
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[img, prompt],
+        )
+        
+        assessment_text = response.text if response.text else "No assessment returned"
+        
+        # Parse score if scoring enabled
+        score = None
+        passed = True
+        
+        if scoring:
+            score = self._extract_score(assessment_text)
+            passed = score >= threshold if score is not None else True
+        
+        # Display assessment to user
+        self._display_assessment(image_path, assessment_text, score, threshold, passed, ctx)
+        
+        duration = int((time.time() - start) * 1000)
+        
+        return StepResult(
+            success=True,
+            output={
+                "assessment": assessment_text,
+                "score": score,
+                "passed": passed,
+                "threshold": threshold,
+                "image_path": str(image_path),
+            },
+            duration_ms=duration,
+            prompt=prompt,
+        )
     
     def _find_image_path(
         self,

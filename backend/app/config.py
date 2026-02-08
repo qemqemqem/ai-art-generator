@@ -5,6 +5,17 @@ from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
+
+
+def _sync_google_gemini_env() -> None:
+    """Ensure GOOGLE_API_KEY and GEMINI_API_KEY are kept in sync."""
+    google_key = os.getenv("GOOGLE_API_KEY")
+    gemini_key = os.getenv("GEMINI_API_KEY")
+
+    if google_key and not gemini_key:
+        os.environ["GEMINI_API_KEY"] = google_key
+    elif gemini_key and not google_key:
+        os.environ["GOOGLE_API_KEY"] = gemini_key
 from pydantic import BaseModel, Field
 
 
@@ -51,10 +62,12 @@ def load_env_file(env_path: Optional[str] = None) -> Path | None:
 
 # Load env on module import (can be re-called with explicit path)
 _loaded_env_path = load_env_file()
+_sync_google_gemini_env()
 
 
 def _get_google_api_key() -> Optional[str]:
     """Get Google API key from environment, checking multiple variable names."""
+    _sync_google_gemini_env()
     return os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
 
 
@@ -112,4 +125,5 @@ def reload_config(env_path: Optional[str] = None) -> AppConfig:
     """Reload configuration with a new env file path."""
     global _loaded_env_path
     _loaded_env_path = load_env_file(env_path)
+    _sync_google_gemini_env()
     return get_config()

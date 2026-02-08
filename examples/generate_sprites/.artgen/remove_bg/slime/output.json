@@ -1,0 +1,13 @@
+{
+  "step_id": "remove_bg",
+  "asset_id": "slime",
+  "timestamp": "2026-02-07T19:34:08.517620",
+  "data": {
+    "path": "/home/keenan/Dev/ai-art-generator/examples/generate_sprites/.artgen/remove_bg/slime/v1.png",
+    "source": "/home/keenan/Dev/ai-art-generator/examples/generate_sprites/.artgen/generate_image/slime/v1.png",
+    "transparent_pixels": 772196,
+    "total_pixels": 1048576,
+    "transparency_pct": 0.7364234924316406,
+    "opaque_pct": 0.2635765075683594
+  }
+}

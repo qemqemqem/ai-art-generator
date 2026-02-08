@@ -1,0 +1,69 @@
+name: "Generate Game Sprites"
+version: "1.0"
+description: |
+  Generate sprite assets from a base art description and CSV inputs.
+
+types:
+  SpriteAsset:
+    id: text
+    name: text?
+    description: text
+    prompt: text?
+    sprite: image?
+
+context:
+  style: "pixel art sprite for a 2D game"
+  generator: "Gemini Imagen"
+
+context_files:
+  base_description: base_description.txt
+
+assets:
+  sprites:
+    type: SpriteAsset
+    from_file: sprites.csv
+
+steps:
+  - id: build_prompt
+    type: generate_prompt
+    for_each: sprites
+    prompt: |
+      You are crafting a production-ready art prompt for {context.generator}.
+      Base description:
+      {context.base_description}
+
+      Sprite description:
+      {asset.description}
+
+      Requirements:
+      - Use the base description and sprite description together.
+      - Keep the style consistent with {context.style}.
+      - Ensure the subject is centered and readable at small sizes.
+      - Avoid backgrounds other than solid white.
+      - Output a single prompt only.
+
+  - id: generate_image
+    type: generate_image
+    for_each: sprites
+    requires: [build_prompt]
+    prompt: "{build_prompt.output}"
+    size: 512
+    variations: 1
+
+  - id: remove_bg
+    type: remove_background
+    for_each: sprites
+    requires: [generate_image]
+    cache: false
+    config:
+      source_step: generate_image
+      min_transparency_pct: 0.10
+      min_opaque_pct: 0.05
+      alpha_threshold: 128
+    is_output: true
+
+output:
+  directory: output/
+  flatten: true
+  naming: "{asset.id}"
+  copy: true

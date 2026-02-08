@@ -7,6 +7,7 @@ from typing import Optional, Type, TypeVar
 from pydantic import BaseModel, Field
 
 from app.config import get_config
+from pipeline.retry import rate_limited_call
 from .base import BaseTextProvider
 
 logger = logging.getLogger(__name__)
@@ -105,9 +106,10 @@ class LiteLLMTextProvider(BaseTextProvider):
         # Set API keys for various providers
         if config.providers.google_api_key:
             litellm.api_key = config.providers.google_api_key
-            # Also set as env var for Gemini
+            # Keep Google/Gemini keys in sync for downstream libs
             import os
             os.environ["GEMINI_API_KEY"] = config.providers.google_api_key
+            os.environ["GOOGLE_API_KEY"] = config.providers.google_api_key
             
         if config.providers.openai_api_key:
             import os
@@ -164,7 +166,7 @@ class LiteLLMTextProvider(BaseTextProvider):
         if max_tokens is not None:
             kwargs["max_tokens"] = max_tokens
         
-        response = await litellm.acompletion(**kwargs)
+        response = await rate_limited_call("litellm", litellm.acompletion, **kwargs)
         
         # Extract content
         content = response.choices[0].message.content or ""

@@ -242,10 +242,10 @@ class RateLimiterRegistry:
 _rate_limiters = RateLimiterRegistry()
 
 # Configure known providers with appropriate limits
-# Gemini: 15 requests/minute for free tier, 60 for paid
-_rate_limiters.configure("gemini", requests_per_minute=15, burst_size=5)
-# LiteLLM (varies by backend, using conservative default)
-_rate_limiters.configure("litellm", requests_per_minute=30, burst_size=10)
+# Gemini free tier is tight; default to a safe baseline
+_rate_limiters.configure("gemini", requests_per_minute=5, burst_size=2)
+# LiteLLM (varies by backend; use conservative baseline)
+_rate_limiters.configure("litellm", requests_per_minute=5, burst_size=2)
 
 
 def get_rate_limiter(provider: str) -> RateLimiter:
@@ -299,6 +299,23 @@ try:
 except ImportError:
     pass
 
+# Try to add Google API exceptions if available
+try:
+    from google.api_core.exceptions import (
+        GoogleAPIError,
+        ResourceExhausted,
+        ServiceUnavailable,
+        DeadlineExceeded,
+    )
+    API_RETRYABLE_EXCEPTIONS = API_RETRYABLE_EXCEPTIONS + (
+        GoogleAPIError,
+        ResourceExhausted,
+        ServiceUnavailable,
+        DeadlineExceeded,
+    )
+except ImportError:
+    pass
+
 
 # Pre-configured retry config for API calls
 API_RETRY_CONFIG = RetryConfig(
@@ -309,3 +326,70 @@ API_RETRY_CONFIG = RetryConfig(
     jitter=True,
     retryable_exceptions=API_RETRYABLE_EXCEPTIONS,
 )
+
+# Default max retries for the executor-level retry-all-errors loop
+DEFAULT_MAX_RETRIES = 3
+
+
+async def retry_on_any_error(
+    func: Callable[..., Any],
+    *args: Any,
+    max_retries: int = DEFAULT_MAX_RETRIES,
+    base_delay: float = 2.0,
+    max_delay: float = 30.0,
+    on_retry: Callable[[int, str], None] | None = None,
+    **kwargs: Any,
+) -> Any:
+    """
+    Execute an async function and retry on ANY exception.
+
+    Unlike retry_async which only retries on specific exception types,
+    this retries on all errors up to max_retries. Designed for the
+    executor layer where we want maximum resilience.
+
+    Args:
+        func: The async function to call
+        *args: Positional arguments to pass to func
+        max_retries: Maximum number of retries (total attempts = max_retries + 1)
+        base_delay: Base delay between retries in seconds
+        max_delay: Maximum delay between retries in seconds
+        on_retry: Optional callback(attempt, error_message) called before each retry
+        **kwargs: Keyword arguments to pass to func
+
+    Returns:
+        The result of func
+
+    Raises:
+        The last exception if all retries are exhausted
+    """
+    last_exception: Exception | None = None
+
+    for attempt in range(max_retries + 1):
+        try:
+            return await func(*args, **kwargs)
+        except Exception as e:
+            last_exception = e
+
+            if attempt < max_retries:
+                delay = min(base_delay * (2.0 ** attempt), max_delay)
+                if True:  # jitter
+                    jitter_range = delay * 0.25
+                    delay = delay + random.uniform(-jitter_range, jitter_range)
+                delay = max(0.1, delay)
+
+                if on_retry:
+                    on_retry(attempt + 1, str(e))
+                else:
+                    console.print(
+                        f"  [yellow]Retry {attempt + 1}/{max_retries} "
+                        f"after {delay:.1f}s: {type(e).__name__}: {e}[/yellow]"
+                    )
+
+                await asyncio.sleep(delay)
+            else:
+                raise
+
+    # Should not reach here, but just in case
+    if last_exception:
+        raise last_exception
+    raise RuntimeError("Retry logic error")

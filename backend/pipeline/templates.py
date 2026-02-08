@@ -165,6 +165,14 @@ def substitute_template(
                 raise TemplateError(f"Step output not found: step_outputs.{step_id}")
             
             step_output = step_outputs[step_id]
+            # If this is a per-asset output, scope to current asset
+            if (
+                isinstance(step_output, dict)
+                and "assets" in step_output
+                and asset
+                and asset.get("id") in step_output["assets"]
+            ):
+                step_output = step_output["assets"][asset.get("id")]
             
             if subfield:
                 value = get_nested_value(step_output, subfield)
@@ -185,6 +193,14 @@ def substitute_template(
                 raise TemplateError(f"Step output not found: {namespace}")
             
             step_output = step_outputs[namespace]
+            # If this is a per-asset output, scope to current asset
+            if (
+                isinstance(step_output, dict)
+                and "assets" in step_output
+                and asset
+                and asset.get("id") in step_output["assets"]
+            ):
+                step_output = step_output["assets"][asset.get("id")]
             if field == "output":
                 # Default output
                 value = step_output.get("output") or step_output.get("content") or step_output

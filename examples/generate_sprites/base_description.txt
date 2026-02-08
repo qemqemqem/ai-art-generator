@@ -1,0 +1,3 @@
+A cohesive set of game sprites with clean silhouettes and strong readability at
+small sizes. The art should feel whimsical but grounded, with consistent lighting,
+minimal noise, and clear edges suitable for a 2D game.

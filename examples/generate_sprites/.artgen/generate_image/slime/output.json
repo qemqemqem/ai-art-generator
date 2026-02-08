@@ -1,0 +1,12 @@
+{
+  "step_id": "generate_image",
+  "asset_id": "slime",
+  "timestamp": "2026-02-07T19:34:03.676587",
+  "data": {
+    "prompt": "pixel art sprite for a 2D game, A small translucent green slime with a cheerful face",
+    "paths": [
+      "/home/keenan/Dev/ai-art-generator/examples/generate_sprites/.artgen/generate_image/slime/v1.png"
+    ]
+  },
+  "prompt": "pixel art sprite for a 2D game, A small translucent green slime with a cheerful face"
+}

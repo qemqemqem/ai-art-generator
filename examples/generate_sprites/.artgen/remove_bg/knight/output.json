@@ -1,0 +1,13 @@
+{
+  "step_id": "remove_bg",
+  "asset_id": "knight",
+  "timestamp": "2026-02-07T19:34:05.777804",
+  "data": {
+    "path": "/home/keenan/Dev/ai-art-generator/examples/generate_sprites/.artgen/remove_bg/knight/v1.png",
+    "source": "/home/keenan/Dev/ai-art-generator/examples/generate_sprites/.artgen/generate_image/knight/v1.png",
+    "transparent_pixels": 628860,
+    "total_pixels": 1048576,
+    "transparency_pct": 0.5997276306152344,
+    "opaque_pct": 0.4002723693847656
+  }
+}

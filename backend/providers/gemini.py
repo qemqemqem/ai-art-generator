@@ -9,6 +9,7 @@ from PIL import Image
 
 from app.config import get_config
 from app.models import StyleConfig
+from pipeline.retry import rate_limited_call
 
 from .base import BaseImageProvider, BaseTextProvider
 
@@ -82,11 +83,27 @@ class GeminiImageProvider(BaseImageProvider):
         # Generate images (Gemini generates one at a time, so loop for variations)
         images = []
         for _ in range(variations):
-            response = self.client.models.generate_content(
-                model=self.model,
-                contents=contents,
-                config=config,
-            )
+            async def _call():
+                return self.client.models.generate_content(
+                    model=self.model,
+                    contents=contents,
+                    config=config,
+                )
+            
+            response = await rate_limited_call("gemini", _call)
+            
+            # Defend against blocked/empty responses
+            if response.parts is None:
+                block_reason = getattr(response, 'prompt_feedback', None)
+                candidates = getattr(response, 'candidates', None)
+                finish_reason = None
+                if candidates and len(candidates) > 0:
+                    finish_reason = getattr(candidates[0], 'finish_reason', None)
+                raise RuntimeError(
+                    f"Gemini returned no content. "
+                    f"Finish reason: {finish_reason}, "
+                    f"Prompt feedback: {block_reason}"
+                )
             
             for part in response.parts:
                 if part.inline_data is not None:
@@ -95,6 +112,12 @@ class GeminiImageProvider(BaseImageProvider):
                     pil_img = _genai_to_pil(genai_img)
                     images.append(pil_img)
                     break  # One image per response
+        
+        if not images:
+            raise RuntimeError(
+                f"Gemini generated 0 images for {variations} requested. "
+                f"Response contained no image data — the prompt may have been filtered."
+            )
         
         return images
     
@@ -121,11 +144,27 @@ class GeminiImageProvider(BaseImageProvider):
             image_config=image_config,
         )
         
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=[image, full_prompt],
-            config=config,
-        )
+        async def _call():
+            return self.client.models.generate_content(
+                model=self.model,
+                contents=[image, full_prompt],
+                config=config,
+            )
+        
+        response = await rate_limited_call("gemini", _call)
+        
+        # Defend against blocked/empty responses
+        if response.parts is None:
+            block_reason = getattr(response, 'prompt_feedback', None)
+            candidates = getattr(response, 'candidates', None)
+            finish_reason = None
+            if candidates and len(candidates) > 0:
+                finish_reason = getattr(candidates[0], 'finish_reason', None)
+            raise RuntimeError(
+                f"Gemini edit returned no content. "
+                f"Finish reason: {finish_reason}, "
+                f"Prompt feedback: {block_reason}"
+            )
         
         for part in response.parts:
             if part.inline_data is not None:
@@ -180,11 +219,27 @@ class GeminiTextProvider(BaseTextProvider):
                 max_output_tokens=max_tokens,
             )
         
-        response = self.client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=[full_prompt],
-            config=config,
-        )
+        async def _call():
+            return self.client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[full_prompt],
+                config=config,
+            )
+        
+        response = await rate_limited_call("gemini", _call)
+        
+        # Defend against blocked/empty responses
+        if response.parts is None:
+            block_reason = getattr(response, 'prompt_feedback', None)
+            candidates = getattr(response, 'candidates', None)
+            finish_reason = None
+            if candidates and len(candidates) > 0:
+                finish_reason = getattr(candidates[0], 'finish_reason', None)
+            raise RuntimeError(
+                f"Gemini text generation returned no content. "
+                f"Finish reason: {finish_reason}, "
+                f"Prompt feedback: {block_reason}"
+            )
         
         # Get text from response
         if response.text:
@@ -215,10 +270,13 @@ class GeminiTextProvider(BaseTextProvider):
             response_mime_type="application/json",
         )
         
-        response = self.client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=contents,
-            config=config,
-        )
+        async def _call():
+            return self.client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=contents,
+                config=config,
+            )
+        
+        response = await rate_limited_call("gemini", _call)
         
         return json.loads(response.text)

@@ -129,7 +129,7 @@ def build_rich_context(
         is_per_asset = (
             step_spec and 
             hasattr(step_spec, 'for_each') and 
-            step_spec.for_each == "asset"
+            bool(step_spec.for_each)
         )
         
         if is_per_asset:
@@ -186,7 +186,7 @@ def get_asset_aware_step_outputs(
         is_per_asset = (
             step_spec and 
             hasattr(step_spec, 'for_each') and 
-            step_spec.for_each == "asset"
+            bool(step_spec.for_each)
         )
         
         if is_per_asset and isinstance(output, dict) and "assets" in output:

@@ -11,6 +11,8 @@ Usage:
 """
 
 import asyncio
+import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -19,6 +21,8 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.tree import Tree
+
+from app.config import reload_config
 
 console = Console()
 
@@ -32,8 +36,12 @@ def cli():
 
 @cli.command()
 @click.argument("pipeline", type=click.Path(exists=True))
+@click.option("--env", "-e", "env_path", type=click.Path(exists=True),
+              help="Path to .env file")
 @click.option("--input", "-i", "input_file", type=click.Path(exists=True),
               help="Override asset input file")
+@click.option("--clean-state", is_flag=True,
+              help="Delete pipeline state directory before running")
 @click.option("--auto-approve", "-y", is_flag=True,
               help="Auto-approve all selections (no human interaction)")
 @click.option("--verbose", "-v", is_flag=True,
@@ -52,7 +60,9 @@ def cli():
               help="Don't auto-open browser (with --web)")
 def run(
     pipeline: str,
+    env_path: str | None,
     input_file: str | None,
+    clean_state: bool,
     auto_approve: bool,
     verbose: bool,
     dry_run: bool,
@@ -70,6 +80,22 @@ def run(
     backend_path = Path(__file__).parent
     if str(backend_path) not in sys.path:
         sys.path.insert(0, str(backend_path))
+
+    # Load env (explicit path takes precedence, otherwise auto-discovery)
+    if env_path:
+        os.environ["ARTGEN_ENV_FILE"] = env_path
+    reload_config(env_path)
+
+    if clean_state:
+        from pipeline.spec_parser import load_pipeline
+
+        spec = load_pipeline(pipeline_path)
+        state_dir = pipeline_path.parent / spec.state.directory
+        if state_dir.exists():
+            shutil.rmtree(state_dir)
+            console.print(f"[yellow]Cleared state directory:[/yellow] {state_dir}")
+        else:
+            console.print(f"[dim]State directory not found:[/dim] {state_dir}")
     
     if dry_run:
         # Just show the plan

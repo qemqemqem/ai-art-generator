@@ -109,6 +109,17 @@ def validate_external_files(spec: PipelineSpec, base_path: Path) -> ValidationRe
     """
     result = ValidationResult(valid=True)
     
+    # Check context files
+    for key, rel_path in spec.context_files.items():
+        file_path = base_path / rel_path
+        if not file_path.exists():
+            result.add_error(
+                f"Context file '{key}' not found: {rel_path}\n"
+                f"  Expected at: {file_path}"
+            )
+        elif file_path.stat().st_size == 0:
+            result.add_error(f"Context file '{key}' is empty: {rel_path}")
+    
     # Check named asset collections
     for name, collection in spec.asset_collections.items():
         if collection.from_file:

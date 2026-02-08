@@ -14,6 +14,7 @@ import argparse
 import asyncio
 import os
 import signal
+import shutil
 import subprocess
 import sys
 import webbrowser
@@ -890,6 +891,266 @@ def cmd_show(args):
     return asyncio.run(show_asset())
 
 
+def _show_pipeline_plan(pipeline_path: Path):
+    """Show execution plan without running."""
+    # Add backend to path
+    backend_path = Path(__file__).parent
+    if str(backend_path) not in sys.path:
+        sys.path.insert(0, str(backend_path))
+
+    from pipeline.spec_parser import load_pipeline, get_execution_order
+    from pipeline.asset_loader import load_assets
+
+    spec = load_pipeline(pipeline_path)
+    assets = load_assets(spec, pipeline_path.parent)
+    tiers = get_execution_order(spec)
+
+    if console:
+        console.print()
+        console.print(Panel(
+            f"[bold]Execution Plan[/bold]\n\n"
+            f"Pipeline: {spec.name}\n"
+            f"Assets: {len(assets)}",
+            border_style="yellow"
+        ))
+    else:
+        print("\nExecution Plan")
+        print(f"Pipeline: {spec.name}")
+        print(f"Assets: {len(assets)}")
+
+    for tier_idx, tier in enumerate(tiers):
+        if console:
+            console.print(f"\n[bold]Tier {tier_idx}[/bold]")
+        else:
+            print(f"\nTier {tier_idx}")
+
+        for step_id in tier:
+            step = spec.step_index[step_id]
+            if step.for_each == "asset":
+                line = f"  {step_id} ({step.type.value}) × {len(assets)} assets"
+            else:
+                line = f"  {step_id} ({step.type.value})"
+            if console:
+                console.print(line)
+            else:
+                print(line)
+
+
+def _run_pipeline_with_web(
+    pipeline_path: Path,
+    input_file: Optional[str],
+    auto_approve: bool,
+    verbose: bool,
+    parallel: int,
+    port: int,
+    open_browser: bool,
+) -> int:
+    """Run pipeline with web-based interactive mode."""
+    # Add backend to path
+    backend_path = Path(__file__).parent
+    if str(backend_path) not in sys.path:
+        sys.path.insert(0, str(backend_path))
+
+    from pipeline.web_server import WebServer
+    from pipeline.web_bridge import reset_bridge, PipelinePhase
+    from pipeline.executor import run_pipeline
+
+    bridge = reset_bridge()
+    base_path = pipeline_path.parent
+    server = WebServer(port=port)
+
+    if console:
+        console.print()
+        console.print(Panel(
+            f"[bold]ArtGen Pipeline Runner (Web Mode)[/bold]\n\n"
+            f"Pipeline: {pipeline_path.name}\n"
+            f"Web UI: http://127.0.0.1:{port}\n"
+            f"Parallelism: {parallel}",
+            border_style="blue"
+        ))
+        console.print()
+        console.print(f"[cyan]Starting web server on port {port}...[/cyan]")
+    else:
+        print("\nArtGen Pipeline Runner (Web Mode)")
+        print(f"Pipeline: {pipeline_path.name}")
+        print(f"Web UI: http://127.0.0.1:{port}")
+        print(f"Parallelism: {parallel}")
+        print(f"Starting web server on port {port}...")
+
+    server.start(base_path=base_path, open_browser=open_browser)
+
+    if console:
+        console.print(f"[green]✓[/green] Web server started: {server.url}")
+        if open_browser:
+            console.print("[dim]Browser opened - approvals will appear there[/dim]")
+        console.print()
+    else:
+        print(f"✓ Web server started: {server.url}")
+        if open_browser:
+            print("Browser opened - approvals will appear there")
+        print()
+
+    try:
+        bridge.set_phase(PipelinePhase.LOADING, "Loading pipeline...")
+
+        result = asyncio.run(run_pipeline(
+            pipeline_path=pipeline_path,
+            input_override=input_file,
+            auto_approve=auto_approve,
+            verbose=verbose,
+            asset_parallelism=parallel,
+            web_bridge=bridge,
+        ))
+
+        if result.success:
+            bridge.set_phase(PipelinePhase.COMPLETE, "Pipeline completed successfully")
+            print_success("Pipeline completed!")
+        else:
+            bridge.update_progress(errors=result.errors)
+            bridge.set_phase(PipelinePhase.FAILED, "Pipeline failed")
+            print_error("Pipeline failed:")
+            for error in result.errors:
+                print_info(f"  • {error}")
+
+        if console:
+            console.print("\n[dim]Waiting for browser close or Ctrl+C to exit...[/dim]")
+        else:
+            print("\nWaiting for browser close or Ctrl+C to exit...")
+
+        try:
+            asyncio.run(bridge.wait_for_shutdown())
+        except KeyboardInterrupt:
+            pass
+    finally:
+        if console:
+            console.print("\n[dim]Shutting down web server...[/dim]")
+        else:
+            print("\nShutting down web server...")
+        server.stop()
+        print_success("Done")
+
+    return 0 if result.success else 1
+
+
+def _run_pipeline_cli(
+    pipeline_path: Path,
+    input_file: Optional[str],
+    env_path: Optional[str],
+    clean_state: bool,
+    auto_approve: bool,
+    verbose: bool,
+    dry_run: bool,
+    parallel: int,
+    skip_validation: bool,
+    web: bool,
+    port: int,
+    no_browser: bool,
+) -> int:
+    """Run a pipeline file from the CLI."""
+    # Add backend to path
+    backend_path = Path(__file__).parent
+    if str(backend_path) not in sys.path:
+        sys.path.insert(0, str(backend_path))
+
+    # Load env (explicit path takes precedence, otherwise auto-discovery)
+    from app.config import reload_config
+    reload_config(env_path)
+
+    if clean_state:
+        from pipeline.spec_parser import load_pipeline
+
+        spec = load_pipeline(pipeline_path)
+        state_dir = pipeline_path.parent / spec.state.directory
+        if state_dir.exists():
+            shutil.rmtree(state_dir)
+            print_info(f"Cleared state directory: {state_dir}")
+        else:
+            print_info(f"State directory not found: {state_dir}")
+
+    if dry_run:
+        _show_pipeline_plan(pipeline_path)
+        return 0
+
+    if not skip_validation:
+        from pipeline.validation import validate_all, print_validation_result
+
+        result, _ = validate_all(pipeline_path, check_env=True)
+
+        if not result.valid:
+            print_validation_result(result, verbose=verbose)
+            return 1
+        if result.warnings and verbose:
+            print_validation_result(result, verbose=True)
+
+    if web:
+        return _run_pipeline_with_web(
+            pipeline_path=pipeline_path,
+            input_file=input_file,
+            auto_approve=auto_approve,
+            verbose=verbose,
+            parallel=parallel,
+            port=port,
+            open_browser=not no_browser,
+        )
+
+    if console:
+        console.print()
+        console.print(Panel(
+            f"[bold]ArtGen Pipeline Runner[/bold]\n\n"
+            f"Pipeline: {pipeline_path.name}\n"
+            f"Auto-approve: {'Yes' if auto_approve else 'No'}\n"
+            f"Parallelism: {parallel}",
+            border_style="blue"
+        ))
+        console.print()
+    else:
+        print("\nArtGen Pipeline Runner")
+        print(f"Pipeline: {pipeline_path.name}")
+        print(f"Auto-approve: {'Yes' if auto_approve else 'No'}")
+        print(f"Parallelism: {parallel}\n")
+
+    from pipeline.executor import run_pipeline
+
+    result = asyncio.run(run_pipeline(
+        pipeline_path=pipeline_path,
+        input_override=input_file,
+        auto_approve=auto_approve,
+        verbose=verbose,
+        asset_parallelism=parallel,
+    ))
+
+    if not result.success:
+        print_error("Pipeline failed:")
+        for error in result.errors:
+            print_info(f"  • {error}")
+        return 1
+
+    return 0
+
+
+def cmd_pipeline(args):
+    """Run a pipeline file."""
+    pipeline_path = Path(args.pipeline)
+    if not pipeline_path.exists():
+        print_error(f"Pipeline not found: {pipeline_path}")
+        return 1
+
+    return _run_pipeline_cli(
+        pipeline_path=pipeline_path,
+        input_file=args.input,
+        env_path=args.env,
+        clean_state=args.clean_state,
+        auto_approve=args.auto_approve,
+        verbose=args.verbose,
+        dry_run=args.dry_run,
+        parallel=args.parallel,
+        skip_validation=args.skip_validation,
+        web=args.web,
+        port=args.port,
+        no_browser=args.no_browser,
+    )
+
+
 def cmd_run(args):
     """Run a specific pipeline step on input files.
     
@@ -898,7 +1159,25 @@ def cmd_run(args):
     - artgen run remove_background --project ./my-project
     """
     print_header()
-    
+
+    # If a pipeline file is provided, delegate to pipeline runner
+    pipeline_path = Path(args.step)
+    if pipeline_path.exists() and pipeline_path.suffix in (".yaml", ".yml"):
+        return _run_pipeline_cli(
+            pipeline_path=pipeline_path,
+            input_file=args.input,
+            env_path=args.env,
+            clean_state=args.clean_state,
+            auto_approve=args.auto_approve,
+            verbose=args.verbose,
+            dry_run=args.dry_run,
+            parallel=args.parallel,
+            skip_validation=args.skip_validation,
+            web=args.web,
+            port=args.port,
+            no_browser=args.no_browser,
+        )
+
     # Validate step type
     valid_steps = ["generate_image", "generate_sprite", "generate_name", "generate_text", "research", "remove_background"]
     if args.step not in valid_steps:
@@ -1277,7 +1556,7 @@ def cmd_resume(args):
 def main():
     """Main CLI entry point."""
     # Check if first arg looks like a file (not a known command or flag)
-    known_commands = {"interactive", "init", "status", "list", "show", "resume", "run", "-h", "--help", "-v", "--verbose", "-e", "--env"}
+    known_commands = {"interactive", "init", "status", "list", "show", "resume", "run", "pipeline", "-h", "--help", "-v", "--verbose", "-e", "--env"}
     
     if len(sys.argv) > 1:
         first_arg = sys.argv[1]
@@ -1501,6 +1780,7 @@ Examples:
   artgen run generate_sprite units.txt -n 4     Generate 4 sprite variations each
   artgen run remove_background                  Remove backgrounds on project assets
   artgen run generate_name --asset item-001     Run on specific asset
+  artgen run pipeline.yaml -y                   Run a pipeline file with auto-approve
         """,
     )
     run_parser.add_argument(
@@ -1513,6 +1793,11 @@ Examples:
         nargs="?",
         help="Input file (txt, csv, json, jsonl). If omitted, uses current project",
         metavar="FILE",
+    )
+    run_parser.add_argument(
+        "-y", "--auto-approve",
+        action="store_true",
+        help="Auto-approve all selections (pipeline mode only)",
     )
     run_parser.add_argument(
         "-e", "--env",
@@ -1538,10 +1823,48 @@ Examples:
         metavar="N",
     )
     run_parser.add_argument(
+        "-p", "--parallel",
+        type=int,
+        default=3,
+        help="Max parallel assets per step (pipeline mode only, default: 3)",
+        metavar="N",
+    )
+    run_parser.add_argument(
         "-a", "--asset",
         dest="asset_id",
         help="Run on specific asset ID (for project mode)",
         metavar="ID",
+    )
+    run_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show pipeline execution plan without running",
+    )
+    run_parser.add_argument(
+        "--clean-state",
+        action="store_true",
+        help="Delete pipeline state directory before running (pipeline mode only)",
+    )
+    run_parser.add_argument(
+        "--skip-validation",
+        action="store_true",
+        help="Skip pre-run validation (pipeline mode only)",
+    )
+    run_parser.add_argument(
+        "--web",
+        action="store_true",
+        help="Enable web-based interactive mode (pipeline mode only)",
+    )
+    run_parser.add_argument(
+        "--port",
+        type=int,
+        default=8080,
+        help="Port for web server (pipeline mode only, default: 8080)",
+    )
+    run_parser.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="Don't auto-open browser (pipeline mode only)",
     )
     run_parser.add_argument(
         "-v", "--verbose",
@@ -1549,6 +1872,77 @@ Examples:
         help="Show detailed output",
     )
     run_parser.set_defaults(func=cmd_run)
+
+    # pipeline command (explicit pipeline runner)
+    pipeline_parser = subparsers.add_parser(
+        "pipeline",
+        help="Run a pipeline YAML file",
+        description="Run a pipeline YAML file with optional overrides",
+    )
+    pipeline_parser.add_argument(
+        "pipeline",
+        help="Pipeline YAML file to run",
+        metavar="FILE",
+    )
+    pipeline_parser.add_argument(
+        "-e", "--env",
+        help="Path to .env file",
+        metavar="PATH",
+    )
+    pipeline_parser.add_argument(
+        "-i", "--input",
+        help="Override asset input file",
+        metavar="FILE",
+    )
+    pipeline_parser.add_argument(
+        "--clean-state",
+        action="store_true",
+        help="Delete pipeline state directory before running",
+    )
+    pipeline_parser.add_argument(
+        "-y", "--auto-approve",
+        action="store_true",
+        help="Auto-approve all selections (no human interaction)",
+    )
+    pipeline_parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Show detailed output",
+    )
+    pipeline_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show execution plan without running",
+    )
+    pipeline_parser.add_argument(
+        "-p", "--parallel",
+        type=int,
+        default=3,
+        help="Max parallel assets per step (default: 3)",
+        metavar="N",
+    )
+    pipeline_parser.add_argument(
+        "--skip-validation",
+        action="store_true",
+        help="Skip pre-run validation",
+    )
+    pipeline_parser.add_argument(
+        "--web",
+        action="store_true",
+        help="Enable web-based interactive mode (opens browser)",
+    )
+    pipeline_parser.add_argument(
+        "--port",
+        type=int,
+        default=8080,
+        help="Port for web server (default: 8080)",
+    )
+    pipeline_parser.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="Don't auto-open browser (with --web)",
+    )
+    pipeline_parser.set_defaults(func=cmd_pipeline)
     
     args = parser.parse_args()
     

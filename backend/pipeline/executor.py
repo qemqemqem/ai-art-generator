@@ -31,9 +31,9 @@ from .cache import CacheManager, should_skip_step
 from .context import build_rich_context, get_asset_aware_step_outputs
 from .executors import ExecutorContext, StepExecutor, StepResult, get_executor
 from .expressions import evaluate_condition
-from .retry import API_RETRY_CONFIG, retry_async
+from .retry import DEFAULT_MAX_RETRIES, retry_on_any_error
 from .spec_parser import PipelineSpec, StepSpec, StepType, get_execution_order, load_pipeline
-from .templates import substitute_all
+from .templates import TemplateError, substitute_all
 
 # Import all executors to register them
 from .executors import assess, fin, image, mse, text, user
@@ -119,8 +119,8 @@ class PipelineExecutor:
             tier_parallelism: Max concurrent steps in same tier (default 4)
             web_bridge: Optional WebApprovalBridge for web mode progress/approvals
         """
-        self.pipeline_path = Path(pipeline_path)
-        self.input_override = Path(input_override) if input_override else None
+        self.pipeline_path = Path(pipeline_path).resolve()
+        self.input_override = Path(input_override).resolve() if input_override else None
         self.auto_approve = auto_approve
         self.verbose = verbose
         self.asset_parallelism = asset_parallelism
@@ -137,6 +137,10 @@ class PipelineExecutor:
         # Execution state
         self.context: dict[str, Any] = {}
         self.step_outputs: dict[str, Any] = {}
+        
+        # Track which assets failed at each step (step_id -> set of asset_ids)
+        # Downstream per-asset steps will skip these assets automatically
+        self.failed_assets: dict[str, set[str]] = {}
         
         # Cost tracking
         self.cost_by_step: dict[str, float] = {}
@@ -474,7 +478,10 @@ class PipelineExecutor:
             desc = config["description"]
             # Try to substitute templates
             if asset or self.context:
-                desc = substitute_all(desc, self.context, asset, self.step_outputs)
+                try:
+                    desc = substitute_all(desc, self.context, asset, self.step_outputs)
+                except TemplateError:
+                    pass
             return desc
         
         # Generate based on step type
@@ -485,7 +492,10 @@ class PipelineExecutor:
             prompt = config.get("prompt", "")
             # Substitute templates if we have context
             if prompt and (asset or self.context):
-                prompt = substitute_all(prompt, self.context, asset, self.step_outputs)
+                try:
+                    prompt = substitute_all(prompt, self.context, asset, self.step_outputs)
+                except TemplateError:
+                    pass
             if prompt and len(prompt) > 80:
                 prompt = prompt[:77] + "..."
             return f"Generate text: {prompt}" if prompt else "Generate text"
@@ -493,7 +503,10 @@ class PipelineExecutor:
             prompt = config.get("prompt", "")
             # Substitute templates if we have context
             if prompt and (asset or self.context):
-                prompt = substitute_all(prompt, self.context, asset, self.step_outputs)
+                try:
+                    prompt = substitute_all(prompt, self.context, asset, self.step_outputs)
+                except TemplateError:
+                    pass
             if prompt and len(prompt) > 60:
                 prompt = prompt[:57] + "..."
             return f"Generate image: {prompt}" if prompt else "Generate image"
@@ -551,11 +564,12 @@ class PipelineExecutor:
         errors = []
         steps_completed = 0
         steps_skipped = 0
+        failed_steps: set[str] = set()
         
         try:
             # Load and validate pipeline
             console.print(f"[bold blue]Loading pipeline:[/bold blue] {self.pipeline_path}")
-            self.spec = load_pipeline(self.pipeline_path)
+            self.spec = load_pipeline(self.pipeline_path, load_context_files=True)
             
             console.print(f"[green]✓[/green] Pipeline '{self.spec.name}' loaded")
             
@@ -574,6 +588,10 @@ class PipelineExecutor:
             
             # Load asset collections (must happen before step info building for per-asset steps)
             self.asset_collections = load_asset_collections(self.spec, base_path)
+
+            # Set up context early for template previews
+            self.context = dict(self.spec.context)
+            self.step_outputs = {}
             
             # Build step info for web UI
             from .web_bridge import StepInfo
@@ -655,10 +673,6 @@ class PipelineExecutor:
             from providers import get_provider_registry
             self.providers = get_provider_registry()
             
-            # Set up context
-            self.context = dict(self.spec.context)
-            self.step_outputs = {}
-            
             # Get execution order
             tiers = get_execution_order(self.spec)
             
@@ -674,6 +688,14 @@ class PipelineExecutor:
                 if len(tier) == 1:
                     # Single step - execute directly
                     step = self.spec.step_index[tier[0]]
+                    failed_deps = [req for req in step.requires if req in failed_steps]
+                    if failed_deps:
+                        steps_skipped += 1
+                        reason = f"Step '{step.id}' skipped (failed deps: {', '.join(failed_deps)})"
+                        errors.append(reason)
+                        self._update_step_status(step.id, "skipped")
+                        self._update_web_progress(completed_steps=steps_completed + steps_skipped)
+                        continue
                     # Use first asset for per-asset steps (preview)
                     step_assets = self._get_step_assets(step)
                     preview_asset = step_assets[0] if step_assets else None
@@ -681,7 +703,12 @@ class PipelineExecutor:
                     step_prompt = step.config.get("prompt", "") if step.config else ""
                     # Substitute templates in prompt for display
                     if step_prompt:
-                        step_prompt = substitute_all(step_prompt, self.context, preview_asset, self.step_outputs)
+                        try:
+                            step_prompt = substitute_all(step_prompt, self.context, preview_asset, self.step_outputs)
+                        except TemplateError as exc:
+                            step_prompt = ""
+                            if self.verbose:
+                                console.print(f"    [dim]Prompt preview unavailable: {exc}[/dim]")
                     # Get the provider for this step
                     text_provider, image_provider, _, _ = self._get_step_providers(step)
                     current_provider = image_provider if step.type.value in ("generate_image", "generate_sprite") else text_provider
@@ -706,9 +733,13 @@ class PipelineExecutor:
                         step_cost = self.cost_by_step.get(step.id, 0.0)
                         step_tokens = self.tokens_by_step.get(step.id)
                         self._update_step_status(step.id, "complete", cost_usd=step_cost, tokens_used=step_tokens)
+                        # Log partial failures as warnings (step still succeeded overall)
+                        if result.error:
+                            errors.append(f"Step '{tier[0]}' partial: {result.error}")
                     else:
                         errors.append(f"Step '{tier[0]}' failed: {result.error}")
                         self._update_step_status(step.id, "failed")
+                        failed_steps.add(step.id)
                     
                     self._update_web_progress(completed_steps=steps_completed + steps_skipped)
                 else:
@@ -720,9 +751,18 @@ class PipelineExecutor:
                         message=f"Running {len(tier)} steps in parallel...",
                     )
                     
-                    # Mark all steps as running
+                    runnable_steps = []
                     for step_id in tier:
-                        self._update_step_status(step_id, "running")
+                        step = self.spec.step_index[step_id]
+                        failed_deps = [req for req in step.requires if req in failed_steps]
+                        if failed_deps:
+                            steps_skipped += 1
+                            reason = f"Step '{step_id}' skipped (failed deps: {', '.join(failed_deps)})"
+                            errors.append(reason)
+                            self._update_step_status(step_id, "skipped")
+                        else:
+                            runnable_steps.append(step_id)
+                            self._update_step_status(step_id, "running")
                     
                     async def run_step_with_semaphore(step_id: str) -> tuple[str, StepResult]:
                         async with semaphore:
@@ -731,7 +771,7 @@ class PipelineExecutor:
                             return step_id, result
                     
                     results = await asyncio.gather(
-                        *[run_step_with_semaphore(step_id) for step_id in tier],
+                        *[run_step_with_semaphore(step_id) for step_id in runnable_steps],
                         return_exceptions=True,
                     )
                     
@@ -749,18 +789,28 @@ class PipelineExecutor:
                                 step_cost = self.cost_by_step.get(step_id, 0.0)
                                 step_tokens = self.tokens_by_step.get(step_id)
                                 self._update_step_status(step_id, "complete", cost_usd=step_cost, tokens_used=step_tokens)
+                                # Log partial failures as warnings
+                                if result.error:
+                                    errors.append(f"Step '{step_id}' partial: {result.error}")
                             else:
                                 errors.append(f"Step '{step_id}' failed: {result.error}")
                                 self._update_step_status(step_id, "failed")
+                                failed_steps.add(step_id)
                     
                     self._update_web_progress(completed_steps=steps_completed + steps_skipped)
             
             duration_ms = int((time.time() - start_time) * 1000)
             
-            # Collect outputs if configured
+            # Collect outputs if configured (even with partial failures)
             collected_outputs = {}
-            if self.spec.output and len(errors) == 0:
+            has_hard_failures = len(failed_steps) > 0
+            if self.spec.output and not has_hard_failures:
                 collected_outputs = self._collect_outputs(base_path, state_dir)
+            
+            # Count total failed assets across all steps
+            total_failed_assets = set()
+            for failed_set in self.failed_assets.values():
+                total_failed_assets |= failed_set
             
             # Summary
             console.print()
@@ -780,14 +830,30 @@ class PipelineExecutor:
                         if cost > 0:
                             cost_info += f"\n    {step_id}: ${cost:.6f}"
             
+            # Partial failure info
+            partial_info = ""
+            if total_failed_assets:
+                partial_info = f"\n[yellow]Assets with failures: {len(total_failed_assets)}[/yellow]"
+            
+            # Choose summary style based on outcome
+            if has_hard_failures:
+                status_text = "[red]Pipeline failed![/red]"
+                border_style = "red"
+            elif total_failed_assets:
+                status_text = "[yellow]Pipeline completed with partial failures[/yellow]"
+                border_style = "yellow"
+            else:
+                status_text = "[green]Pipeline completed![/green]"
+                border_style = "green"
+            
             console.print(Panel(
-                f"[green]Pipeline completed![/green]\n\n"
+                f"{status_text}\n\n"
                 f"Assets processed: {len(self.assets)}\n"
                 f"Steps completed: {steps_completed}\n"
                 f"Steps skipped (cached): {steps_skipped}\n"
-                f"Duration: {duration_ms / 1000:.1f}s{output_info}{cost_info}",
+                f"Duration: {duration_ms / 1000:.1f}s{output_info}{partial_info}{cost_info}",
                 title="Summary",
-                border_style="green"
+                border_style=border_style,
             ))
             
             # Update web bridge to complete phase
@@ -941,8 +1007,16 @@ class PipelineExecutor:
         )
         config["_step_id"] = step.id
         
-        # Execute
-        result = await executor.execute(config, ctx)
+        # Execute with retry on any error
+        try:
+            result = await retry_on_any_error(
+                executor.execute,
+                config,
+                ctx,
+                max_retries=DEFAULT_MAX_RETRIES,
+            )
+        except Exception as e:
+            result = StepResult(success=False, error=str(e))
         
         if result.success:
             # Format cost if available
@@ -1117,6 +1191,19 @@ class PipelineExecutor:
         
         return items
     
+    def _get_upstream_failed_assets(self, step: StepSpec) -> set[str]:
+        """
+        Get the set of asset IDs that failed in any required upstream step.
+        
+        These assets should be skipped in the current step because their
+        upstream dependencies didn't produce output.
+        """
+        failed = set()
+        for req in step.requires:
+            if req in self.failed_assets:
+                failed |= self.failed_assets[req]
+        return failed
+    
     async def _execute_per_asset(
         self,
         step: StepSpec,
@@ -1133,11 +1220,15 @@ class PipelineExecutor:
         # Generate descriptive action text
         action_text = self._get_step_action_text(step)
         asset_count = len(assets_to_process)
-        asset_label = "asset" if asset_count == 1 else "assets"
         collection_name = step.for_each or "assets"
         
         console.print(f"  [cyan]{step.id}[/cyan] - {action_text} ({asset_count} {collection_name})")
         self._update_web_progress(current_step=step.id, message=f"{action_text}...")
+        
+        # Skip assets that failed in upstream steps
+        upstream_failed = self._get_upstream_failed_assets(step)
+        if upstream_failed:
+            console.print(f"    [dim]Skipping {len(upstream_failed)} assets (failed in upstream steps)[/dim]")
         
         # Get pending assets (for skip_existing)
         if cache_setting == "skip_existing":
@@ -1146,9 +1237,10 @@ class PipelineExecutor:
             pending_assets = [
                 (i, a) for i, a in enumerate(assets_to_process)
                 if a.get("id", f"asset-{i}") in pending_ids
+                and a.get("id", f"asset-{i}") not in upstream_failed
             ]
             
-            skipped = len(assets_to_process) - len(pending_assets)
+            skipped = len(assets_to_process) - len(pending_assets) - len(upstream_failed)
             if skipped > 0:
                 console.print(f"    [dim]Skipping {skipped} cached assets[/dim]")
                 
@@ -1159,7 +1251,7 @@ class PipelineExecutor:
                 
                 for i, asset in enumerate(assets_to_process):
                     asset_id = asset.get("id", f"asset-{i}")
-                    if asset_id not in pending_ids:
+                    if asset_id not in pending_ids and asset_id not in upstream_failed:
                         # This asset was cached - restore its output
                         cached_output = self.cache.get_cached_output(step.id, asset_id)
                         if cached_output is not None:
@@ -1175,9 +1267,15 @@ class PipelineExecutor:
                             # Update web UI to show cached asset as complete
                             self._update_asset_status(asset_id, "complete")
         else:
-            pending_assets = list(enumerate(assets_to_process))
+            pending_assets = [
+                (i, a) for i, a in enumerate(assets_to_process)
+                if a.get("id", f"asset-{i}") not in upstream_failed
+            ]
         
         if not pending_assets:
+            if upstream_failed and len(upstream_failed) == len(assets_to_process):
+                console.print(f"    [yellow]All assets skipped (failed in upstream steps)[/yellow]")
+                return StepResult(success=False, error="All assets failed in upstream steps")
             console.print(f"    [green]✓[/green] All {len(assets_to_process)} assets cached")
             return StepResult(success=True, cached=True)
         
@@ -1203,6 +1301,7 @@ class PipelineExecutor:
         results: list[StepResult] = []
         results_lock = asyncio.Lock()
         completed_count = [0]  # Use list to allow mutation in nested function
+        failures: list[tuple[str, str, str]] = []
         
         async def process_asset(
             asset_idx: int,
@@ -1287,13 +1386,21 @@ class PipelineExecutor:
                             step, executor, config, ctx, asset_name
                         )
                 else:
-                    # Normal execution with retry
+                    # Normal execution with retry on ANY error
+                    def _on_retry(attempt: int, error_msg: str):
+                        with pause_progress(progress):
+                            console.print(
+                                f"    [yellow]↻ {asset_name}: retry {attempt}/{DEFAULT_MAX_RETRIES} "
+                                f"({error_msg})[/yellow]"
+                            )
+                    
                     try:
-                        result = await retry_async(
+                        result = await retry_on_any_error(
                             executor.execute,
                             config,
                             ctx,
-                            config=API_RETRY_CONFIG,
+                            max_retries=DEFAULT_MAX_RETRIES,
+                            on_retry=_on_retry,
                         )
                     except Exception as e:
                         result = StepResult(success=False, error=str(e))
@@ -1348,8 +1455,17 @@ class PipelineExecutor:
                     # Mark asset as complete
                     self._update_asset_status(asset_id, "complete")
                 else:
-                    # Mark asset as failed
+                    # Mark asset as failed and track it for downstream steps
                     self._update_asset_status(asset_id, "failed")
+                    error_text = result.error or "Unknown error"
+                    with pause_progress(progress):
+                        console.print(f"    [red]✗[/red] {asset_name}: {error_text}")
+                    async with results_lock:
+                        failures.append((asset_id, asset_name, error_text))
+                        # Track this asset as failed for downstream steps
+                        if step.id not in self.failed_assets:
+                            self.failed_assets[step.id] = set()
+                        self.failed_assets[step.id].add(asset_id)
                 
                 async with results_lock:
                     results.append(result)
@@ -1385,13 +1501,34 @@ class PipelineExecutor:
                     import traceback
                     traceback.print_exception(type(res), res, res.__traceback__)
         
-        # Check if all succeeded
+        # Evaluate results: partial success if some assets succeeded
+        succeeded = [r for r in results if r.success]
         failed = [r for r in results if not r.success]
+        
         if failed:
-            return StepResult(
-                success=False,
-                error=f"{len(failed)} assets failed",
-            )
+            unique_errors: list[str] = []
+            for _, _, error in failures:
+                if error not in unique_errors:
+                    unique_errors.append(error)
+            error_summary = f": {unique_errors[0]}" if unique_errors else ""
+            
+            if not succeeded:
+                # ALL assets failed — hard failure
+                return StepResult(
+                    success=False,
+                    error=f"All {len(failed)} assets failed{error_summary}",
+                )
+            else:
+                # PARTIAL success — continue pipeline with successful assets
+                parallel_note = f" (parallel={parallelism})" if parallelism > 1 else ""
+                console.print(
+                    f"    [yellow]⚠[/yellow] {len(succeeded)}/{len(results)} assets succeeded, "
+                    f"{len(failed)} failed{parallel_note}"
+                )
+                return StepResult(
+                    success=True,
+                    error=f"{len(failed)} assets failed{error_summary}",
+                )
         
         parallel_note = f" (parallel={parallelism})" if parallelism > 1 else ""
         console.print(f"    [green]✓[/green] Completed {len(pending_assets)} assets{parallel_note}")

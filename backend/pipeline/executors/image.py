@@ -55,6 +55,7 @@ class GenerateImageExecutor(StepExecutor):
         prompt = config.get("prompt", "")
         variations = config.get("variations", 1)
         size = config.get("size", 512)
+        aspect_ratio = config.get("aspect_ratio", "1:1")
         
         # Evaluate expression strings (e.g., "4 if asset.rarity in ['rare'] else 2")
         if isinstance(variations, str):
@@ -79,8 +80,8 @@ class GenerateImageExecutor(StepExecutor):
         from app.models import StyleConfig
         
         style = StyleConfig(
-            width=size,
-            height=size,
+            aspect_ratio=aspect_ratio,
+            image_size=f"{size}" if isinstance(size, int) else size,
         )
         
         images = await provider.generate(

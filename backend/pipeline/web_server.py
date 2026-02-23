@@ -1733,6 +1733,16 @@ def get_html_page() -> str:
         
         .approval-section.visible { display: block; }
         
+        .pane-title {
+            text-align: center;
+            font-size: 22px;
+            font-weight: 700;
+            color: #1e293b;
+            padding: 20px 16px 0;
+            letter-spacing: 0.01em;
+        }
+        .pane-title.hidden { display: none; }
+        
         .approval-header {
             margin-bottom: 20px;
         }
@@ -2803,6 +2813,9 @@ def get_html_page() -> str:
                 <button class="history-banner-btn" id="backToCurrentBtn">Back to Current</button>
             </div>
             
+            <!-- Pane title: Asset — Stage -->
+            <div class="pane-title hidden" id="paneTitle"></div>
+            
             <!-- Approval Section (at top for visibility) -->
             <section class="approval-section" id="approvalSection">
                 <div class="approval-header">
@@ -3050,6 +3063,7 @@ def get_html_page() -> str:
         const assetProperties = $('assetProperties');
         const promptBox = $('promptBox');
         const promptBoxText = $('promptBoxText');
+        const paneTitle = $('paneTitle');
         const approvalSection = $('approvalSection');
         const approvalTitle = $('approvalTitle');
         const approvalSubtitle = $('approvalSubtitle');
@@ -3565,12 +3579,15 @@ def get_html_page() -> str:
             emptyState.style.display = 'none';
             assetDetails.classList.remove('hidden');
             
-            // Title: "Asset Name — Stage Name" so it's always clear what you're looking at
+            // Pane title: "Asset Name — Stage Name" centered at top
             const activeStepId = viewingStep || currentStep;
             const formatStep = (id) => id ? id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '';
-            assetDetailsTitle.textContent = activeStepId
+            paneTitle.textContent = activeStepId
                 ? `${asset.name} \u2014 ${formatStep(activeStepId)}`
                 : asset.name;
+            paneTitle.classList.remove('hidden');
+            
+            assetDetailsTitle.textContent = asset.name;
             
             // Get effective status (same logic as asset list)
             const effectiveStatus = getEffectiveAssetStatus(asset);
@@ -3659,6 +3676,7 @@ def get_html_page() -> str:
             // Hide asset details for global steps
             if (!isPerAssetStep) {
                 assetDetails.classList.add('hidden');
+                paneTitle.classList.add('hidden');
             }
         }
         
@@ -3726,6 +3744,7 @@ def get_html_page() -> str:
                 } else {
                     // Global step - fetch history without asset ID, hide asset details
                     assetDetails.classList.add('hidden');
+                    paneTitle.classList.add('hidden');
                     fetchStepHistory(stepId, null);
                 }
             } else if (step.status === 'pending') {
@@ -3809,6 +3828,7 @@ def get_html_page() -> str:
             // Hide asset details panel for global steps
             if (!isPerAssetStep) {
                 assetDetails.classList.add('hidden');
+                paneTitle.classList.add('hidden');
             }
         }
         
@@ -4107,6 +4127,7 @@ def get_html_page() -> str:
             historyView.classList.remove('visible');
             futureStepView.classList.remove('visible');
             assetDetails.classList.add('hidden');
+            paneTitle.classList.add('hidden');
             emptyState.style.display = 'none';
             
             // Update banner
@@ -4206,6 +4227,7 @@ def get_html_page() -> str:
             // Hide asset details for review/global steps - they shouldn't show individual assets
             if (isReview) {
                 assetDetails.classList.add('hidden');
+                paneTitle.classList.add('hidden');
                 assetsSection.style.display = 'none';
             }
             
@@ -4252,10 +4274,15 @@ def get_html_page() -> str:
             $('regenerateBtn').style.display = ''; // Show default regenerate button
             
             const stepLabel = request.step_id ? request.step_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '';
+            
+            // Pane title: "Asset Name — Stage Name" centered at top
+            paneTitle.textContent = stepLabel
+                ? `${request.asset_name} \u2014 ${stepLabel}`
+                : request.asset_name;
+            paneTitle.classList.remove('hidden');
+            
             const titlePrefix = isSelect ? 'Select best option' : 'Approve result';
-            approvalTitle.textContent = stepLabel 
-                ? `${titlePrefix} for "${request.asset_name}" \u2014 ${stepLabel}`
-                : `${titlePrefix} for "${request.asset_name}"`;
+            approvalTitle.textContent = titlePrefix;
             const hasImage = request.options.some(o => o.path || o.image_path);
             approvalSubtitle.textContent = isSelect
                 ? 'Click on an option to select it'

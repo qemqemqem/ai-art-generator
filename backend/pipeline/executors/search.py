@@ -10,7 +10,7 @@ from typing import Any
 
 from .base import ExecutorContext, StepExecutor, StepResult
 from .registry import register_executor
-from ..image_search import GoogleCSESearchProvider, download_image
+from ..image_search import SerpAPISearchProvider, download_image
 from ..templates import substitute_template
 
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ class ImageSearchExecutor(StepExecutor):
             )
             query = f"{query} {style}"
 
-        provider = GoogleCSESearchProvider()
+        provider = SerpAPISearchProvider()
         results = await provider.search(
             query,
             count=count,

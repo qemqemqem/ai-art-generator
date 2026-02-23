@@ -137,38 +137,17 @@ steps:
   # Phase 4: Generate card art
   # ---------------------------------------------------------------------------
 
-  - id: art_prompt
-    type: generate_prompt
-    for_each: asset
-    requires: [suggest_bird_name, research_bird]
-    config:
-      prompt: |
-        Create an image generation prompt for a Magic: The Gathering card
-        depicting a real bird.
-
-        Bird: {suggest_bird_name.content}
-        Card type: {fetch_card_stats.type_line}
-        Research (use for accurate plumage and habitat details): {research_bird.content}
-        Art direction: {context.art_style}
-
-        The prompt should describe:
-        - The specific bird species in a dramatic, natural pose
-        - Accurate plumage colors and markings based on the research
-        - A habitat appropriate for this bird
-        - Lighting and mood fitting for a trading card illustration
-        - Photorealistic wildlife photography style
-
-        Output ONLY the image prompt, no preamble.
-
   - id: card_art
-    type: generate_image
+    type: image_search
     for_each: asset
-    requires: [art_prompt]
+    requires: [suggest_bird_name]
     config:
-      prompt: "{art_prompt.output}"
-      variations: 2
-      size: 1024
-      aspect_ratio: "4:3"
+      query: "{suggest_bird_name.content}"
+      count: 3
+      aspect_ratio: landscape
+      style: "wildlife photography"
+      image_type: photo
+      safe_search: moderate
 
   - id: approve_art
     type: user_approve

@@ -2,7 +2,11 @@
 Image Search Providers.
 
 Abstract interface for searching the web for images, plus concrete
-implementations. Currently supports Google Custom Search JSON API.
+implementations.
+
+Providers:
+  - SerpAPI (default) -- wraps Google Images via serpapi.com
+  - Google CSE        -- Google Custom Search JSON API (requires CSE setup)
 
 To add a new provider, subclass ImageSearchProvider and implement search().
 """
@@ -18,15 +22,28 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
+SERPAPI_ENDPOINT = "https://serpapi.com/search"
 GOOGLE_CSE_ENDPOINT = "https://www.googleapis.com/customsearch/v1"
 
-_ASPECT_RATIO_MAP = {
+_SERPAPI_ASPECT_RATIO_MAP = {
+    "square": "s",
+    "landscape": "w",
+    "portrait": "t",
+}
+
+_SERPAPI_SAFE_SEARCH_MAP = {
+    "off": "off",
+    "moderate": "active",
+    "strict": "active",
+}
+
+_GOOGLE_CSE_ASPECT_RATIO_MAP = {
     "square": "square",
     "landscape": "wide",
     "portrait": "tall",
 }
 
-_SAFE_SEARCH_MAP = {
+_GOOGLE_CSE_SAFE_SEARCH_MAP = {
     "off": "off",
     "moderate": "medium",
     "strict": "high",
@@ -72,6 +89,74 @@ class ImageSearchProvider(ABC):
         ...
 
 
+# ---------------------------------------------------------------------------
+# SerpAPI  (default)
+# ---------------------------------------------------------------------------
+
+class SerpAPISearchProvider(ImageSearchProvider):
+    """Google Images search via SerpAPI (serpapi.com)."""
+
+    def __init__(self, api_key: str | None = None):
+        self.api_key = api_key or os.environ.get("SERPAPI_API_KEY")
+
+    async def search(
+        self,
+        query: str,
+        *,
+        count: int = 1,
+        aspect_ratio: str | None = None,
+        image_type: str | None = None,
+        safe_search: str = "moderate",
+    ) -> list[ImageSearchResult]:
+        if not self.api_key:
+            raise RuntimeError(
+                "SerpAPI key not set. "
+                "Get one at https://serpapi.com/ then set SERPAPI_API_KEY."
+            )
+
+        params: dict[str, str | int] = {
+            "api_key": self.api_key,
+            "engine": "google_images",
+            "q": query,
+            "ijn": 0,
+        }
+
+        if aspect_ratio and aspect_ratio in _SERPAPI_ASPECT_RATIO_MAP:
+            params["imgar"] = _SERPAPI_ASPECT_RATIO_MAP[aspect_ratio]
+
+        if image_type:
+            params["image_type"] = image_type
+
+        safe_val = _SERPAPI_SAFE_SEARCH_MAP.get(safe_search)
+        if safe_val:
+            params["safe"] = safe_val
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get(SERPAPI_ENDPOINT, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+
+        items = data.get("images_results", [])
+        if not items:
+            return []
+
+        results = []
+        for item in items[:count]:
+            results.append(ImageSearchResult(
+                url=item.get("original", ""),
+                width=item.get("original_width", 0),
+                height=item.get("original_height", 0),
+                title=item.get("title", ""),
+                source_url=item.get("link", ""),
+            ))
+
+        return results
+
+
+# ---------------------------------------------------------------------------
+# Google Custom Search Engine  (alternative, requires CSE setup)
+# ---------------------------------------------------------------------------
+
 class GoogleCSESearchProvider(ImageSearchProvider):
     """Google Custom Search Engine image search."""
 
@@ -93,10 +178,12 @@ class GoogleCSESearchProvider(ImageSearchProvider):
                 "Google CSE API key not set. "
                 "Set GOOGLE_CSE_API_KEY or GOOGLE_API_KEY in your environment."
             )
-        if not self.cse_id:
+        if not self.cse_id or self.cse_id.startswith("your_"):
             raise RuntimeError(
-                "Google CSE ID not set. "
-                "Set GOOGLE_CSE_ID in your environment."
+                "Google CSE ID not configured. "
+                "Create a Programmable Search Engine at "
+                "https://programmablesearchengine.google.com/controlpanel/create "
+                "then set GOOGLE_CSE_ID in your environment."
             )
 
         params: dict[str, str | int] = {
@@ -105,11 +192,11 @@ class GoogleCSESearchProvider(ImageSearchProvider):
             "q": query,
             "searchType": "image",
             "num": min(count, 10),
-            "safe": _SAFE_SEARCH_MAP.get(safe_search, "medium"),
+            "safe": _GOOGLE_CSE_SAFE_SEARCH_MAP.get(safe_search, "medium"),
         }
 
-        if aspect_ratio and aspect_ratio in _ASPECT_RATIO_MAP:
-            params["imgSize"] = _ASPECT_RATIO_MAP[aspect_ratio]
+        if aspect_ratio and aspect_ratio in _GOOGLE_CSE_ASPECT_RATIO_MAP:
+            params["imgSize"] = _GOOGLE_CSE_ASPECT_RATIO_MAP[aspect_ratio]
 
         if image_type:
             params["imgType"] = image_type
@@ -136,6 +223,10 @@ class GoogleCSESearchProvider(ImageSearchProvider):
 
         return results
 
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 async def download_image(url: str, timeout: float = 30) -> Image.Image:
     """Download an image URL and return a PIL Image."""

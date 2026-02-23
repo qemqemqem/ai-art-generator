@@ -241,11 +241,12 @@ class RateLimiterRegistry:
 # Global rate limiter registry
 _rate_limiters = RateLimiterRegistry()
 
-# Configure known providers with appropriate limits
-# Gemini free tier is tight; default to a safe baseline
-_rate_limiters.configure("gemini", requests_per_minute=5, burst_size=2)
-# LiteLLM (varies by backend; use conservative baseline)
-_rate_limiters.configure("litellm", requests_per_minute=5, burst_size=2)
+# Configure known providers with appropriate limits.
+# Paid Gemini Tier 1 allows 150-300 RPM depending on model.
+# We set limits just below actual API quotas; if you hit 429s the
+# retry_on_any_error loop will back off automatically.
+_rate_limiters.configure("gemini", requests_per_minute=200, burst_size=30)
+_rate_limiters.configure("litellm", requests_per_minute=200, burst_size=30)
 
 
 def get_rate_limiter(provider: str) -> RateLimiter:

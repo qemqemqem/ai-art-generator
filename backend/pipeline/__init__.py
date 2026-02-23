@@ -61,6 +61,10 @@ from .context import (
     get_asset_aware_step_outputs,
 )
 
+from .logging_config import (
+    setup_logging,
+)
+
 from .retry import (
     RetryConfig,
     RateLimiter,
@@ -146,6 +150,9 @@ __all__ = [
     "RichContext",
     "build_rich_context",
     "get_asset_aware_step_outputs",
+    
+    # Logging
+    "setup_logging",
     
     # Retry and rate limiting
     "RetryConfig",

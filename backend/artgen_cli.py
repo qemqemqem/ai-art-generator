@@ -23,6 +23,7 @@ from rich.table import Table
 from rich.tree import Tree
 
 from app.config import reload_config
+from pipeline.logging_config import setup_logging
 
 console = Console()
 
@@ -48,8 +49,8 @@ def cli():
               help="Show detailed output")
 @click.option("--dry-run", is_flag=True,
               help="Show what would be executed without running")
-@click.option("--parallel", "-p", default=3, type=int,
-              help="Max parallel assets per step (default: 3)")
+@click.option("--parallel", "-p", default=20, type=int,
+              help="Max parallel assets per step (default: 20)")
 @click.option("--skip-validation", is_flag=True,
               help="Skip pre-run validation")
 @click.option("--web", "-w", is_flag=True,
@@ -58,6 +59,8 @@ def cli():
               help="Port for web server (default: 8080)")
 @click.option("--no-browser", is_flag=True,
               help="Don't auto-open browser (with --web)")
+@click.option("--log-file", type=click.Path(), default=None,
+              help="Write detailed logs to file (captures all provider/library output)")
 def run(
     pipeline: str,
     env_path: str | None,
@@ -71,6 +74,7 @@ def run(
     web: bool,
     port: int,
     no_browser: bool,
+    log_file: str | None,
 ):
     """Run an ArtGen pipeline."""
     
@@ -80,6 +84,12 @@ def run(
     backend_path = Path(__file__).parent
     if str(backend_path) not in sys.path:
         sys.path.insert(0, str(backend_path))
+
+    # Set up logging early (before any providers are imported)
+    # State dir is resolved later, so pass log_file if explicit
+    log_path = setup_logging(verbose=verbose, log_file=log_file)
+    if log_path:
+        console.print(f"[dim]Logging to: {log_path}[/dim]")
 
     # Load env (explicit path takes precedence, otherwise auto-discovery)
     if env_path:

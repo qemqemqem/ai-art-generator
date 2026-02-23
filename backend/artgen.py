@@ -132,6 +132,10 @@ def cmd_generate(args):
     backend_dir = Path(__file__).parent
     if str(backend_dir) not in sys.path:
         sys.path.insert(0, str(backend_dir))
+
+    # Set up logging
+    from pipeline.logging_config import setup_logging
+    setup_logging(verbose=getattr(args, "verbose", False))
     
     from parsers import parse_input_file
     from app.config import reload_config, get_config
@@ -1045,12 +1049,19 @@ def _run_pipeline_cli(
     web: bool,
     port: int,
     no_browser: bool,
+    log_file: Optional[str] = None,
 ) -> int:
     """Run a pipeline file from the CLI."""
     # Add backend to path
     backend_path = Path(__file__).parent
     if str(backend_path) not in sys.path:
         sys.path.insert(0, str(backend_path))
+
+    # Set up logging early (before any providers are imported)
+    from pipeline.logging_config import setup_logging
+    log_path = setup_logging(verbose=verbose, log_file=log_file)
+    if log_path and console:
+        console.print(f"[dim]Logging to: {log_path}[/dim]")
 
     # Load env (explicit path takes precedence, otherwise auto-discovery)
     from app.config import reload_config
@@ -1148,6 +1159,7 @@ def cmd_pipeline(args):
         web=args.web,
         port=args.port,
         no_browser=args.no_browser,
+        log_file=getattr(args, "log_file", None),
     )
 
 
@@ -1176,6 +1188,7 @@ def cmd_run(args):
             web=args.web,
             port=args.port,
             no_browser=args.no_browser,
+            log_file=getattr(args, "log_file", None),
         )
 
     # Validate step type
@@ -1825,8 +1838,8 @@ Examples:
     run_parser.add_argument(
         "-p", "--parallel",
         type=int,
-        default=3,
-        help="Max parallel assets per step (pipeline mode only, default: 3)",
+        default=20,
+        help="Max parallel assets per step (pipeline mode only, default: 20)",
         metavar="N",
     )
     run_parser.add_argument(
@@ -1870,6 +1883,11 @@ Examples:
         "-v", "--verbose",
         action="store_true",
         help="Show detailed output",
+    )
+    run_parser.add_argument(
+        "--log-file",
+        help="Write detailed logs to file (captures all provider/library output)",
+        metavar="PATH",
     )
     run_parser.set_defaults(func=cmd_run)
 
@@ -1917,8 +1935,8 @@ Examples:
     pipeline_parser.add_argument(
         "-p", "--parallel",
         type=int,
-        default=3,
-        help="Max parallel assets per step (default: 3)",
+        default=20,
+        help="Max parallel assets per step (default: 20)",
         metavar="N",
     )
     pipeline_parser.add_argument(
@@ -1941,6 +1959,11 @@ Examples:
         "--no-browser",
         action="store_true",
         help="Don't auto-open browser (with --web)",
+    )
+    pipeline_parser.add_argument(
+        "--log-file",
+        help="Write detailed logs to file (captures all provider/library output)",
+        metavar="PATH",
     )
     pipeline_parser.set_defaults(func=cmd_pipeline)
     

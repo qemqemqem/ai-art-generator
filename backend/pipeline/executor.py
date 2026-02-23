@@ -31,6 +31,7 @@ from .cache import CacheManager, should_skip_step
 from .context import build_rich_context, get_asset_aware_step_outputs
 from .executors import ExecutorContext, StepExecutor, StepResult, get_executor
 from .expressions import evaluate_condition
+from .logging_config import setup_logging
 from .retry import DEFAULT_MAX_RETRIES, retry_on_any_error
 from .spec_parser import PipelineSpec, StepSpec, StepType, get_execution_order, load_pipeline
 from .templates import TemplateError, substitute_all
@@ -41,8 +42,8 @@ from .executors import assess, fin, image, mse, text, user
 console = Console()
 
 # Default parallelism settings
-DEFAULT_ASSET_PARALLELISM = 3  # Max concurrent assets
-DEFAULT_TIER_PARALLELISM = 4   # Max concurrent steps in same tier
+DEFAULT_ASSET_PARALLELISM = 20  # Max concurrent assets per step
+DEFAULT_TIER_PARALLELISM = 4    # Max concurrent steps in same tier
 
 
 @contextmanager
@@ -115,7 +116,7 @@ class PipelineExecutor:
             input_override: Optional override for asset input file
             auto_approve: Skip human approval steps
             verbose: Show detailed output
-            asset_parallelism: Max concurrent assets per step (default 3)
+            asset_parallelism: Max concurrent assets per step (default 20)
             tier_parallelism: Max concurrent steps in same tier (default 4)
             web_bridge: Optional WebApprovalBridge for web mode progress/approvals
         """
@@ -577,6 +578,15 @@ class PipelineExecutor:
             base_path = self.pipeline_path.parent
             state_dir = base_path / self.spec.state.directory
             state_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Reconfigure logging to also write to state dir (run.log)
+            # This preserves existing console settings but adds the file handler
+            log_path = setup_logging(
+                verbose=self.verbose,
+                state_dir=state_dir,
+            )
+            if log_path and self.verbose:
+                console.print(f"[dim]Run log: {log_path}[/dim]")
             
             # Initialize cache manager
             self.cache = CacheManager(state_dir)
@@ -1230,8 +1240,8 @@ class PipelineExecutor:
         if upstream_failed:
             console.print(f"    [dim]Skipping {len(upstream_failed)} assets (failed in upstream steps)[/dim]")
         
-        # Get pending assets (for skip_existing)
-        if cache_setting == "skip_existing":
+        # Get pending assets (for skip_existing or cache: true)
+        if cache_setting == "skip_existing" or cache_setting is True:
             all_ids = [a.get("id", f"asset-{i}") for i, a in enumerate(assets_to_process)]
             pending_ids = self.cache.get_pending_assets(step.id, all_ids)
             pending_assets = [

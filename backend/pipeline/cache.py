@@ -94,6 +94,27 @@ class CacheManager:
         
         return False
     
+    def _output_files_exist(self, state: dict) -> bool:
+        """
+        Verify that all output files referenced by a cached state still exist on disk.
+        
+        Checks both the JSON metadata file (output_path) and the actual generated
+        files (output_files, e.g. images). If any referenced file is missing,
+        the cache entry is considered stale.
+        """
+        # Check the JSON output metadata file
+        if "output_path" in state:
+            output_path = self.state_dir / state["output_path"]
+            if not output_path.exists():
+                return False
+        
+        # Check actual output files (images, etc.)
+        for file_path in state.get("output_files", []):
+            if not Path(file_path).exists():
+                return False
+        
+        return True
+
     def is_step_cached(
         self,
         step_id: str,
@@ -107,7 +128,7 @@ class CacheManager:
             asset_id: Optional asset ID for per-asset steps
             
         Returns:
-            True if cached output exists
+            True if cached output exists and all output files are present
         """
         if asset_id:
             cache_key = f"{step_id}:{asset_id}"
@@ -119,13 +140,10 @@ class CacheManager:
         
         state = self._step_states[cache_key]
         
-        # Check if output file still exists
-        if "output_path" in state:
-            output_path = self.state_dir / state["output_path"]
-            if not output_path.exists():
-                return False
+        if not state.get("completed", False):
+            return False
         
-        return state.get("completed", False)
+        return self._output_files_exist(state)
     
     def get_cached_output(
         self,
@@ -261,17 +279,22 @@ class CacheManager:
         """
         Get set of asset IDs that have completed a step.
         
+        Verifies that output files still exist on disk — if a user deletes
+        generated files, those assets will be treated as pending again.
+        
         Args:
             step_id: The step ID
             
         Returns:
-            Set of completed asset IDs
+            Set of completed asset IDs with verified output files
         """
         completed = set()
         prefix = f"{step_id}:"
         
         for key, state in self._step_states.items():
             if key.startswith(prefix) and state.get("completed"):
+                if not self._output_files_exist(state):
+                    continue
                 asset_id = key[len(prefix):]
                 completed.add(asset_id)
         

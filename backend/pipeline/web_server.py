@@ -1601,6 +1601,101 @@ def get_html_page() -> str:
             border-radius: 6px;
             border-left: 3px solid #22c55e;
         }
+        .asset-step-output .output-verdict {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .output-data-table {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            background: #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+        .output-data-row {
+            display: flex;
+            background: #fff;
+            min-height: 32px;
+        }
+        .output-data-key {
+            flex: 0 0 140px;
+            padding: 6px 10px;
+            font-weight: 600;
+            color: #475569;
+            background: #f8fafc;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .output-data-value {
+            flex: 1;
+            padding: 6px 10px;
+            color: #1e293b;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+        .output-variations {
+            margin-bottom: 12px;
+        }
+        .output-variations-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .output-variation {
+            font-size: 13px;
+            color: #374151;
+            background: #f9fafb;
+            padding: 8px 10px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            border: 1px solid #e2e8f0;
+            position: relative;
+        }
+        .output-variation.selected {
+            background: #f0fdf4;
+            border-color: #22c55e;
+        }
+        .variation-selected-badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            color: #16a34a;
+            background: #dcfce7;
+            padding: 1px 6px;
+            border-radius: 4px;
+            margin-right: 6px;
+        }
+        .variation-number {
+            font-weight: 600;
+            color: #9ca3af;
+        }
+        .output-image-card {
+            position: relative;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 2px solid transparent;
+        }
+        .output-image-card.selected {
+            border-color: #22c55e;
+        }
+        .output-image-selected-badge {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #fff;
+            background: #16a34a;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
         
         /* Prompt Box */
         .prompt-box {
@@ -3268,52 +3363,143 @@ def get_html_page() -> str:
             
             updateAssetDetails(asset);
             
-            // If viewing a step's history (completed step), re-fetch filtered to this asset
-            if (viewingStep && (viewingStepData?.status === 'complete' || viewingStepData?.status === 'skipped')) {
-                fetchStepHistory(viewingStep, assetId);
-            }
-            // If in live view and this asset has completed the current step, show its output
-            else if (!viewingStep && currentStep && progressData?.phase === 'running') {
-                const currentStepCompleted = stepAssetStatus[currentStep];
-                if (currentStepCompleted && currentStepCompleted.has(assetId)) {
-                    // Asset has finished this step - show its output
-                    showAssetStepOutput(currentStep, assetId, asset);
+            // Show the approval for THIS asset at the current/viewing stage (if one exists)
+            const activeStepId = viewingStep || currentStep;
+            const approvalForAsset = queueItems.find(
+                q => q.asset_id === assetId && (
+                    q.step_id === activeStepId ||
+                    (activeStepId === currentStep && q.step_id === 'user_select')
+                )
+            );
+            
+            if (approvalForAsset) {
+                currentRequest = approvalForAsset;
+                showApproval(approvalForAsset);
+            } else {
+                // No pending approval for this asset at this stage — hide approval section
+                approvalSection.classList.remove('visible');
+                
+                // If viewing a step's history (completed step), re-fetch filtered to this asset
+                if (viewingStep && (viewingStepData?.status === 'complete' || viewingStepData?.status === 'skipped')) {
+                    fetchStepHistory(viewingStep, assetId);
+                }
+                // If in live view and this asset has completed the current step, show its output
+                else if (!viewingStep && currentStep && progressData?.phase === 'running') {
+                    const currentStepCompleted = stepAssetStatus[currentStep];
+                    if (currentStepCompleted && currentStepCompleted.has(assetId)) {
+                        showAssetStepOutput(currentStep, assetId, asset);
+                    }
                 }
             }
         }
         
+        function renderOutputData(outputData) {
+            let html = '';
+            if (!outputData) return html;
+
+            if (typeof outputData === 'string') {
+                html += `<div class="output-text">${escapeHtmlSafe(outputData)}</div>`;
+                return html;
+            }
+            if (typeof outputData !== 'object') return html;
+
+            const handled = new Set();
+
+            if (outputData.assessment) {
+                html += `<div class="output-assessment"><strong>Assessment:</strong> ${escapeHtmlSafe(outputData.assessment)}</div>`;
+                handled.add('assessment');
+            }
+            if (outputData.approved !== undefined) {
+                html += `<div class="output-verdict">${outputData.approved ? '✅ Approved' : '❌ Rejected'}</div>`;
+                handled.add('approved');
+            }
+            if (outputData.verdict) {
+                html += `<div class="output-verdict">${escapeHtmlSafe(outputData.verdict)}</div>`;
+                handled.add('verdict');
+            }
+
+            if (outputData.content) {
+                html += `<div class="output-text">${escapeHtmlSafe(outputData.content)}</div>`;
+                handled.add('content');
+            }
+
+            if (outputData.output && outputData.output !== outputData.content) {
+                html += `<div class="output-text">${escapeHtmlSafe(String(outputData.output))}</div>`;
+                handled.add('output');
+            }
+
+            if (outputData.variations && Array.isArray(outputData.variations)) {
+                const selectedIdx = outputData.selected_index;
+                html += '<div class="output-variations">';
+                html += '<div class="output-variations-label">Variations</div>';
+                outputData.variations.forEach((v, i) => {
+                    const isSel = i === selectedIdx;
+                    const badge = isSel ? '<span class="variation-selected-badge">✓ Selected</span>' : '';
+                    const text = typeof v === 'string' ? escapeHtmlSafe(v) : escapeHtmlSafe(JSON.stringify(v, null, 2));
+                    html += `<div class="output-variation ${isSel ? 'selected' : ''}">${badge}<span class="variation-number">${i + 1}.</span> ${text}</div>`;
+                });
+                html += '</div>';
+                handled.add('variations');
+                handled.add('selected_index');
+                handled.add('selected_path');
+            }
+
+            const skipKeys = new Set(['prompt', 'query', 'approved_attempt', 'paths', 'path', 'selected_path', 'output_path', 'image_path']);
+            const remaining = Object.entries(outputData).filter(([k]) => !handled.has(k) && !skipKeys.has(k));
+
+            if (remaining.length > 0) {
+                html += '<div class="output-data-table">';
+                remaining.forEach(([key, value]) => {
+                    const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                    let displayValue;
+                    if (value === null || value === undefined) {
+                        displayValue = '-';
+                    } else if (Array.isArray(value)) {
+                        displayValue = value.join(', ');
+                    } else if (typeof value === 'object') {
+                        displayValue = JSON.stringify(value, null, 2);
+                    } else {
+                        displayValue = String(value);
+                    }
+                    html += `<div class="output-data-row"><span class="output-data-key">${escapeHtmlSafe(label)}</span><span class="output-data-value">${escapeHtmlSafe(displayValue)}</span></div>`;
+                });
+                html += '</div>';
+            }
+
+            return html;
+        }
+
         async function showAssetStepOutput(stepId, assetId, asset) {
-            // Show the output for an asset that has completed the current step
             try {
                 const resp = await fetch(`/api/history/${stepId}?asset_id=${encodeURIComponent(assetId)}`);
                 if (resp.ok) {
                     const data = await resp.json();
-                    
-                    // Show output in the asset details area
+                    const formatStep = (id) => id ? id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : id;
+
                     let outputHtml = '<div class="asset-step-output">';
-                    outputHtml += `<div class="output-header">✓ Completed: ${stepId}</div>`;
-                    
-                    // Show any generated images
+                    outputHtml += `<div class="output-header">✓ Completed: ${formatStep(stepId)}</div>`;
+
+                    let selectedIdx = null;
+                    data.outputs.forEach(o => {
+                        if (o.selected_index !== null && o.selected_index !== undefined) selectedIdx = o.selected_index;
+                    });
+
                     if (data.files && data.files.length > 0) {
                         outputHtml += '<div class="output-images history-images">';
                         data.files.forEach((file, i) => {
+                            const isSelected = selectedIdx !== null && file.includes(`v${selectedIdx + 1}`);
+                            outputHtml += `<div class="output-image-card ${isSelected ? 'selected' : ''}">`;
                             outputHtml += `<img src="/files/${file}" alt="Generated ${i+1}" class="output-thumbnail">`;
+                            if (isSelected) outputHtml += '<div class="output-image-selected-badge">✓ Selected</div>';
+                            outputHtml += '</div>';
                         });
                         outputHtml += '</div>';
                     }
-                    
-                    // Show text outputs
+
                     data.outputs.forEach(output => {
-                        const outputData = output.data;
-                        if (outputData?.content) {
-                            outputHtml += `<div class="output-text">${escapeHtmlSafe(outputData.content)}</div>`;
-                        }
-                        if (outputData?.assessment) {
-                            outputHtml += `<div class="output-assessment">${escapeHtmlSafe(outputData.assessment)}</div>`;
-                        }
+                        outputHtml += renderOutputData(output.data);
                     });
-                    
-                    // Show saved path (compact version)
+
                     if (data.saved_paths && data.saved_paths.length > 0) {
                         const cachePath = data.saved_paths[0];
                         outputHtml += `
@@ -3325,15 +3511,13 @@ def get_html_page() -> str:
                             </div>
                         `;
                     }
-                    
+
                     outputHtml += '</div>';
-                    
-                    // Append to asset properties area
+
                     const outputContainer = document.getElementById('assetStepOutput');
                     if (outputContainer) {
                         outputContainer.innerHTML = outputHtml;
                     } else {
-                        // Create container if it doesn't exist
                         assetProperties.insertAdjacentHTML('afterend', `<div id="assetStepOutput">${outputHtml}</div>`);
                     }
                 }
@@ -3344,15 +3528,21 @@ def get_html_page() -> str:
         
         function getEffectiveAssetStatus(asset) {
             // Compute effective status using same logic as renderAssets
-            const needsReviewAssetId = currentRequest ? currentRequest.asset_id : null;
             const stepToCheck = viewingStep || currentStep;
+            const needsReview = queueItems.some(
+                q => q.asset_id === asset.id && (
+                    q.step_id === stepToCheck ||
+                    // Implicit selections (from _handle_variations) may carry step_id "user_select"
+                    (stepToCheck === currentStep && q.step_id === 'user_select')
+                )
+            );
             const stepCompleted = stepToCheck && stepAssetStatus[stepToCheck] 
                 ? stepAssetStatus[stepToCheck] 
                 : null;
             const isViewingFutureStep = viewingStepData && viewingStepData.status === 'pending';
             const isLiveView = !viewingStep && progressData?.phase === 'running';
             
-            if (asset.id === needsReviewAssetId) {
+            if (needsReview) {
                 return 'needs-review';
             } else if (isViewingFutureStep) {
                 return 'pending';
@@ -3374,7 +3564,13 @@ def get_html_page() -> str:
         function updateAssetDetails(asset) {
             emptyState.style.display = 'none';
             assetDetails.classList.remove('hidden');
-            assetDetailsTitle.textContent = asset.name;
+            
+            // Title: "Asset Name — Stage Name" so it's always clear what you're looking at
+            const activeStepId = viewingStep || currentStep;
+            const formatStep = (id) => id ? id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '';
+            assetDetailsTitle.textContent = activeStepId
+                ? `${asset.name} \u2014 ${formatStep(activeStepId)}`
+                : asset.name;
             
             // Get effective status (same logic as asset list)
             const effectiveStatus = getEffectiveAssetStatus(asset);
@@ -3392,10 +3588,10 @@ def get_html_page() -> str:
                 const action = STEP_TYPE_ACTIONS[currentStepType] || 'Processing';
                 const providerName = PROVIDER_NAMES[currentProvider] || currentProvider || 'AI provider';
                 processingDetail.textContent = `${action} with ${providerName}`;
-                assetDetailsSubtitle.textContent = `Currently at: ${currentStep || 'processing'}`;
+                assetDetailsSubtitle.textContent = '';
             } else {
                 processingInfo.classList.remove('visible');
-                assetDetailsSubtitle.textContent = viewingStep ? `Viewing: ${viewingStep}` : '';
+                assetDetailsSubtitle.textContent = '';
             }
             
             // Show properties - get output field from current/viewing step to mark as NEW
@@ -3470,6 +3666,13 @@ def get_html_page() -> str:
         async function viewStep(stepId) {
             const step = pipelineSteps.find(s => s.id === stepId);
             if (!step) return;
+            
+            // Clicking the currently running step should return to live view,
+            // not enter "viewing" mode (which suppresses approvals and live updates)
+            if (step.status === 'running' || (stepId === currentStep && progressData?.phase === 'waiting')) {
+                backToCurrent();
+                return;
+            }
             
             viewingStep = stepId;
             viewingStepData = step;
@@ -3670,59 +3873,108 @@ def get_html_page() -> str:
             const textLabel = getTextOutputLabel(stepType);
             const isTextStep = ['generate_text', 'generate_name', 'generate_prompt', 'research'].includes(stepType);
             
-            // Show text outputs with enhanced display for verdicts/assessments
             data.outputs.forEach(output => {
                 const outputData = output.data;
                 if (!outputData) return;
-                
-                // Check for assessment/verdict data
-                const isVerdict = outputData.assessment || outputData.verdict || outputData.approved !== undefined;
-                const verdictClass = isVerdict ? 'verdict' : (isTextStep ? 'text-output' : '');
-                
-                // Handle different output structures
-                if (typeof outputData === 'object') {
-                    // Assessment results
-                    if (outputData.assessment) {
-                        html += `
-                            <div class="history-output verdict">
-                                <div class="history-output-label">🔬 AI Assessment</div>
-                                <div class="history-output-content">${escapeHtmlSafe(outputData.assessment)}</div>
-                            </div>
-                        `;
-                        if (outputData.approved !== undefined) {
-                            html += `
-                                <div class="history-output ${outputData.approved ? 'verdict' : ''}">
-                                    <div class="history-output-label">Verdict</div>
-                                    <div class="history-output-content">${outputData.approved ? '✅ Approved' : '❌ Rejected'}</div>
-                                </div>
-                            `;
-                        }
-                    }
-                    // Text content
-                    else if (outputData.content) {
-                        html += `
-                            <div class="history-output ${verdictClass}">
-                                <div class="history-output-label">${textLabel}</div>
-                                <div class="history-output-content">${escapeHtmlSafe(outputData.content)}</div>
-                            </div>
-                        `;
-                    }
-                    // Selection info
-                    if (output.selected_index !== null && output.selected_index !== undefined) {
-                        html += `
-                            <div class="history-output">
-                                <div class="history-output-label">User Selection</div>
-                                <div class="history-output-content">Selected option ${output.selected_index + 1}</div>
-                            </div>
-                        `;
-                    }
-                } else if (typeof outputData === 'string') {
+
+                if (typeof outputData === 'string') {
                     html += `
                         <div class="history-output ${isTextStep ? 'text-output' : ''}">
                             <div class="history-output-label">${textLabel}</div>
                             <div class="history-output-content">${escapeHtmlSafe(outputData)}</div>
                         </div>
                     `;
+                    return;
+                }
+                if (typeof outputData !== 'object') return;
+
+                const handled = new Set();
+
+                if (outputData.assessment) {
+                    html += `
+                        <div class="history-output verdict">
+                            <div class="history-output-label">🔬 AI Assessment</div>
+                            <div class="history-output-content">${escapeHtmlSafe(outputData.assessment)}</div>
+                        </div>
+                    `;
+                    handled.add('assessment');
+                    if (outputData.approved !== undefined) {
+                        html += `
+                            <div class="history-output ${outputData.approved ? 'verdict' : ''}">
+                                <div class="history-output-label">Verdict</div>
+                                <div class="history-output-content">${outputData.approved ? '✅ Approved' : '❌ Rejected'}</div>
+                            </div>
+                        `;
+                        handled.add('approved');
+                    }
+                }
+                if (outputData.verdict) {
+                    html += `
+                        <div class="history-output verdict">
+                            <div class="history-output-label">Verdict</div>
+                            <div class="history-output-content">${escapeHtmlSafe(outputData.verdict)}</div>
+                        </div>
+                    `;
+                    handled.add('verdict');
+                }
+                if (outputData.content) {
+                    const verdictClass = (outputData.assessment || outputData.verdict) ? 'verdict' : (isTextStep ? 'text-output' : '');
+                    html += `
+                        <div class="history-output ${verdictClass}">
+                            <div class="history-output-label">${textLabel}</div>
+                            <div class="history-output-content">${escapeHtmlSafe(outputData.content)}</div>
+                        </div>
+                    `;
+                    handled.add('content');
+                }
+                if (outputData.output && outputData.output !== outputData.content) {
+                    html += `
+                        <div class="history-output ${isTextStep ? 'text-output' : ''}">
+                            <div class="history-output-label">${textLabel}</div>
+                            <div class="history-output-content">${escapeHtmlSafe(String(outputData.output))}</div>
+                        </div>
+                    `;
+                    handled.add('output');
+                }
+
+                if (outputData.variations && Array.isArray(outputData.variations)) {
+                    const selIdx = outputData.selected_index;
+                    html += '<div class="output-variations">';
+                    html += '<div class="output-variations-label">Variations</div>';
+                    outputData.variations.forEach((v, i) => {
+                        const isSel = i === selIdx;
+                        const badge = isSel ? '<span class="variation-selected-badge">✓ Selected</span>' : '';
+                        const text = typeof v === 'string' ? escapeHtmlSafe(v) : escapeHtmlSafe(JSON.stringify(v, null, 2));
+                        html += `<div class="output-variation ${isSel ? 'selected' : ''}">${badge}<span class="variation-number">${i + 1}.</span> ${text}</div>`;
+                    });
+                    html += '</div>';
+                    handled.add('variations');
+                    handled.add('selected_index');
+                    handled.add('selected_path');
+                } else if (output.selected_index !== null && output.selected_index !== undefined) {
+                    html += `
+                        <div class="history-output">
+                            <div class="history-output-label">User Selection</div>
+                            <div class="history-output-content">Selected option ${output.selected_index + 1}</div>
+                        </div>
+                    `;
+                    handled.add('selected_index');
+                }
+
+                const skipKeys = new Set(['prompt', 'query', 'approved_attempt', 'paths', 'path', 'selected_path', 'output_path', 'image_path']);
+                const remaining = Object.entries(outputData).filter(([k]) => !handled.has(k) && !skipKeys.has(k));
+                if (remaining.length > 0) {
+                    html += '<div class="output-data-table">';
+                    remaining.forEach(([key, value]) => {
+                        const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                        let displayValue;
+                        if (value === null || value === undefined) displayValue = '-';
+                        else if (Array.isArray(value)) displayValue = value.join(', ');
+                        else if (typeof value === 'object') displayValue = JSON.stringify(value, null, 2);
+                        else displayValue = String(value);
+                        html += `<div class="output-data-row"><span class="output-data-key">${escapeHtmlSafe(label)}</span><span class="output-data-value">${escapeHtmlSafe(displayValue)}</span></div>`;
+                    });
+                    html += '</div>';
                 }
             });
             
@@ -3931,6 +4183,15 @@ def get_html_page() -> str:
             // Add to queue if not already there
             addToQueue(request);
             
+            // Auto-select the asset that needs approval so sidebar and panel stay in sync
+            if (request.asset_id && request.asset_id !== selectedAssetId) {
+                selectedAssetId = request.asset_id;
+                const asset = assets.find(a => a.id === request.asset_id);
+                if (asset) {
+                    updateAssetDetails(asset);
+                }
+            }
+            
             // Re-render assets to show warning icon
             renderAssets();
             
@@ -3990,9 +4251,11 @@ def get_html_page() -> str:
             
             $('regenerateBtn').style.display = ''; // Show default regenerate button
             
-            approvalTitle.textContent = isSelect 
-                ? `Select best option for "${request.asset_name}"`
-                : `Approve result for "${request.asset_name}"?`;
+            const stepLabel = request.step_id ? request.step_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '';
+            const titlePrefix = isSelect ? 'Select best option' : 'Approve result';
+            approvalTitle.textContent = stepLabel 
+                ? `${titlePrefix} for "${request.asset_name}" \u2014 ${stepLabel}`
+                : `${titlePrefix} for "${request.asset_name}"`;
             const hasImage = request.options.some(o => o.path || o.image_path);
             approvalSubtitle.textContent = isSelect
                 ? 'Click on an option to select it'

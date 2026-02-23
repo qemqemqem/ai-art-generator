@@ -5,7 +5,6 @@ Usage:
     artgen birds.txt                    Generate one image per line
     artgen birds.txt --style "pixel art"  With style
     artgen birds.txt --transparent      Transparent backgrounds
-    artgen interactive                  Start browser-based UI
     artgen init                         Initialize new project
     artgen status                       Show project status
 """
@@ -17,7 +16,7 @@ import signal
 import shutil
 import subprocess
 import sys
-import webbrowser
+
 from pathlib import Path
 from typing import Optional
 
@@ -360,220 +359,6 @@ def wait_for_port(port: int, timeout: float = 10.0, interval: float = 0.2) -> bo
     return False
 
 
-def cmd_interactive(args):
-    """Start the interactive browser-based UI."""
-    import time
-    
-    print_header()
-    
-    # Setup environment
-    env_file = setup_env(args.env)
-    if env_file:
-        print_success(f"Using env: {env_file}")
-    
-    # Add backend to path
-    backend_dir = Path(__file__).parent
-    if str(backend_dir) not in sys.path:
-        sys.path.insert(0, str(backend_dir))
-    
-    # Find frontend directory
-    frontend_dir = backend_dir.parent / "frontend"
-    if not frontend_dir.exists():
-        print_error(f"Frontend not found at {frontend_dir}")
-        print_info("Make sure you have the full artgen installation")
-        return 1
-    
-    # Check if node_modules exists
-    if not (frontend_dir / "node_modules").exists():
-        print_info("Installing frontend dependencies...")
-        result = subprocess.run(
-            ["npm", "install"],
-            cwd=frontend_dir,
-            capture_output=True,
-        )
-        if result.returncode != 0:
-            print_error("Failed to install frontend dependencies")
-            print_info("Run: cd frontend && npm install")
-            return 1
-        print_success("Frontend dependencies installed")
-    
-    # Smart port management
-    backend_port = args.port
-    frontend_port = args.ui_port
-    
-    # Check and find available ports
-    if not is_port_available(backend_port):
-        old_port = backend_port
-        backend_port = find_available_port(backend_port)
-        print_info(f"Port {old_port} in use, using {backend_port} for backend")
-    
-    if not is_port_available(frontend_port):
-        old_port = frontend_port
-        frontend_port = find_available_port(frontend_port)
-        print_info(f"Port {old_port} in use, using {frontend_port} for frontend")
-    
-    print_info("Starting services...")
-    
-    # Track child processes for cleanup
-    processes = []
-    shutdown_in_progress = False
-    
-    def cleanup(signum=None, frame=None):
-        """Clean up child processes."""
-        nonlocal shutdown_in_progress
-        if shutdown_in_progress:
-            return
-        shutdown_in_progress = True
-        
-        print()
-        print_info("Shutting down...")
-        for name, proc in processes:
-            if proc.poll() is None:  # Still running
-                proc.terminate()
-                try:
-                    proc.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-                    proc.wait()
-                print_success(f"{name} stopped")
-        print()
-        print_info("Goodbye!")
-        sys.exit(0)
-    
-    signal.signal(signal.SIGINT, cleanup)
-    signal.signal(signal.SIGTERM, cleanup)
-    
-    # Start backend
-    backend_env = os.environ.copy()
-    if env_file:
-        backend_env["ARTGEN_ENV_FILE"] = env_file
-    
-    backend_proc = subprocess.Popen(
-        [
-            sys.executable, "-m", "uvicorn",
-            "app.main:app",
-            "--host", "127.0.0.1",
-            "--port", str(backend_port),
-        ],
-        cwd=backend_dir,
-        env=backend_env,
-        stdout=subprocess.PIPE if not args.verbose else None,
-        stderr=subprocess.PIPE if not args.verbose else None,
-    )
-    processes.append(("Backend", backend_proc))
-    
-    # Wait for backend to be ready
-    if not wait_for_port(backend_port, timeout=15.0):
-        if backend_proc.poll() is not None:
-            # Process died, get error output
-            if not args.verbose:
-                _, stderr = backend_proc.communicate()
-                if stderr:
-                    print_error(f"Backend failed: {stderr.decode()[:200]}")
-            print_error("Backend failed to start")
-        else:
-            print_error("Backend did not become ready in time")
-        cleanup()
-        return 1
-    
-    print_success(f"Backend API     http://localhost:{backend_port}")
-    
-    # Start frontend with strict port (no auto-switching)
-    frontend_env = os.environ.copy()
-    frontend_env["VITE_API_URL"] = f"http://localhost:{backend_port}"
-    
-    frontend_proc = subprocess.Popen(
-        ["npm", "run", "dev", "--", "--port", str(frontend_port), "--strictPort"],
-        cwd=frontend_dir,
-        env=frontend_env,
-        stdout=subprocess.PIPE if not args.verbose else None,
-        stderr=subprocess.PIPE if not args.verbose else None,
-    )
-    processes.append(("Frontend", frontend_proc))
-    
-    # Wait for frontend to be ready
-    if not wait_for_port(frontend_port, timeout=30.0):
-        if frontend_proc.poll() is not None:
-            print_error("Frontend failed to start")
-        else:
-            print_error("Frontend did not become ready in time")
-        cleanup()
-        return 1
-    
-    print_success(f"Frontend UI     http://localhost:{frontend_port}")
-    
-    # Load content file if provided
-    if args.file:
-        input_file = Path(args.file)
-        if input_file.exists():
-            # POST to the backend to load the file
-            try:
-                import httpx
-                with open(input_file, "r") as f:
-                    content = f.read()
-                
-                # Detect format from extension
-                suffix = input_file.suffix.lower()
-                fmt = "text"
-                if suffix == ".json":
-                    fmt = "json"
-                elif suffix == ".jsonl":
-                    fmt = "jsonl"
-                elif suffix == ".csv":
-                    fmt = "csv"
-                elif suffix == ".tsv":
-                    fmt = "tsv"
-                
-                response = httpx.post(
-                    f"http://localhost:{backend_port}/assets/upload",
-                    json={"content": content, "format": fmt},
-                    timeout=30.0,
-                )
-                if response.status_code == 200:
-                    data = response.json()
-                    count = len(data.get("assets", []))
-                    print_success(f"Loaded {count} items from {input_file.name}")
-                else:
-                    print_error(f"Failed to load {input_file.name}")
-            except Exception as e:
-                print_error(f"Failed to load content: {e}")
-        else:
-            print_error(f"File not found: {args.file}")
-    
-    # Open browser
-    if not args.no_browser:
-        print_success("Opening browser...")
-        webbrowser.open(f"http://localhost:{frontend_port}")
-    
-    print()
-    if console:
-        console.print(Panel(
-            "[bold]Ready![/bold] Use the browser to upload content and approve generations.\n\n"
-            "Press [bold cyan]Ctrl+C[/bold cyan] to stop all services.",
-            border_style="green",
-        ))
-    else:
-        print("  Ready! Use the browser to upload content and approve generations.")
-        print("  Press Ctrl+C to stop all services.")
-    print()
-    
-    # Wait for processes
-    try:
-        while True:
-            # Check if either process has died
-            if backend_proc.poll() is not None:
-                print_error("Backend stopped unexpectedly")
-                cleanup()
-                return 1
-            if frontend_proc.poll() is not None:
-                print_error("Frontend stopped unexpectedly")
-                cleanup()
-                return 1
-            time.sleep(1)
-    except KeyboardInterrupt:
-        cleanup()
-    
-    return 0
 
 
 def cmd_init(args):
@@ -604,7 +389,7 @@ def cmd_init(args):
         print_info("  1. Set up API keys in .env.local or export GOOGLE_API_KEY")
         print_info("  2. Create a content file (birds.txt, cards.csv, etc.)")
         print_info("  3. Run: artgen your-content.txt")
-        print_info("     Or:  artgen interactive")
+        print_info("     Or:  artgen your-project.yaml")
         
         return 0
     
@@ -1197,7 +982,7 @@ def cmd_run(args):
         )
 
     # Validate step type
-    valid_steps = ["generate_image", "generate_sprite", "generate_name", "generate_text", "research", "remove_background"]
+    valid_steps = ["generate_image", "generate_sprite", "generate_name", "generate_text", "research", "remove_background", "image_search"]
     if args.step not in valid_steps:
         print_error(f"Unknown step: {args.step}")
         print_info(f"Valid steps: {', '.join(valid_steps)}")
@@ -1236,6 +1021,7 @@ def cmd_run(args):
             "generate_text": StepType.GENERATE_TEXT,
             "research": StepType.RESEARCH,
             "remove_background": StepType.REMOVE_BACKGROUND,
+            "image_search": StepType.IMAGE_SEARCH,
         }
         step_type = step_type_map[args.step]
         
@@ -1574,7 +1360,7 @@ def cmd_resume(args):
 def main():
     """Main CLI entry point."""
     # Check if first arg looks like a file (not a known command or flag)
-    known_commands = {"interactive", "init", "status", "list", "show", "resume", "run", "pipeline", "-h", "--help", "-v", "--verbose", "-e", "--env"}
+    known_commands = {"init", "status", "list", "show", "resume", "run", "pipeline", "-h", "--help", "-v", "--verbose", "-e", "--env"}
     
     if len(sys.argv) > 1:
         first_arg = sys.argv[1]
@@ -1625,7 +1411,6 @@ Examples:
   artgen resume                          Resume failed/pending assets
   artgen run generate_image birds.txt    Run specific pipeline step
   
-  artgen interactive                     Start browser-based UI
   artgen init                            Initialize new project
   artgen status                          Show project and API status
 
@@ -1646,47 +1431,6 @@ First time? Run: artgen init
     )
     
     subparsers = parser.add_subparsers(dest="command", metavar="COMMAND")
-    
-    # interactive command
-    interactive_parser = subparsers.add_parser(
-        "interactive",
-        help="Start browser-based interactive mode",
-        description="Start the browser-based UI for interactive approval workflow",
-    )
-    interactive_parser.add_argument(
-        "file",
-        nargs="?",
-        help="Optional content file to pre-load",
-        metavar="FILE",
-    )
-    interactive_parser.add_argument(
-        "-e", "--env",
-        help="Path to .env file",
-        metavar="PATH",
-    )
-    interactive_parser.add_argument(
-        "-p", "--port",
-        type=int,
-        default=8471,
-        help="Backend API port (default: 8471)",
-    )
-    interactive_parser.add_argument(
-        "-P", "--ui-port",
-        type=int,
-        default=5471,
-        help="Frontend UI port (default: 5471)",
-    )
-    interactive_parser.add_argument(
-        "--no-browser",
-        action="store_true",
-        help="Don't auto-open browser",
-    )
-    interactive_parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Show server logs",
-    )
-    interactive_parser.set_defaults(func=cmd_interactive)
     
     # init command
     init_parser = subparsers.add_parser(
@@ -1792,6 +1536,7 @@ Steps:
   generate_text       Generate text descriptions
   research            Research concepts using AI
   remove_background   Remove backgrounds from existing images
+  image_search        Search the web for images and download results
 
 Examples:
   artgen run generate_image birds.txt           Run image generation on input file

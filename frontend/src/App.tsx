@@ -1,14 +1,20 @@
+/**
+ * @deprecated This entire React frontend is deprecated.
+ * The active web UI is served inline from backend/pipeline/web_server.py.
+ * This frontend is scheduled for removal.
+ */
+
 import { useState, useEffect, useCallback } from "react";
-import { ApprovalQueue } from "./components/ApprovalQueue";
-import { AssetList } from "./components/AssetList";
 import { InputUploader } from "./components/InputUploader";
+import { StageTabs } from "./components/StageTabs";
+import { AssetSidebar } from "./components/AssetSidebar";
+import { StageAssetPanel } from "./components/StageAssetPanel";
 import { ContentInput } from "./pages/ContentInput";
 import { FlowSetup } from "./pages/FlowSetup";
 import { ArtDirection } from "./pages/ArtDirection";
 import { InteractiveQueue } from "./pages/InteractiveQueue";
-import type { QueueItem, Asset, PipelineStep, StyleConfig, Project, FinInfo } from "./types";
+import type { Asset, PipelineStep, StyleConfig, Project, FinInfo } from "./types";
 import {
-  getApprovalQueue,
   listAssets,
   getHealth,
   getProject,
@@ -18,7 +24,24 @@ import {
 
 type Mode = "classic" | "interactive";
 type InteractiveStep = "content" | "flow" | "style" | "queue" | "results";
-type ClassicTab = "queue" | "assets" | "input";
+
+function DeprecatedBanner() {
+  return (
+    <div style={{
+      background: "#b45309",
+      color: "white",
+      padding: "10px 16px",
+      fontSize: "14px",
+      fontWeight: 600,
+      textAlign: "center",
+      position: "sticky",
+      top: 0,
+      zIndex: 9999,
+    }}>
+      DEPRECATED — This UI is no longer maintained. Use the built-in web UI served by the pipeline server instead.
+    </div>
+  );
+}
 
 function App() {
   // Connection state
@@ -34,11 +57,22 @@ function App() {
   const [style, setStyle] = useState<StyleConfig | null>(null);
   const [finInfo, setFinInfo] = useState<FinInfo | null>(null);
 
-  // Classic mode state
-  const [activeTab, setActiveTab] = useState<ClassicTab>("queue");
-  const [queue, setQueue] = useState<QueueItem[]>([]);
+  // Classic mode state — strict (stageId, assetId) selection hierarchy
+  const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+  const [showInputUploader, setShowInputUploader] = useState(false);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Reset cascade: changing stage always clears asset selection
+  const selectStage = useCallback((stageId: string) => {
+    setSelectedAssetId(null);
+    setSelectedStageId(stageId);
+  }, []);
+
+  // Derived state — never stored separately
+  const selectedAsset = assets.find((a) => a.id === selectedAssetId) ?? null;
+  const stages: PipelineStep[] = project?.config?.pipeline ?? [];
 
   // Check backend connection
   useEffect(() => {
@@ -64,11 +98,7 @@ function App() {
 
     setLoading(true);
     try {
-      const [queueResult, assetsResult] = await Promise.all([
-        getApprovalQueue(),
-        listAssets(),
-      ]);
-      setQueue(queueResult.queue as unknown as QueueItem[]);
+      const assetsResult = await listAssets();
       setAssets(assetsResult.assets as unknown as Asset[]);
     } catch (error) {
       console.error("Failed to load project data:", error);
@@ -85,6 +115,13 @@ function App() {
       return () => clearInterval(interval);
     }
   }, [connected, mode, loadProjectData]);
+
+  // Auto-select the first stage when stages become available
+  useEffect(() => {
+    if (stages.length > 0 && selectedStageId === null) {
+      setSelectedStageId(stages[0].id);
+    }
+  }, [stages, selectedStageId]);
 
   // Handle interactive mode flow
   const handleContentNext = () => {
@@ -119,7 +156,9 @@ function App() {
   // Mode selection screen
   if (!connected) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col">
+        <DeprecatedBanner />
+        <div className="flex-1 flex items-center justify-center">
         <div className="text-center py-16 text-gray-400">
           <div className="text-6xl mb-4">🔌</div>
           <h2 className="text-2xl font-semibold mb-2">Connecting to backend...</h2>
@@ -129,6 +168,7 @@ function App() {
             uvicorn app.main:app --reload --port 8000
           </pre>
         </div>
+        </div>
       </div>
     );
   }
@@ -136,6 +176,7 @@ function App() {
   if (mode === null) {
     return (
       <div className="min-h-screen bg-gray-900 text-gray-100">
+        <DeprecatedBanner />
         <div className="max-w-4xl mx-auto px-6 py-16">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold mb-4">🎨 AI Art Generator</h1>
@@ -201,6 +242,7 @@ function App() {
   if (mode === "interactive") {
     return (
       <div className="min-h-screen bg-gray-900 text-gray-100">
+        <DeprecatedBanner />
         {/* Progress header for wizard steps */}
         {interactiveStep !== "queue" && (
           <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
@@ -357,10 +399,7 @@ function App() {
               {/* Action Buttons */}
               <div className="flex gap-4 justify-center mt-12">
                 <button
-                  onClick={() => {
-                    setMode("classic");
-                    setActiveTab("assets");
-                  }}
+                  onClick={() => setMode("classic")}
                   className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium"
                 >
                   View All Assets
@@ -379,18 +418,13 @@ function App() {
     );
   }
 
-  // Classic mode (original UI)
-  const tabs: { id: ClassicTab; label: string; count?: number }[] = [
-    { id: "queue", label: "Approval Queue", count: queue.length },
-    { id: "assets", label: "All Assets", count: assets.length },
-    { id: "input", label: "Add Input" },
-  ];
-
+  // Classic mode — strict 3-level hierarchy: stage → asset → panel
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
+    <div className="h-screen flex flex-col bg-gray-900 text-gray-100">
+      <DeprecatedBanner />
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
+      <header className="bg-gray-800 border-b border-gray-700 px-6 py-3 flex-shrink-0">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setMode(null)}
@@ -398,10 +432,16 @@ function App() {
             >
               ←
             </button>
-            <h1 className="text-xl font-bold">🎨 AI Art Generator</h1>
+            <h1 className="text-xl font-bold">AI Art Generator</h1>
             {project && <span className="text-gray-400">/ {project.name}</span>}
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowInputUploader(!showInputUploader)}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium transition-colors"
+            >
+              + Add Input
+            </button>
             <div className="flex items-center gap-2 text-sm text-green-400">
               <span className="w-2 h-2 rounded-full bg-green-400" />
               Connected
@@ -410,48 +450,104 @@ function App() {
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
-        {/* Tabs */}
-        <div className="flex gap-1 mb-6 border-b border-gray-700">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 -mb-px border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? "border-blue-500 text-blue-400"
-                  : "border-transparent text-gray-400 hover:text-gray-200"
-              }`}
-            >
-              {tab.label}
-              {tab.count !== undefined && (
-                <span className="ml-2 px-2 py-0.5 rounded-full bg-gray-700 text-xs">
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          ))}
+      {/* Stage tabs */}
+      {stages.length > 0 && (
+        <div className="bg-gray-800 flex-shrink-0">
+          <StageTabs
+            stages={stages}
+            assets={assets}
+            selectedStageId={selectedStageId}
+            onSelect={selectStage}
+          />
         </div>
+      )}
 
-        {/* Loading indicator */}
-        {loading && <div className="text-center py-4 text-gray-400">Loading...</div>}
+      {/* Loading indicator */}
+      {loading && assets.length === 0 && (
+        <div className="text-center py-4 text-gray-400 flex-shrink-0">Loading...</div>
+      )}
 
-        {/* Tab Content */}
-        {activeTab === "queue" && (
-          <ApprovalQueue queue={queue} onRefresh={loadProjectData} />
-        )}
-
-        {activeTab === "assets" && <AssetList assets={assets} />}
-
-        {activeTab === "input" && (
-          <InputUploader
-            onUploadComplete={() => {
-              loadProjectData();
-              setActiveTab("queue");
-            }}
+      {/* Main content area: sidebar + panel */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Asset sidebar — conditional on selected stage having assets */}
+        {selectedStageId && (
+          <AssetSidebar
+            assets={assets}
+            stageId={selectedStageId}
+            selectedAssetId={selectedAssetId}
+            onSelect={setSelectedAssetId}
           />
         )}
+
+        {/* Main panel */}
+        <main className="flex-1 overflow-hidden">
+          {selectedAsset && selectedStageId ? (
+            <StageAssetPanel
+              key={`${selectedAsset.id}-${selectedStageId}`}
+              asset={selectedAsset}
+              stageId={selectedStageId}
+              onActionComplete={loadProjectData}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center text-gray-400">
+              <div className="text-center">
+                {!selectedStageId ? (
+                  stages.length === 0 ? (
+                    <>
+                      <div className="text-5xl mb-4">📋</div>
+                      <h2 className="text-xl font-semibold mb-2">No pipeline configured</h2>
+                      <p className="text-sm">This project has no pipeline stages defined yet.</p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-5xl mb-4">👆</div>
+                      <h2 className="text-xl font-semibold mb-2">Select a stage</h2>
+                      <p className="text-sm">Choose a pipeline stage from the tabs above.</p>
+                    </>
+                  )
+                ) : assets.length === 0 ? (
+                  <>
+                    <div className="text-5xl mb-4">📭</div>
+                    <h2 className="text-xl font-semibold mb-2">No assets yet</h2>
+                    <p className="text-sm">
+                      Click &quot;+ Add Input&quot; to add content to this project.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-5xl mb-4">👈</div>
+                    <h2 className="text-xl font-semibold mb-2">Select an asset</h2>
+                    <p className="text-sm">Choose an asset from the sidebar to view its details at this stage.</p>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </main>
       </div>
+
+      {/* Input uploader modal */}
+      {showInputUploader && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-xl w-full max-w-2xl max-h-[80vh] overflow-auto p-6 m-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Add Input</h2>
+              <button
+                onClick={() => setShowInputUploader(false)}
+                className="text-gray-400 hover:text-gray-200 text-xl"
+              >
+                ✕
+              </button>
+            </div>
+            <InputUploader
+              onUploadComplete={() => {
+                loadProjectData();
+                setShowInputUploader(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

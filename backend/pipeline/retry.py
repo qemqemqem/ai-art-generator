@@ -25,23 +25,18 @@ console = Console()
 # Fatal exceptions - permanent failures that should never be retried
 # ---------------------------------------------------------------------------
 
-# Populated below via try/import so we don't hard-depend on litellm at import time
+# Populated below via try/import so we don't hard-depend on litellm at import time.
+# Each import is independent so one missing symbol can't silence the rest.
 NON_RETRYABLE_EXCEPTIONS: tuple[type[Exception], ...] = ()
 
 try:
-    from litellm import (
-        AuthenticationError as _LiteLLMAuthError,
-        PermissionDeniedError as _LiteLLMPermissionError,
-        BudgetExceededError as _LiteLLMBudgetError,
-        LiteLLMUnknownProvider as _LiteLLMUnknownProvider,
-    )
-    NON_RETRYABLE_EXCEPTIONS = NON_RETRYABLE_EXCEPTIONS + (
-        _LiteLLMAuthError,
-        _LiteLLMPermissionError,
-        _LiteLLMBudgetError,
-        _LiteLLMUnknownProvider,
-    )
-except ImportError:
+    import litellm as _litellm
+    for _attr in ("AuthenticationError", "PermissionDeniedError", "BudgetExceededError", "LiteLLMUnknownProvider"):
+        _exc = getattr(_litellm, _attr, None)
+        if _exc is not None:
+            NON_RETRYABLE_EXCEPTIONS = NON_RETRYABLE_EXCEPTIONS + (_exc,)
+    del _litellm, _attr, _exc
+except Exception:
     pass
 
 

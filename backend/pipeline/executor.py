@@ -37,7 +37,7 @@ from .spec_parser import PipelineSpec, StepSpec, StepType, get_execution_order, 
 from .templates import TemplateError, substitute_all
 
 # Import all executors to register them
-from .executors import assess, fin, image, mse, script, text, user
+from .executors import assess, fin, image, mse, script, search, text, user
 
 console = Console()
 
@@ -448,6 +448,7 @@ class PipelineExecutor:
             "remove_background": "Removing background",
             "resize": "Resizing image",
             "composite": "Compositing layers",
+            "image_search": "Searching for images",
         }
         
         base_action = action_map.get(step_type, f"Executing {step_type}")
@@ -456,6 +457,10 @@ class PipelineExecutor:
         variations = config.get("variations", 1)
         if isinstance(variations, int) and variations > 1 and step_type in ("generate_image", "generate_sprite"):
             base_action += f" ({variations} variations)"
+        if step_type == "image_search":
+            count = config.get("count", 1)
+            if isinstance(count, int) and count > 1:
+                base_action += f" (top {count} results)"
         
         return base_action
     
@@ -513,6 +518,16 @@ class PipelineExecutor:
             return f"Generate image: {prompt}" if prompt else "Generate image"
         elif step_type == "generate_sprite":
             return "Generate game sprite"
+        elif step_type == "image_search":
+            query = config.get("query", "")
+            if query and (asset or self.context):
+                try:
+                    query = substitute_all(query, self.context, asset, self.step_outputs)
+                except TemplateError:
+                    pass
+            if query and len(query) > 60:
+                query = query[:57] + "..."
+            return f"Image search: {query}" if query else "Image search"
         elif step_type == "assess":
             return "AI assessment of result"
         elif step_type == "user_select":
@@ -1305,14 +1320,19 @@ class PipelineExecutor:
             console.print(f"    [red]No executor for step type: {step.type.value}[/red]")
             return StepResult(success=False, error=f"No executor for {step.type.value}")
         
-        # Check if this step needs user interaction (cannot parallelize if so)
+        # In CLI mode, user-interactive steps must run serially (one terminal).
+        # In web mode, the browser handles concurrent approval requests via
+        # the web bridge, so we can generate all assets in parallel and queue
+        # them for human review.
+        is_web_mode = self.web_bridge is not None
         needs_user_interaction = (
-            (step.until == "approved" and not self.auto_approve) or
-            (step.select == "user" and not self.auto_approve) or
-            (step.variations and step.variations > 1 and not self.auto_approve)
+            not is_web_mode and (
+                (step.until == "approved" and not self.auto_approve) or
+                (step.select == "user" and not self.auto_approve) or
+                (step.variations and step.variations > 1 and not self.auto_approve)
+            )
         )
         
-        # Use parallelism only for non-interactive steps
         parallelism = 1 if needs_user_interaction else self.asset_parallelism
         semaphore = asyncio.Semaphore(parallelism)
         
@@ -1422,11 +1442,17 @@ class PipelineExecutor:
                 else:
                     # Normal execution with retry on ANY error
                     def _on_retry(attempt: int, error_msg: str):
-                        with pause_progress(progress):
+                        if is_web_mode:
                             console.print(
                                 f"    [yellow]↻ {asset_name}: retry {attempt}/{DEFAULT_MAX_RETRIES} "
                                 f"({error_msg})[/yellow]"
                             )
+                        else:
+                            with pause_progress(progress):
+                                console.print(
+                                    f"    [yellow]↻ {asset_name}: retry {attempt}/{DEFAULT_MAX_RETRIES} "
+                                    f"({error_msg})[/yellow]"
+                                )
                     
                     try:
                         result = await retry_on_any_error(
@@ -1446,10 +1472,15 @@ class PipelineExecutor:
                             (result.variations and len(result.variations) > 1)
                         )
                         if needs_selection and not self.auto_approve:
-                            with pause_progress(progress):
+                            if is_web_mode:
                                 result = await self._handle_variations(
                                     step, result, ctx, asset_name, executor, config
                                 )
+                            else:
+                                with pause_progress(progress):
+                                    result = await self._handle_variations(
+                                        step, result, ctx, asset_name, executor, config
+                                    )
                 
                 if result.success:
                     # Cache the output (include prompt and cost for history display)
@@ -1492,8 +1523,11 @@ class PipelineExecutor:
                     # Mark asset as failed and track it for downstream steps
                     self._update_asset_status(asset_id, "failed")
                     error_text = result.error or "Unknown error"
-                    with pause_progress(progress):
+                    if is_web_mode:
                         console.print(f"    [red]✗[/red] {asset_name}: {error_text}")
+                    else:
+                        with pause_progress(progress):
+                            console.print(f"    [red]✗[/red] {asset_name}: {error_text}")
                     async with results_lock:
                         failures.append((asset_id, asset_name, error_text))
                         # Track this asset as failed for downstream steps
@@ -1689,6 +1723,7 @@ class PipelineExecutor:
                 {
                     "prompt": f"Select best for {asset_name}",
                     "options_from": step.id,
+                    "_step_id": step.id,
                 },
                 select_ctx,
             )

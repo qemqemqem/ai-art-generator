@@ -129,6 +129,7 @@ class StepType(str, Enum):
     GENERATE_PROMPT = "generate_prompt"
     GENERATE_IMAGE = "generate_image"
     GENERATE_SPRITE = "generate_sprite"
+    IMAGE_SEARCH = "image_search"
     ASSESS = "assess"
     USER_SELECT = "user_select"
     USER_APPROVE = "user_approve"

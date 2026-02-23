@@ -1,6 +1,6 @@
 {
   "pipeline_hash": "f5a38510914922f4",
-  "updated_at": "2026-02-23T04:24:35.315609",
+  "updated_at": "2026-02-23T18:06:50.403748",
   "steps": {
     "fetch_card_stats:birds-of-paradise": {
       "completed": true,
@@ -43,6 +43,69 @@
       "output_path": "suggest_bird_name/birds-of-paradise/output.json",
       "output_files": [],
       "cost_usd": 0.00269
+    },
+    "research_bird:baleful-strix": {
+      "completed": true,
+      "completed_at": "2026-02-23T06:23:44.043162",
+      "output_path": "research_bird/baleful-strix/output.json",
+      "output_files": [],
+      "cost_usd": 0.01916
+    },
+    "research_bird:aven-mindcensor": {
+      "completed": true,
+      "completed_at": "2026-02-23T06:23:44.058227",
+      "output_path": "research_bird/aven-mindcensor/output.json",
+      "output_files": [],
+      "cost_usd": 0.0211
+    },
+    "research_bird:birds-of-paradise": {
+      "completed": true,
+      "completed_at": "2026-02-23T06:23:45.465816",
+      "output_path": "research_bird/birds-of-paradise/output.json",
+      "output_files": [],
+      "cost_usd": 0.02063
+    },
+    "art_prompt:baleful-strix": {
+      "completed": true,
+      "completed_at": "2026-02-23T06:23:52.104886",
+      "output_path": "art_prompt/baleful-strix/output.json",
+      "output_files": [],
+      "cost_usd": 0.0034805
+    },
+    "art_prompt:birds-of-paradise": {
+      "completed": true,
+      "completed_at": "2026-02-23T06:23:52.837300",
+      "output_path": "art_prompt/birds-of-paradise/output.json",
+      "output_files": [],
+      "cost_usd": 0.0035870000000000003
+    },
+    "art_prompt:aven-mindcensor": {
+      "completed": true,
+      "completed_at": "2026-02-23T06:23:53.040512",
+      "output_path": "art_prompt/aven-mindcensor/output.json",
+      "output_files": [],
+      "cost_usd": 0.0039942
+    },
+    "generate_flavor_text:baleful-strix": {
+      "completed": true,
+      "completed_at": "2026-02-23T17:45:58.854895",
+      "output_path": "generate_flavor_text/baleful-strix/output.json",
+      "output_files": [],
+      "cost_usd": 0.013126140000000001
+    },
+    "generate_flavor_text:aven-mindcensor": {
+      "completed": true,
+      "completed_at": "2026-02-23T18:06:07.422224",
+      "output_path": "generate_flavor_text/aven-mindcensor/output.json",
+      "output_files": [],
+      "cost_usd": 0.01505457
+    },
+    "generate_flavor_text:birds-of-paradise": {
+      "completed": true,
+      "completed_at": "2026-02-23T18:06:50.403637",
+      "output_path": "generate_flavor_text/birds-of-paradise/output.json",
+      "output_files": [],
+      "cost_usd": 0.0128132
     }
   }
 }

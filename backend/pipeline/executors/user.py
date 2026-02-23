@@ -117,12 +117,22 @@ class UserSelectExecutor(StepExecutor):
             web_options = []
             for opt in options:
                 if isinstance(opt, (str, Path)):
-                    # Make path relative to base_path for serving
+                    opt_path = Path(opt)
+                    is_file = False
                     try:
-                        rel_path = str(Path(opt).relative_to(ctx.base_path))
-                    except ValueError:
-                        rel_path = str(opt)
-                    web_options.append({"path": rel_path})
+                        candidate = opt_path if opt_path.is_absolute() else ctx.base_path / opt_path
+                        is_file = candidate.is_file()
+                    except (OSError, ValueError):
+                        pass
+
+                    if is_file:
+                        try:
+                            rel_path = str(opt_path.relative_to(ctx.base_path))
+                        except ValueError:
+                            rel_path = str(opt)
+                        web_options.append({"path": rel_path})
+                    else:
+                        web_options.append({"content": str(opt)})
                 else:
                     web_options.append({"content": str(opt)})
             

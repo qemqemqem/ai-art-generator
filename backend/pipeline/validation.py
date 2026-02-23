@@ -56,7 +56,7 @@ _PROVIDER_KEY_MAP: dict[str, tuple[list[str], str]] = {
     "dalle":      (["OPENAI_API_KEY"],                   "OPENAI_API_KEY"),
     "anthropic":  (["ANTHROPIC_API_KEY"],                "ANTHROPIC_API_KEY"),
     "claude":     (["ANTHROPIC_API_KEY"],                "ANTHROPIC_API_KEY"),
-    "perplexity": (["PERPLEXITYAI_API_KEY"],             "PERPLEXITYAI_API_KEY"),
+    "perplexity": (["PERPLEXITY_API_KEY", "PERPLEXITYAI_API_KEY"], "PERPLEXITY_API_KEY or PERPLEXITYAI_API_KEY"),
     "tavily":     (["TAVILY_API_KEY"],                   "TAVILY_API_KEY"),
     "pixellab":   (["PIXELLAB_API_KEY"],                 "PIXELLAB_API_KEY"),
 }
@@ -467,6 +467,10 @@ def validate_step_configs(spec: PipelineSpec) -> ValidationResult:
         elif step.type == StepType.GENERATE_IMAGE:
             if "prompt" not in config:
                 result.add_warning(f"Step '{step.id}' (generate_image) has no 'prompt' config")
+        
+        elif step.type == StepType.IMAGE_SEARCH:
+            if "query" not in config:
+                result.add_warning(f"Step '{step.id}' (image_search) has no 'query' config")
         
         elif step.type == StepType.ASSESS:
             # Assess can work without explicit config

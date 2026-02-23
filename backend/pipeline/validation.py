@@ -316,7 +316,8 @@ def validate_template_references(
                 field = match.group(2)
                 
                 if namespace in ("context", "ctx"):
-                    if field not in context_keys:
+                    root_field = field.split('.')[0]
+                    if root_field not in context_keys:
                         result.add_warning(
                             f"Step '{step_id}' references unknown context.{field}"
                         )

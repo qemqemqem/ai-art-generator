@@ -15,6 +15,7 @@ from PIL import Image
 
 from .base import ExecutorContext, StepExecutor, StepResult
 from .registry import register_executor
+from ..expressions import evaluate_expression
 from ..templates import substitute_template
 
 
@@ -54,6 +55,15 @@ class GenerateImageExecutor(StepExecutor):
         prompt = config.get("prompt", "")
         variations = config.get("variations", 1)
         size = config.get("size", 512)
+        
+        # Evaluate expression strings (e.g., "4 if asset.rarity in ['rare'] else 2")
+        if isinstance(variations, str):
+            expr_ctx = {}
+            if ctx.asset:
+                expr_ctx["asset"] = ctx.asset
+            if ctx.context:
+                expr_ctx["context"] = ctx.context
+            variations = int(evaluate_expression(variations, expr_ctx))
         
         # Substitute template variables
         prompt = substitute_template(

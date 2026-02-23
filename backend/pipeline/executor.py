@@ -454,7 +454,7 @@ class PipelineExecutor:
         
         # Add variation info if applicable
         variations = config.get("variations", 1)
-        if variations > 1 and step_type in ("generate_image", "generate_sprite"):
+        if isinstance(variations, int) and variations > 1 and step_type in ("generate_image", "generate_sprite"):
             base_action += f" ({variations} variations)"
         
         return base_action
@@ -701,6 +701,7 @@ class PipelineExecutor:
                     failed_deps = [req for req in step.requires if req in failed_steps]
                     if failed_deps:
                         steps_skipped += 1
+                        failed_steps.add(step.id)
                         reason = f"Step '{step.id}' skipped (failed deps: {', '.join(failed_deps)})"
                         errors.append(reason)
                         self._update_step_status(step.id, "skipped")
@@ -770,6 +771,7 @@ class PipelineExecutor:
                         failed_deps = [req for req in step.requires if req in failed_steps]
                         if failed_deps:
                             steps_skipped += 1
+                            failed_steps.add(step_id)
                             reason = f"Step '{step_id}' skipped (failed deps: {', '.join(failed_deps)})"
                             errors.append(reason)
                             self._update_step_status(step_id, "skipped")
@@ -939,8 +941,8 @@ class PipelineExecutor:
             else:
                 cache_setting = True
         
-        # Check condition
-        if step.condition:
+        # Check condition (defer to per-asset if step uses for_each)
+        if step.condition and not step.for_each:
             should_run = evaluate_condition(step.condition, {
                 "context": self.context,
                 "ctx": self.context,
@@ -1331,6 +1333,21 @@ class PipelineExecutor:
             async with semaphore:
                 asset_id = asset.get("id", f"asset-{asset_idx}")
                 asset_name = asset.get("name", asset_id)
+                
+                # Check per-asset condition
+                if step.condition:
+                    should_run = evaluate_condition(step.condition, {
+                        "asset": asset,
+                        "context": self.context,
+                        "ctx": self.context,
+                        **self.step_outputs,
+                    })
+                    if not should_run:
+                        async with results_lock:
+                            results.append(StepResult(success=True, cached=True))
+                            completed_count[0] += 1
+                        progress.update(task, advance=1)
+                        return
                 
                 # Mark asset as processing
                 self._update_asset_status(asset_id, "processing")

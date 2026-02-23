@@ -235,9 +235,13 @@ Task:
         
         duration = int((time.time() - start) * 1000)
         
+        output = {"content": results[0]}
+        if len(results) > 1:
+            output["variations"] = results
+        
         return StepResult(
             success=True,
-            output={"content": results[0]},
+            output=output,
             variations=results,
             duration_ms=duration,
             prompt=full_prompt,

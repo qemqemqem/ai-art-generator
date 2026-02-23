@@ -78,10 +78,10 @@ class UserSelectExecutor(StepExecutor):
         if options_from and options_from in ctx.step_outputs:
             source_output = ctx.step_outputs[options_from]
         else:
-            # Look for the most recent step with variations
+            # Look for the most recent step with variations or paths
             for sid in reversed(list(ctx.step_outputs.keys())):
                 output = ctx.step_outputs[sid]
-                if isinstance(output, dict) and "paths" in output:
+                if isinstance(output, dict) and ("paths" in output or "variations" in output):
                     source_output = output
                     options_from = sid
                     break

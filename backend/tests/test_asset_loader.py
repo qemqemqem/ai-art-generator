@@ -158,8 +158,35 @@ class TestLoadTXT:
         items = load_txt(txt_file)
         
         assert len(items) == 3
+        assert items[0]["name"] == "First item"
         assert items[0]["content"] == "First item"
-        assert items[0]["id"] == "item-001"
+        assert items[0]["id"] == "first-item"
+    
+    def test_slug_id_generation(self, tmp_path):
+        """Test that IDs are slugified from the line text."""
+        txt_file = tmp_path / "cards.txt"
+        txt_file.write_text(
+            "Birds of Paradise\n"
+            "Baleful Strix\n"
+            "Aven Mindcensor\n"
+        )
+        
+        items = load_txt(txt_file)
+        
+        assert items[0]["id"] == "birds-of-paradise"
+        assert items[0]["name"] == "Birds of Paradise"
+        assert items[1]["id"] == "baleful-strix"
+        assert items[2]["id"] == "aven-mindcensor"
+    
+    def test_slug_strips_punctuation(self, tmp_path):
+        """Test that apostrophes and commas are removed from slugs."""
+        txt_file = tmp_path / "names.txt"
+        txt_file.write_text("Nature's Claim\nKorvold, Fae-Cursed King\n")
+        
+        items = load_txt(txt_file)
+        
+        assert items[0]["id"] == "natures-claim"
+        assert items[1]["id"] == "korvold-fae-cursed-king"
     
     def test_blank_lines_ignored(self, tmp_path):
         """Test that blank lines are ignored."""

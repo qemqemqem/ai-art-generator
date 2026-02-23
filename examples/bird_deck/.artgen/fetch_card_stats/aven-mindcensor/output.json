@@ -1,0 +1,22 @@
+{
+  "step_id": "fetch_card_stats",
+  "asset_id": "aven-mindcensor",
+  "timestamp": "2026-02-23T04:04:58.622525",
+  "data": {
+    "mana_cost": "{2}{W}",
+    "type_line": "Creature \u2014 Bird Wizard",
+    "oracle_text": "Flash\nFlying\nIf an opponent would search a library, that player searches the top four cards of that library instead.",
+    "power": "2",
+    "toughness": "1",
+    "colors": [
+      "W"
+    ],
+    "color_identity": [
+      "W"
+    ],
+    "cmc": 3.0,
+    "rarity": "uncommon",
+    "set_name": "Commander Legends: Battle for Baldur's Gate",
+    "scryfall_uri": "https://scryfall.com/card/clb/688/aven-mindcensor?utm_source=api"
+  }
+}

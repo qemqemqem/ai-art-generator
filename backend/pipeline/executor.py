@@ -32,7 +32,7 @@ from .context import build_rich_context, get_asset_aware_step_outputs
 from .executors import ExecutorContext, StepExecutor, StepResult, get_executor
 from .expressions import evaluate_condition
 from .logging_config import setup_logging
-from .retry import DEFAULT_MAX_RETRIES, retry_on_any_error
+from .retry import DEFAULT_MAX_RETRIES, format_api_error, retry_on_any_error
 from .spec_parser import PipelineSpec, StepSpec, StepType, get_execution_order, load_pipeline
 from .templates import TemplateError, substitute_all
 
@@ -1035,7 +1035,7 @@ class PipelineExecutor:
                 max_retries=DEFAULT_MAX_RETRIES,
             )
         except Exception as e:
-            result = StepResult(success=False, error=str(e))
+            result = StepResult(success=False, error=format_api_error(e))
         
         if result.success:
             # Format cost if available
@@ -1437,7 +1437,7 @@ class PipelineExecutor:
                             on_retry=_on_retry,
                         )
                     except Exception as e:
-                        result = StepResult(success=False, error=str(e))
+                        result = StepResult(success=False, error=format_api_error(e))
                     
                     if result.success:
                         # Handle variations and selection (select: user or multiple variations)

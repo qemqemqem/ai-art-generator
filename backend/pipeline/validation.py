@@ -47,28 +47,104 @@ class ValidationResult:
         self.warnings.append(msg)
 
 
-def validate_environment() -> ValidationResult:
+# Maps provider name → (list of accepted env vars, human-readable description)
+# At least one env var in the list must be set.
+_PROVIDER_KEY_MAP: dict[str, tuple[list[str], str]] = {
+    "gemini":     (["GOOGLE_API_KEY", "GEMINI_API_KEY"], "GOOGLE_API_KEY or GEMINI_API_KEY"),
+    "google":     (["GOOGLE_API_KEY", "GEMINI_API_KEY"], "GOOGLE_API_KEY or GEMINI_API_KEY"),
+    "openai":     (["OPENAI_API_KEY"],                   "OPENAI_API_KEY"),
+    "dalle":      (["OPENAI_API_KEY"],                   "OPENAI_API_KEY"),
+    "anthropic":  (["ANTHROPIC_API_KEY"],                "ANTHROPIC_API_KEY"),
+    "claude":     (["ANTHROPIC_API_KEY"],                "ANTHROPIC_API_KEY"),
+    "perplexity": (["PERPLEXITYAI_API_KEY"],             "PERPLEXITYAI_API_KEY"),
+    "tavily":     (["TAVILY_API_KEY"],                   "TAVILY_API_KEY"),
+    "pixellab":   (["PIXELLAB_API_KEY"],                 "PIXELLAB_API_KEY"),
+}
+
+_TEXT_STEP_TYPES = {
+    StepType.RESEARCH, StepType.GENERATE_TEXT, StepType.GENERATE_NAME,
+    StepType.GENERATE_PROMPT, StepType.ASSESS, StepType.REVIEW, StepType.REFINE,
+}
+_IMAGE_STEP_TYPES = {StepType.GENERATE_IMAGE, StepType.GENERATE_SPRITE}
+
+
+def _collect_steps(steps: list[StepSpec]) -> list[StepSpec]:
+    """Recursively collect all steps including those nested in loop steps."""
+    result = []
+    for step in steps:
+        result.append(step)
+        nested = step.config.get("steps")
+        if nested and isinstance(nested, list):
+            result.extend(_collect_steps(nested))
+    return result
+
+
+def validate_provider_keys(spec: PipelineSpec) -> ValidationResult:
     """
-    Validate required environment variables.
-    
-    Checks for API keys needed by providers.
+    Validate that every provider used in the pipeline has its API key set.
+
+    Walks all steps (including nested loop steps) and resolves the provider
+    each step will use at runtime, then checks the corresponding env vars.
     """
     result = ValidationResult(valid=True)
-    
-    # Required for Gemini image generation (supports both env var names)
+
+    used: set[str] = set()
+    for step in _collect_steps(spec.steps):
+        if step.provider:
+            used.add(step.provider)
+        elif step.type in _TEXT_STEP_TYPES:
+            used.add(spec.providers.text)
+        elif step.type in _IMAGE_STEP_TYPES:
+            used.add(spec.providers.image)
+
+    for provider in used:
+        if provider == "litellm":
+            # litellm delegates to whichever underlying key is present;
+            # warn if none of the common ones are configured.
+            any_text_key = any(
+                os.environ.get(v)
+                for v in ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY", "GEMINI_API_KEY"]
+            )
+            if not any_text_key:
+                result.add_warning(
+                    "Provider 'litellm' is used but no text API key is set "
+                    "(OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY)."
+                )
+            continue
+
+        if provider not in _PROVIDER_KEY_MAP:
+            continue
+
+        env_vars, description = _PROVIDER_KEY_MAP[provider]
+        if not any(os.environ.get(v) for v in env_vars):
+            result.add_error(
+                f"Provider '{provider}' is used in this pipeline but {description} is not set."
+            )
+
+    return result
+
+
+def validate_environment() -> ValidationResult:
+    """
+    Validate required environment variables without a pipeline spec.
+
+    Used as a baseline startup check. For a more precise check that only
+    tests keys actually needed by the pipeline, use validate_provider_keys().
+    """
+    result = ValidationResult(valid=True)
+
     if not os.environ.get("GOOGLE_API_KEY") and not os.environ.get("GEMINI_API_KEY"):
         result.add_error(
             "GOOGLE_API_KEY or GEMINI_API_KEY environment variable not set. "
             "Required for image generation with Gemini."
         )
-    
-    # Optional but recommended
+
     if not os.environ.get("OPENAI_API_KEY") and not os.environ.get("ANTHROPIC_API_KEY"):
         result.add_warning(
             "No OPENAI_API_KEY or ANTHROPIC_API_KEY set. "
             "Text generation will use Gemini (slower)."
         )
-    
+
     return result
 
 
@@ -441,30 +517,30 @@ def validate_all(
     combined = ValidationResult(valid=True)
     spec: PipelineSpec | None = None
     base_path = pipeline_path.parent
-    
-    # Check environment
-    if check_env:
-        env_result = validate_environment()
-        combined.errors.extend(env_result.errors)
-        combined.warnings.extend(env_result.warnings)
-        if not env_result.valid:
-            combined.valid = False
-    
-    # Check file
+
+    # Check file first so we can parse the spec before checking env keys
     file_result = validate_pipeline_file(pipeline_path)
     combined.errors.extend(file_result.errors)
     combined.warnings.extend(file_result.warnings)
     if not file_result.valid:
         combined.valid = False
         return combined, None
-    
+
     # Try to parse
     try:
         spec = load_pipeline(pipeline_path)
     except (ParseError, ValidationError) as e:
         combined.add_error(f"Pipeline parse error: {e}")
         return combined, None
-    
+
+    # Check API keys for providers actually used in this pipeline
+    if check_env:
+        env_result = validate_provider_keys(spec)
+        combined.errors.extend(env_result.errors)
+        combined.warnings.extend(env_result.warnings)
+        if not env_result.valid:
+            combined.valid = False
+
     # Validate external files
     files_result = validate_external_files(spec, base_path)
     combined.errors.extend(files_result.errors)

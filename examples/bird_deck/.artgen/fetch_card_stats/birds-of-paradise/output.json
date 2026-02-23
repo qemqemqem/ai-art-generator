@@ -1,0 +1,22 @@
+{
+  "step_id": "fetch_card_stats",
+  "asset_id": "birds-of-paradise",
+  "timestamp": "2026-02-23T04:04:58.613738",
+  "data": {
+    "mana_cost": "{G}",
+    "type_line": "Creature \u2014 Bird",
+    "oracle_text": "Flying\n{T}: Add one mana of any color.",
+    "power": "0",
+    "toughness": "1",
+    "colors": [
+      "G"
+    ],
+    "color_identity": [
+      "G"
+    ],
+    "cmc": 1.0,
+    "rarity": "rare",
+    "set_name": "Ravnica Remastered",
+    "scryfall_uri": "https://scryfall.com/card/rvr/133/birds-of-paradise?utm_source=api"
+  }
+}

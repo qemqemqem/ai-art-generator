@@ -73,14 +73,17 @@ from .retry import (
     with_retry,
     rate_limited_call,
     get_rate_limiter,
+    format_api_error,
     API_RETRY_CONFIG,
     DEFAULT_MAX_RETRIES,
+    NON_RETRYABLE_EXCEPTIONS,
 )
 
 from .validation import (
     ValidationResult,
     validate_all,
     validate_environment,
+    validate_provider_keys,
     validate_pipeline_file,
     validate_assets,
     print_validation_result,
@@ -107,6 +110,14 @@ from .web_bridge import (
 
 from .web_server import (
     WebServer,
+)
+
+from .orchestrator import (
+    PipelineOrchestrator,
+)
+
+from .project import (
+    Project,
 )
 
 __all__ = [
@@ -162,11 +173,14 @@ __all__ = [
     "rate_limited_call",
     "get_rate_limiter",
     "API_RETRY_CONFIG",
-    
+    "format_api_error",
+    "NON_RETRYABLE_EXCEPTIONS",
+
     # Validation
     "ValidationResult",
     "validate_all",
     "validate_environment",
+    "validate_provider_keys",
     "validate_pipeline_file",
     "validate_assets",
     "print_validation_result",
@@ -188,4 +202,8 @@ __all__ = [
     "get_bridge",
     "reset_bridge",
     "WebServer",
+    
+    # Orchestrator and Project
+    "PipelineOrchestrator",
+    "Project",
 ]

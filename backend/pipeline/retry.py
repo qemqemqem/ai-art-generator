@@ -9,6 +9,7 @@ Provides:
 
 import asyncio
 import random
+import re
 import time
 from collections import deque
 from dataclasses import dataclass, field
@@ -18,6 +19,52 @@ from typing import Any, Callable, TypeVar
 from rich.console import Console
 
 console = Console()
+
+
+# ---------------------------------------------------------------------------
+# Fatal exceptions - permanent failures that should never be retried
+# ---------------------------------------------------------------------------
+
+# Populated below via try/import so we don't hard-depend on litellm at import time
+NON_RETRYABLE_EXCEPTIONS: tuple[type[Exception], ...] = ()
+
+try:
+    from litellm import (
+        AuthenticationError as _LiteLLMAuthError,
+        PermissionDeniedError as _LiteLLMPermissionError,
+        BudgetExceededError as _LiteLLMBudgetError,
+        LiteLLMUnknownProvider as _LiteLLMUnknownProvider,
+    )
+    NON_RETRYABLE_EXCEPTIONS = NON_RETRYABLE_EXCEPTIONS + (
+        _LiteLLMAuthError,
+        _LiteLLMPermissionError,
+        _LiteLLMBudgetError,
+        _LiteLLMUnknownProvider,
+    )
+except ImportError:
+    pass
+
+
+def format_api_error(e: Exception) -> str:
+    """
+    Return a clean, human-readable error message from an API exception.
+
+    Strips embedded HTML (e.g., Cloudflare 401 pages) and truncates
+    excessively long messages that add no diagnostic value.
+    """
+    msg = str(e)
+
+    # Strip embedded HTML responses (e.g., Perplexity/Cloudflare 401 pages)
+    html_match = re.search(r'\s*<html[\s>]', msg, re.IGNORECASE)
+    if html_match:
+        msg = msg[:html_match.start()].rstrip(' -\n')
+
+    # Truncate if still very long
+    if len(msg) > 300:
+        msg = msg[:300].rstrip() + " ..."
+
+    return msg.strip() or type(e).__name__
+
 
 T = TypeVar("T")
 
@@ -369,6 +416,10 @@ async def retry_on_any_error(
         try:
             return await func(*args, **kwargs)
         except Exception as e:
+            # Fatal errors are permanent - retrying will never help
+            if NON_RETRYABLE_EXCEPTIONS and isinstance(e, NON_RETRYABLE_EXCEPTIONS):
+                raise
+
             last_exception = e
 
             if attempt < max_retries:
@@ -379,11 +430,11 @@ async def retry_on_any_error(
                 delay = max(0.1, delay)
 
                 if on_retry:
-                    on_retry(attempt + 1, str(e))
+                    on_retry(attempt + 1, format_api_error(e))
                 else:
                     console.print(
                         f"  [yellow]Retry {attempt + 1}/{max_retries} "
-                        f"after {delay:.1f}s: {type(e).__name__}: {e}[/yellow]"
+                        f"after {delay:.1f}s: {type(e).__name__}: {format_api_error(e)}[/yellow]"
                     )
 
                 await asyncio.sleep(delay)

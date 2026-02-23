@@ -80,10 +80,9 @@ def setup_env(env_path: Optional[str] = None):
     Search order:
     1. Explicit --env flag
     2. ARTGEN_ENV_FILE environment variable
-    3. .env.local in current directory
-    4. .env in current directory
-    5. ~/.config/artgen/.env
-    6. ~/.env.local
+    3. .env.local / .env in current directory, then each parent directory
+    4. ~/.config/artgen/.env
+    5. ~/.env.local
     """
     if env_path:
         if Path(env_path).exists():
@@ -97,15 +96,21 @@ def setup_env(env_path: Optional[str] = None):
     if os.environ.get("ARTGEN_ENV_FILE"):
         return os.environ["ARTGEN_ENV_FILE"]
     
-    # Search order
-    search_paths = [
-        Path.cwd() / ".env.local",
-        Path.cwd() / ".env",
-        Path.home() / ".config" / "artgen" / ".env",
-        Path.home() / ".env.local",
-    ]
+    # Walk up from cwd looking for .env.local or .env
+    directory = Path.cwd()
+    while True:
+        for name in (".env.local", ".env"):
+            candidate = directory / name
+            if candidate.exists():
+                os.environ["ARTGEN_ENV_FILE"] = str(candidate)
+                return str(candidate)
+        parent = directory.parent
+        if parent == directory:
+            break
+        directory = parent
     
-    for path in search_paths:
+    # Fall back to home-dir locations
+    for path in [Path.home() / ".config" / "artgen" / ".env", Path.home() / ".env.local"]:
         if path.exists():
             os.environ["ARTGEN_ENV_FILE"] = str(path)
             return str(path)
@@ -1662,14 +1667,14 @@ First time? Run: artgen init
     interactive_parser.add_argument(
         "-p", "--port",
         type=int,
-        default=8000,
-        help="Backend API port (default: 8000)",
+        default=8471,
+        help="Backend API port (default: 8471)",
     )
     interactive_parser.add_argument(
         "-P", "--ui-port",
         type=int,
-        default=5173,
-        help="Frontend UI port (default: 5173)",
+        default=5471,
+        help="Frontend UI port (default: 5471)",
     )
     interactive_parser.add_argument(
         "--no-browser",

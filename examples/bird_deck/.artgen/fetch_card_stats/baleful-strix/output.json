@@ -1,0 +1,24 @@
+{
+  "step_id": "fetch_card_stats",
+  "asset_id": "baleful-strix",
+  "timestamp": "2026-02-23T04:04:58.649422",
+  "data": {
+    "mana_cost": "{U}{B}",
+    "type_line": "Artifact Creature \u2014 Bird",
+    "oracle_text": "Flying, deathtouch\nWhen this creature enters, draw a card.",
+    "power": "1",
+    "toughness": "1",
+    "colors": [
+      "B",
+      "U"
+    ],
+    "color_identity": [
+      "B",
+      "U"
+    ],
+    "cmc": 2.0,
+    "rarity": "rare",
+    "set_name": "Outlaws of Thunder Junction Commander",
+    "scryfall_uri": "https://scryfall.com/card/otc/215/baleful-strix?utm_source=api"
+  }
+}

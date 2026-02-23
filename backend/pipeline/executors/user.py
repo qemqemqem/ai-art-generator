@@ -315,6 +315,17 @@ class UserApproveExecutor(StepExecutor):
                 except ValueError:
                     rel_path = str(artifact_path)
                 result["path"] = rel_path
+            else:
+                # No image — look for text content in step outputs
+                for sid in reversed(list(ctx.step_outputs.keys())):
+                    output = ctx.step_outputs[sid]
+                    if isinstance(output, dict):
+                        for key in ("content", "text", "summary"):
+                            if key in output and isinstance(output[key], str):
+                                result["content"] = output[key]
+                                break
+                    if "content" in result:
+                        break
             
             # Try to find the generation prompt from previous step outputs
             for sid in reversed(list(ctx.step_outputs.keys())):

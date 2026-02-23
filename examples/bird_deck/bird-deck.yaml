@@ -60,7 +60,7 @@ steps:
     type: script
     for_each: asset
     config:
-      command: "python scripts/scryfall_lookup.py"
+      command: "python3 scripts/scryfall_lookup.py"
       input: json
       output_format: json
       timeout: 10

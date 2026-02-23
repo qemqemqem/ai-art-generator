@@ -24,10 +24,8 @@ def load_env_file(env_path: Optional[str] = None) -> Path | None:
     
     Priority:
     1. Explicitly provided path (CLI flag or ARTGEN_ENV_FILE)
-    2. .env.local in current directory
-    3. .env in current directory
-    4. .env.local in tool directory (ai-art-generator/)
-    5. .env in tool directory
+    2. .env.local / .env in current directory, then each parent directory
+    3. .env.local / .env in tool directory (ai-art-generator/)
     """
     # Check for explicit path first
     explicit_path = env_path or os.getenv("ARTGEN_ENV_FILE")
@@ -39,21 +37,18 @@ def load_env_file(env_path: Optional[str] = None) -> Path | None:
         else:
             print(f"Warning: Specified env file not found: {path}")
     
-    # Search locations
-    cwd = Path.cwd()
-    tool_dir = Path(__file__).parent.parent.parent  # ai-art-generator/
-    
-    search_paths = [
-        cwd / ".env.local",
-        cwd / ".env",
-        tool_dir / ".env.local",
-        tool_dir / ".env",
-    ]
-    
-    for path in search_paths:
-        if path.exists():
-            load_dotenv(path)
-            return path
+    # Walk up from cwd looking for .env.local or .env
+    directory = Path.cwd()
+    while True:
+        for name in (".env.local", ".env"):
+            candidate = directory / name
+            if candidate.exists():
+                load_dotenv(candidate)
+                return candidate
+        parent = directory.parent
+        if parent == directory:
+            break
+        directory = parent
     
     # Fallback to default dotenv behavior
     load_dotenv()

@@ -3993,9 +3993,10 @@ def get_html_page() -> str:
             approvalTitle.textContent = isSelect 
                 ? `Select best option for "${request.asset_name}"`
                 : `Approve result for "${request.asset_name}"?`;
+            const hasImage = request.options.some(o => o.path || o.image_path);
             approvalSubtitle.textContent = isSelect
                 ? 'Click on an option to select it'
-                : 'Click the image to approve';
+                : hasImage ? 'Click the image to approve' : 'Review the result below';
             
             // Render options
             optionsGrid.innerHTML = '';

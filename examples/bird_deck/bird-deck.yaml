@@ -1,0 +1,179 @@
+# Bird EDH Deck
+# Real MTG cards re-skinned with real bird species, bird facts, and bird art.
+#
+# Pipeline:
+#   1. Fetch real card stats from Scryfall
+#   2. Suggest a real bird name (human approves or vetoes)
+#   3. Generate flavor text as bird factoids (pick 1 of 4)
+#   4. Generate card art depicting the bird
+
+name: "Bird EDH Deck"
+version: "1.0"
+description: |
+  Takes a list of real Magic: The Gathering card names and re-skins each one:
+    - Card name → a real bird species
+    - Card art → AI-generated bird artwork
+    - Flavor text → a real factoid about that bird
+  
+  The original card's stats (mana cost, type, abilities) stay unchanged.
+
+# =============================================================================
+# Type Definitions
+# =============================================================================
+
+types:
+  BirdCard:
+    id: text
+    name: text                    # Original MTG card name (e.g., "Birds of Paradise")
+
+# =============================================================================
+# Context
+# =============================================================================
+
+context:
+  deck_name: "Aviary of the Ancients"
+  format: "EDH / Commander"
+  art_style: |
+    Wildlife photography style. Natural lighting, shallow depth of field,
+    the bird in its natural habitat. Rich colors, sharp detail on plumage.
+    No text, no frames, no watermarks.
+
+# =============================================================================
+# Assets
+# =============================================================================
+
+assets:
+  type: BirdCard
+  from_file: cards.txt
+
+# =============================================================================
+# Steps
+# =============================================================================
+
+steps:
+
+  # ---------------------------------------------------------------------------
+  # Phase 1: Fetch real card data from Scryfall
+  # ---------------------------------------------------------------------------
+
+  - id: fetch_card_stats
+    type: script
+    for_each: asset
+    config:
+      command: "python scripts/scryfall_lookup.py"
+      input: json
+      output_format: json
+      timeout: 10
+
+  # ---------------------------------------------------------------------------
+  # Phase 2: Suggest a real bird species name
+  # ---------------------------------------------------------------------------
+
+  - id: suggest_bird_name
+    type: generate_text
+    for_each: asset
+    requires: [fetch_card_stats]
+    until: "approved"
+    max_attempts: 5
+    config:
+      prompt: |
+        You are helping re-skin a Magic: The Gathering card as a bird-themed card.
+
+        Original card: {asset.name}
+        Mana cost: {fetch_card_stats.mana_cost}
+        Type: {fetch_card_stats.type_line}
+        Abilities: {fetch_card_stats.oracle_text}
+        Colors: {fetch_card_stats.colors}
+
+        Suggest a REAL bird species whose characteristics match the flavor and
+        mechanics of this card. The bird must be a real species — no made-up names.
+
+        Respond in exactly this format:
+        BIRD: <full common name of the bird>
+        RATIONALE: <2-3 sentences explaining why this bird fits the card>
+
+  # ---------------------------------------------------------------------------
+  # Phase 3: Research the bird, then generate flavor text
+  # ---------------------------------------------------------------------------
+
+  - id: research_bird
+    type: research
+    for_each: asset
+    requires: [suggest_bird_name]
+    provider: perplexity
+    config:
+      query: |
+        {suggest_bird_name.content} bird species:
+        - Habitat, range, and migration patterns
+        - Distinctive behaviors or hunting techniques
+        - Unique physical characteristics (plumage, size, calls)
+        - Interesting or surprising facts
+        - Conservation status
+
+  - id: generate_flavor_text
+    type: generate_text
+    for_each: asset
+    requires: [research_bird]
+    variations: 4
+    select: "user"
+    config:
+      prompt: |
+        Write a single short factoid about a real bird for use as Magic: The
+        Gathering flavor text.
+
+        Bird: {suggest_bird_name.content}
+        Original card: {asset.name}
+        Research: {research_bird.content}
+
+        The factoid should be:
+        - A real, accurate fact about this bird species
+        - Written in an evocative, slightly poetic tone (like MTG flavor text)
+        - 1-2 sentences, max 120 characters
+        - No quotation marks or attribution
+
+        Respond with ONLY the flavor text, nothing else.
+
+  # ---------------------------------------------------------------------------
+  # Phase 4: Generate card art
+  # ---------------------------------------------------------------------------
+
+  - id: art_prompt
+    type: generate_prompt
+    for_each: asset
+    requires: [suggest_bird_name, research_bird]
+    config:
+      prompt: |
+        Create an image generation prompt for a Magic: The Gathering card
+        depicting a real bird.
+
+        Bird: {suggest_bird_name.content}
+        Card type: {fetch_card_stats.type_line}
+        Research (use for accurate plumage and habitat details): {research_bird.content}
+        Art direction: {context.art_style}
+
+        The prompt should describe:
+        - The specific bird species in a dramatic, natural pose
+        - Accurate plumage colors and markings based on the research
+        - A habitat appropriate for this bird
+        - Lighting and mood fitting for a trading card illustration
+        - Photorealistic wildlife photography style
+
+        Output ONLY the image prompt, no preamble.
+
+  - id: card_art
+    type: generate_image
+    for_each: asset
+    requires: [art_prompt]
+    config:
+      prompt: "{art_prompt.output}"
+      variations: 2
+      size: 1024
+      aspect_ratio: "4:3"
+
+  - id: approve_art
+    type: user_approve
+    for_each: asset
+    requires: [card_art]
+    config:
+      prompt: |
+        Approve art for {asset.name} (re-skinned as {suggest_bird_name.content})?

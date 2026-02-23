@@ -1,0 +1,34 @@
+{
+  "pipeline_hash": "c23362b72706dd3d",
+  "updated_at": "2026-02-23T03:43:57.162311",
+  "steps": {
+    "research_art": {
+      "completed": true,
+      "completed_at": "2026-02-23T03:42:26.170814",
+      "output_path": "research_art/output.json",
+      "output_files": [],
+      "cost_usd": 0.0097104
+    },
+    "research_mtg": {
+      "completed": true,
+      "completed_at": "2026-02-23T03:42:36.048013",
+      "output_path": "research_mtg/output.json",
+      "output_files": [],
+      "cost_usd": 0.015124900000000002
+    },
+    "style_guide": {
+      "completed": true,
+      "completed_at": "2026-02-23T03:42:53.394973",
+      "output_path": "style_guide/output.json",
+      "output_files": [],
+      "cost_usd": 0.0100474
+    },
+    "brainstorm_mechanics": {
+      "completed": true,
+      "completed_at": "2026-02-23T03:43:57.162120",
+      "output_path": "brainstorm_mechanics/output.json",
+      "output_files": [],
+      "cost_usd": 0.04518553
+    }
+  }
+}

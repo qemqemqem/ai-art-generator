@@ -37,7 +37,7 @@ from .spec_parser import PipelineSpec, StepSpec, StepType, get_execution_order, 
 from .templates import TemplateError, substitute_all
 
 # Import all executors to register them
-from .executors import assess, fin, image, mse, text, user
+from .executors import assess, fin, image, mse, script, text, user
 
 console = Console()
 
@@ -732,7 +732,10 @@ class PipelineExecutor:
                     )
                     self._update_step_status(step.id, "running")
                     
-                    result = await self._execute_step(step, base_path, state_dir)
+                    try:
+                        result = await self._execute_step(step, base_path, state_dir)
+                    except Exception as e:
+                        result = StepResult(success=False, error=str(e))
                     
                     if result.cached:
                         steps_skipped += 1
@@ -1009,12 +1012,16 @@ class PipelineExecutor:
         )
         
         # Substitute templates in config
-        config = substitute_all(
-            step.config,
-            self.context,
-            None,
-            self.step_outputs,
-        )
+        try:
+            config = substitute_all(
+                step.config,
+                self.context,
+                None,
+                self.step_outputs,
+            )
+        except TemplateError as e:
+            console.print(f"    [red]✗[/red] Template error: {e}")
+            return StepResult(success=False, error=str(e))
         config["_step_id"] = step.id
         
         # Execute with retry on any error
@@ -1504,12 +1511,17 @@ class PipelineExecutor:
             # Run with parallelism controlled by semaphore
             gather_results = await asyncio.gather(*tasks, return_exceptions=True)
             
-            # Check for exceptions in gather results
+            # Check for exceptions in gather results — track as failures
             for i, res in enumerate(gather_results):
                 if isinstance(res, Exception):
                     console.print(f"    [red]Task {i} exception: {res}[/red]")
                     import traceback
                     traceback.print_exception(type(res), res, res.__traceback__)
+                    results.append(StepResult(success=False, error=str(res)))
+                    asset_idx, asset = pending_assets[i]
+                    asset_id = asset.get("id", f"asset-{asset_idx}")
+                    asset_name = asset.get("name", asset_id)
+                    failures.append((asset_id, asset_name, str(res)))
         
         # Evaluate results: partial success if some assets succeeded
         succeeded = [r for r in results if r.success]

@@ -31,6 +31,9 @@ class ProviderRegistry:
         self._text_providers["gemini"] = LiteLLMTextProvider(model="gemini/gemini-2.5-flash")
         self._text_providers["gemini_legacy"] = GeminiTextProvider()  # Old unstructured
         
+        # Perplexity for research (grounded in web search)
+        self._text_providers["perplexity"] = LiteLLMTextProvider(model="perplexity/sonar-pro")
+        
         # TODO: Add more providers as needed
         # self._image_providers["dalle"] = DalleImageProvider()
         # self._text_providers["claude"] = LiteLLMTextProvider(model="claude-3-5-sonnet-latest")

@@ -276,16 +276,24 @@ def load_jsonl(file_path: Path) -> list[dict[str, Any]]:
 
 
 def load_txt(file_path: Path) -> list[dict[str, Any]]:
-    """Load items from a text file (one per line)."""
+    """Load items from a text file (one per line).
+    
+    Each non-empty line becomes an asset with:
+      - id: slugified version of the line (e.g., "birds-of-paradise")
+      - name: the original line text
+      - content: alias for name (backward compat)
+    """
     items = []
     
     with open(file_path, "r", encoding="utf-8") as f:
-        for i, line in enumerate(f, 1):
+        for line in f:
             line = line.strip()
             if not line:
                 continue
+            slug = line.lower().replace(" ", "-").replace("'", "").replace(",", "")
             items.append({
-                "id": f"item-{i:03d}",
+                "id": slug,
+                "name": line,
                 "content": line,
             })
     

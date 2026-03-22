@@ -34,6 +34,9 @@ NOISY_LOGGERS = [
     "google.api_core",
     "grpc",
     "PIL",
+    "google_genai",
+    "google_genai._api_client",
+    "google_genai.models",
 ]
 
 # Our own loggers (these get more permissive levels)

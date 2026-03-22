@@ -42,7 +42,7 @@ def cli():
 @click.option("--input", "-i", "input_file", type=click.Path(exists=True),
               help="Override asset input file")
 @click.option("--clean-state", is_flag=True,
-              help="Delete pipeline state directory before running")
+              help="Delete all cached outputs before running (forces full regeneration)")
 @click.option("--auto-approve", "-y", is_flag=True,
               help="Auto-approve all selections (no human interaction)")
 @click.option("--verbose", "-v", is_flag=True,
@@ -76,7 +76,16 @@ def run(
     no_browser: bool,
     log_file: str | None,
 ):
-    """Run an ArtGen pipeline."""
+    """Run an ArtGen pipeline.
+
+    \b
+    Caching:
+      By default, completed steps/assets are skipped on re-run (resume mode).
+      To force a full regeneration, use --clean-state to wipe all cached data.
+      To selectively re-run specific steps or assets, use `artgen clean`
+      first (e.g. `artgen clean pipeline.yaml -s step_id -a asset_id`).
+      You can also set `cache: false` on individual steps in the YAML.
+    """
     
     pipeline_path = Path(pipeline)
     
@@ -364,7 +373,14 @@ def show(pipeline: str, graph: bool):
 @click.option("--asset", "-a", help="Clear specific asset only")
 @click.option("--force", "-f", is_flag=True, help="Don't ask for confirmation")
 def clean(pipeline: str, step: str | None, asset: str | None, force: bool):
-    """Clear cached data for a pipeline."""
+    """Clear cached data for a pipeline.
+
+    \b
+    Use before `artgen run` to selectively re-run parts of a pipeline:
+      artgen clean pipeline.yaml                    # clear everything
+      artgen clean pipeline.yaml -s art_prompt      # clear one step
+      artgen clean pipeline.yaml -s card_art -a elf # clear one asset in one step
+    """
     
     pipeline_path = Path(pipeline)
     

@@ -61,10 +61,11 @@ class ImageSearchExecutor(StepExecutor):
             )
             query = f"{query} {style}"
 
+        fetch_count = min(count * 3, 10)
         provider = SerpAPISearchProvider()
         results = await provider.search(
             query,
-            count=count,
+            count=fetch_count,
             aspect_ratio=aspect_ratio,
             image_type=image_type,
             safe_search=safe_search,
@@ -78,13 +79,17 @@ class ImageSearchExecutor(StepExecutor):
 
         output_paths = []
         urls = []
-        for i, result in enumerate(results):
+        saved = 0
+        for result in results:
+            if saved >= count:
+                break
             try:
                 img = await download_image(result.url)
-                path = self.get_image_output_path(ctx, "image_search", i)
+                path = self.get_image_output_path(ctx, "image_search", saved)
                 img.save(path)
                 output_paths.append(path)
                 urls.append(result.url)
+                saved += 1
             except Exception:
                 logger.warning("Failed to download image: %s", result.url, exc_info=True)
 

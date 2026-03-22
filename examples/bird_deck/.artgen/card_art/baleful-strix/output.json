@@ -1,0 +1,15 @@
+{
+  "step_id": "card_art",
+  "asset_id": "baleful-strix",
+  "timestamp": "2026-03-22T22:29:36.718121",
+  "data": {
+    "query": "BIRD: Greater Sooty Owl\nRATIONALE: The Greater Sooty Owl's strikingly dark, almost black, plumage perfectly embodies a \"baleful\" and mysterious aesthetic, aligning with the card's blue-black colors. As a supremely silent, nocturnal predator, its precise and deadly hunting skills strongly evoke the 'deathtouch' ability, while its nature as an owl connects naturally to the 'draw a card' wisdom and foresight. This species also directly relates to the \"Strix\" in the original card's name. wildlife photography",
+    "paths": [
+      "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/baleful-strix/v1.png"
+    ],
+    "urls": [
+      "https://cdn-thumbnails.huggingface.co/social-thumbnails/models/jkang/espnet2_librispeech_100_conformer_word.png"
+    ]
+  },
+  "prompt": "BIRD: Greater Sooty Owl\nRATIONALE: The Greater Sooty Owl's strikingly dark, almost black, plumage perfectly embodies a \"baleful\" and mysterious aesthetic, aligning with the card's blue-black colors. As a supremely silent, nocturnal predator, its precise and deadly hunting skills strongly evoke the 'deathtouch' ability, while its nature as an owl connects naturally to the 'draw a card' wisdom and foresight. This species also directly relates to the \"Strix\" in the original card's name. wildlife photography"
+}

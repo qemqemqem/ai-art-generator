@@ -1,0 +1,66 @@
+mse_version: 2.0.2
+game: magic
+game_version: 2020-04-25
+stylesheet: m15-altered
+stylesheet_version: 2020-09-04
+set_info:
+	title: phasing_lands
+	symbol:
+	masterpiece_symbol:
+styling:
+	magic-m15-altered:
+		other_options: auto vehicles, auto nyx crowns
+		text_box_mana_symbols: magic-mana-small.mse-symbol-font
+		level_mana_symbols: magic-mana-large.mse-symbol-font
+		overlay:
+card:
+	has_styling: false
+	time_created: 2026-03-22 16:00:27
+	time_modified: 2026-03-22 16:00:27
+	name: Semigeddon
+	image: image0
+	super_type: <word-list-type>Sorcery</word-list-type>
+	sub_type: <word-list-type></word-list-type>
+	casting_cost: 3W
+	rule_text:
+		Put a phasing counter on each land.
+	flavor_text: <i-flavor>Not destroyed, but merely… deferred. The world shimmered, then slipped away.</i-flavor>
+	power: 
+	toughness: 
+	loyalty: 
+	illustrator: AI Generated
+	rarity: common
+card:
+	has_styling: false
+	time_created: 2026-03-22 16:00:27
+	time_modified: 2026-03-22 16:00:27
+	name: Stone Drizzle
+	image: image1
+	super_type: <word-list-type>Sorcery</word-list-type>
+	sub_type: <word-list-type></word-list-type>
+	casting_cost: 2R
+	rule_text:
+		Put a phasing counter on target land.
+	flavor_text: <i-flavor>Not shattered, but softened. The peaks blurred, then shimmered, into whispers of what they were.</i-flavor>
+	power: 
+	toughness: 
+	loyalty: 
+	illustrator: AI Generated
+	rarity: common
+card:
+	has_styling: false
+	time_created: 2026-03-22 16:00:27
+	time_modified: 2026-03-22 16:00:27
+	name: Parboil
+	image: image2
+	super_type: <word-list-type>Instant</word-list-type>
+	sub_type: <word-list-type></word-list-type>
+	casting_cost: 3R
+	rule_text:
+		Put a phasing counter on all Islands.
+	flavor_text: <i-flavor>The seas themselves began to parboil, and every shore shimmered, half-fading into the ethereal.</i-flavor>
+	power: 
+	toughness: 
+	loyalty: 
+	illustrator: AI Generated
+	rarity: common

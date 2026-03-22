@@ -1,0 +1,15 @@
+{
+  "step_id": "flavor_text",
+  "asset_id": "semigeddon",
+  "timestamp": "2026-03-22T22:59:49.339268",
+  "data": {
+    "content": "Not destroyed, but merely\u2026 deferred. The world shimmered, then slipped away."
+  },
+  "prompt": "Background Context:\nProject Context:\n- set_name: Phasing Lands\n- theme: Land destruction reimagined as phasing \u2014 lands flicker out of existence\nrather than being destroyed outright. A gentler apocalypse.\n\n- art_style: Dark fantasy illustration. Dramatic lighting with an ethereal,\notherworldly glow. Landscapes and terrain warping, shimmering,\nhalf-fading from reality. Rich color palette: deep reds, warm golds,\nand spectral blues. No text, no card frames, no watermarks.\n\n\nCurrent Asset:\n- name: Semigeddon\n- mana_cost: 3W\n- type_line: Sorcery\n- oracle_text: Put a phasing counter on each land.\n\n\nTask:\nWrite a short flavor text for a custom Magic: The Gathering card.\n\nCard name: Semigeddon\nMana cost: 3W\nType: Sorcery\nRules text: Put a phasing counter on each land.\n\nTheme: Land destruction reimagined as phasing \u2014 lands flicker out of existence\nrather than being destroyed outright. A gentler apocalypse.\n\n\nThe flavor text should:\n- Evoke the feeling of lands phasing out of existence\n- Be 1-2 sentences, max 120 characters\n- Match the tone of real MTG flavor text (poetic, ominous, evocative)\n- Not repeat the rules text\n\nRespond with ONLY the flavor text, nothing else.\n",
+  "cost_usd": 0.0026119,
+  "tokens_used": {
+    "prompt_tokens": 298,
+    "completion_tokens": 1009,
+    "total_tokens": 1307
+  }
+}

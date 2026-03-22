@@ -1,0 +1,14 @@
+{
+  "step_id": "render_full_cards",
+  "asset_id": null,
+  "timestamp": "2026-03-22T23:00:30.688149",
+  "data": {
+    "mse_set": "/home/keenan/Dev/ai-art-generator/examples/mock_cards/.artgen/render_full_cards/phasing_lands.mse-set",
+    "cards_rendered": 3,
+    "paths": [
+      "/home/keenan/Dev/ai-art-generator/examples/mock_cards/.artgen/render_full_cards/cards/Parboil.png",
+      "/home/keenan/Dev/ai-art-generator/examples/mock_cards/.artgen/render_full_cards/cards/Semigeddon.png",
+      "/home/keenan/Dev/ai-art-generator/examples/mock_cards/.artgen/render_full_cards/cards/Stone Drizzle.png"
+    ]
+  }
+}

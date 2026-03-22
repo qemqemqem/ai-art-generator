@@ -335,13 +335,61 @@ class PipelineExecutor:
         
         console.print(f"\n[bold]Collecting outputs to {output_config.directory}[/bold]")
         
+        def _extract_paths(output_data: dict) -> list[Path]:
+            """Pull file paths from a step's output data dict."""
+            paths = []
+            for key in ["selected_path", "path", "paths", "output_path", "image_path"]:
+                val = output_data.get(key)
+                if isinstance(val, str) and val:
+                    paths.append(Path(val))
+                elif isinstance(val, list):
+                    paths.extend(Path(p) for p in val if p)
+            return paths
+
+        def _collect_file(src_path: Path, dest_path: Path, bucket_key: str):
+            nonlocal total_files
+            if dest_path.exists():
+                dest_path.unlink()
+            if output_config.copy:
+                shutil.copy2(src_path, dest_path)
+            else:
+                dest_path.symlink_to(src_path.resolve())
+            collected.setdefault(bucket_key, []).append(dest_path)
+            total_files += 1
+
         for step in output_steps:
             step_dir = state_dir / step.id
-            
+
             if not step_dir.exists():
                 continue
-            
-            # Check for per-asset outputs
+
+            # Gather / non-per-asset steps have output.json directly in step_dir
+            step_output_file = step_dir / "output.json"
+            if step_output_file.exists():
+                has_asset_subdirs = any(
+                    (d / "output.json").exists()
+                    for d in step_dir.iterdir() if d.is_dir()
+                )
+                if not has_asset_subdirs:
+                    try:
+                        with open(step_output_file) as f:
+                            data = json.load(f)
+                        output_data = data.get("data", {})
+                        paths_to_collect = _extract_paths(output_data)
+
+                        for src_path in paths_to_collect:
+                            if not src_path.is_absolute():
+                                src_path = base_path / src_path
+                            if not src_path.exists():
+                                continue
+                            dest_path = output_dir / src_path.name
+                            _collect_file(src_path, dest_path, step.id)
+
+                    except (json.JSONDecodeError, IOError) as e:
+                        console.print(f"[yellow]Warning: Could not read {step_output_file}: {e}[/yellow]")
+                    continue
+
+            # Per-asset outputs: each asset has its own subdirectory
             for asset_dir in step_dir.iterdir():
                 if not asset_dir.is_dir():
                     continue
@@ -357,17 +405,8 @@ class PipelineExecutor:
                         data = json.load(f)
                     
                     output_data = data.get("data", {})
+                    paths_to_collect = _extract_paths(output_data)
                     
-                    # Extract file paths from output
-                    paths_to_collect = []
-                    for key in ["selected_path", "path", "paths", "output_path", "image_path"]:
-                        val = output_data.get(key)
-                        if isinstance(val, str) and val:
-                            paths_to_collect.append(Path(val))
-                        elif isinstance(val, list):
-                            paths_to_collect.extend(Path(p) for p in val if p)
-                    
-                    # Copy/symlink each file
                     for src_path in paths_to_collect:
                         if not src_path.is_absolute():
                             src_path = base_path / src_path
@@ -375,13 +414,10 @@ class PipelineExecutor:
                         if not src_path.exists():
                             continue
                         
-                        # Determine destination path
                         if output_config.flatten:
-                            # All files in root of output dir
                             dest_name = f"{asset_id}_{step.id}_{src_path.name}"
                             dest_path = output_dir / dest_name
                         else:
-                            # Organize by asset
                             asset_output_dir = output_dir / asset_id
                             asset_output_dir.mkdir(parents=True, exist_ok=True)
                             dest_path = asset_output_dir / src_path.name
@@ -399,19 +435,7 @@ class PipelineExecutor:
                             ext = src_path.suffix
                             dest_path = dest_path.parent / f"{name_pattern}{ext}"
                         
-                        # Copy or symlink
-                        if dest_path.exists():
-                            dest_path.unlink()
-                        
-                        if output_config.copy:
-                            shutil.copy2(src_path, dest_path)
-                        else:
-                            dest_path.symlink_to(src_path.resolve())
-                        
-                        if asset_id not in collected:
-                            collected[asset_id] = []
-                        collected[asset_id].append(dest_path)
-                        total_files += 1
+                        _collect_file(src_path, dest_path, asset_id)
                         
                 except (json.JSONDecodeError, IOError) as e:
                     console.print(f"[yellow]Warning: Could not read {output_file}: {e}[/yellow]")
@@ -1021,6 +1045,7 @@ class PipelineExecutor:
             state_dir=state_dir,
             context=self.context,
             step_outputs=self.step_outputs,
+            assets=self.assets,
             providers=self.providers,
             text_provider=text_provider,
             image_provider=image_provider,

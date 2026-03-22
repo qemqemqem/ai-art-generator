@@ -142,7 +142,7 @@ steps:
     for_each: asset
     requires: [suggest_bird_name]
     config:
-      query: "{suggest_bird_name.content}"
+      query: "{suggest_bird_name.bird}"
       count: 3
       aspect_ratio: landscape
       style: "wildlife photography"

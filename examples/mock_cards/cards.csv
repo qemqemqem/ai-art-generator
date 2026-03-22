@@ -1,0 +1,4 @@
+id,name,mana_cost,type_line,oracle_text
+semigeddon,Semigeddon,3W,Sorcery,Put a phasing counter on each land.
+stone-drizzle,Stone Drizzle,2R,Sorcery,Put a phasing counter on target land.
+parboil,Parboil,3R,Instant,Put a phasing counter on all Islands.

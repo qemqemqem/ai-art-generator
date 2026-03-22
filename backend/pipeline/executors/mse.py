@@ -206,7 +206,7 @@ class RenderMSECardsExecutor(StepExecutor):
         Config:
             mse_path: Path to MSE executable (default: ~/Installs/M15-Magic-Pack/mse.exe)
             set_name: Name for the generated set (default: from pipeline name)
-            card_data_step: Step ID containing card JSON (default: critique_and_refine)
+            card_data_step: Step ID containing card JSON (optional — falls back to assets)
             flavor_text_step: Step ID containing flavor text (default: write_flavor_text)
             art_direction_step: Step ID containing art direction (default: generate_art_direction)
             art_step: Step ID containing card art (default: generate_art)
@@ -218,7 +218,7 @@ class RenderMSECardsExecutor(StepExecutor):
         mse_path_str = config.get("mse_path", str(DEFAULT_MSE_PATH))
         mse_path = Path(mse_path_str).expanduser()
         set_name = config.get("set_name", ctx.pipeline_name.replace("-", "_"))
-        card_data_step = config.get("card_data_step", "critique_and_refine")
+        card_data_step = config.get("card_data_step")
         flavor_text_step = config.get("flavor_text_step", "write_flavor_text")
         art_direction_step = config.get("art_direction_step", "generate_art_direction")
         art_step = config.get("art_step", "generate_art")
@@ -241,101 +241,79 @@ class RenderMSECardsExecutor(StepExecutor):
         # Gather card data from all assets
         cards = []
         step_id = config.get("_step_id", "render_mse_cards")
-        
-        # We need to iterate through all assets in the pipeline
-        # The assets should be available via the context or we load from state
         state_dir = ctx.state_dir
         
-        # Find all cards by looking at the card_data_step output directories
-        card_data_dir = state_dir / card_data_step
-        if not card_data_dir.exists():
-            return StepResult(
-                success=False,
-                error=f"Card data not found. Run {card_data_step} step first.",
-            )
+        # Determine card data source: step output directory or pipeline assets
+        card_data_dir = state_dir / card_data_step if card_data_step else None
+        use_step_data = card_data_dir and card_data_dir.exists()
         
-        # Process each card
-        for card_dir in sorted(card_data_dir.iterdir()):
-            if not card_dir.is_dir():
-                continue
+        if use_step_data:
+            # Load card data from a previous step's output (e.g. critique_and_refine)
+            for card_dir in sorted(card_data_dir.iterdir()):
+                if not card_dir.is_dir():
+                    continue
+                
+                asset_id = card_dir.name
+                
+                card_json_path = card_dir / "output.json"
+                if not card_json_path.exists():
+                    continue
+                
+                with open(card_json_path) as f:
+                    card_output = json.load(f)
+                
+                card_content = card_output.get("data", {}).get("content", "")
+                card_data = extract_json_from_content(card_content)
+                
+                if not card_data:
+                    print(f"Warning: Could not parse card JSON for {asset_id}")
+                    continue
+                
+                self._enrich_card(card_data, asset_id, state_dir, flavor_text_step, art_direction_step, art_step)
+                cards.append(card_data)
+        else:
+            # Build card data directly from pipeline assets (CSV / inline)
+            if not ctx.assets:
+                source = card_data_step or "assets"
+                return StepResult(
+                    success=False,
+                    error=f"Card data not found. No '{source}' step output and no assets loaded.",
+                )
             
-            asset_id = card_dir.name
-            
-            # Load card JSON from card_data_step
-            card_json_path = card_dir / "output.json"
-            if not card_json_path.exists():
-                continue
-            
-            with open(card_json_path) as f:
-                card_output = json.load(f)
-            
-            # Extract the actual card data (may be in markdown code block)
-            card_content = card_output.get("data", {}).get("content", "")
-            card_data = extract_json_from_content(card_content)
-            
-            if not card_data:
-                print(f"Warning: Could not parse card JSON for {asset_id}")
-                continue
-            
-            # Load flavor text
-            flavor_path = state_dir / flavor_text_step / asset_id / "output.json"
-            if flavor_path.exists():
-                with open(flavor_path) as f:
-                    flavor_output = json.load(f)
-                card_data["flavor_text"] = flavor_output.get("data", {}).get("content", "")
-            
-            # Load art direction for artist credit
-            art_dir_path = state_dir / art_direction_step / asset_id / "output.json"
-            if art_dir_path.exists():
-                with open(art_dir_path) as f:
-                    art_dir_output = json.load(f)
-                art_direction = art_dir_output.get("data", {}).get("content", "")
-                card_data["artist_credit"] = extract_artist_credit(art_direction)
-            
-            # Load art image path
-            art_output_path = state_dir / art_step / asset_id / "output.json"
-            if art_output_path.exists():
-                with open(art_output_path) as f:
-                    art_output = json.load(f)
-                paths = art_output.get("data", {}).get("paths", [])
-                if paths:
-                    art_path_str = paths[0]
-                    art_path = Path(art_path_str)
-                    
-                    # Build list of candidate paths to try
-                    candidates = [
-                        art_path if art_path.is_absolute() else None,
-                        art_path,  # Try as-is (relative to cwd)
-                    ]
-                    
-                    # If path contains .artgen, extract the state-relative portion
-                    if ".artgen/" in art_path_str:
-                        path_parts = art_path_str.split(".artgen/")
-                        if len(path_parts) > 1:
-                            candidates.append(state_dir / path_parts[1])
-                    
-                    # Also try relative to generate_image step directory
-                    if "generate_image" in art_path_str:
-                        # Extract just the asset/filename part
-                        parts = art_path_str.split("generate_image/")
-                        if len(parts) > 1:
-                            candidates.append(state_dir / "generate_image" / parts[1])
-                    
-                    # Try finding via the actual step output location
-                    # The image should be in state_dir/generate_image/asset_id/
-                    candidates.append(state_dir / "generate_image" / asset_id / "v1.png")
-                    
-                    for candidate in candidates:
-                        if candidate and candidate.exists():
-                            card_data["image_path"] = str(candidate.resolve())
-                            break
-            
-            cards.append(card_data)
+            for asset in ctx.assets:
+                asset_id = asset.get("id", "")
+                card_data = {
+                    "name": asset.get("name", "Unknown"),
+                    "mana_cost": asset.get("mana_cost", asset.get("casting_cost", "")),
+                    "rule_text": asset.get("oracle_text", asset.get("rule_text", "")),
+                    "rarity": asset.get("rarity", "common"),
+                    "power": asset.get("power", ""),
+                    "toughness": asset.get("toughness", ""),
+                    "loyalty": asset.get("loyalty", ""),
+                }
+                
+                # Parse type_line into supertype / subtype if available
+                type_line = asset.get("type_line", asset.get("type", ""))
+                if " — " in type_line:
+                    supertype, subtype = type_line.split(" — ", 1)
+                    card_data["supertype"] = supertype.strip()
+                    card_data["subtype"] = subtype.strip()
+                elif " - " in type_line:
+                    supertype, subtype = type_line.split(" - ", 1)
+                    card_data["supertype"] = supertype.strip()
+                    card_data["subtype"] = subtype.strip()
+                else:
+                    card_data["supertype"] = type_line
+                    card_data["subtype"] = ""
+                
+                self._enrich_card(card_data, asset_id, state_dir, flavor_text_step, art_direction_step, art_step)
+                cards.append(card_data)
         
         if not cards:
+            source = f"step '{card_data_step}'" if card_data_step else "pipeline assets"
             return StepResult(
                 success=False,
-                error="No cards found to render. Ensure previous steps have completed.",
+                error=f"No cards found to render from {source}. Ensure previous steps have completed.",
             )
         
         # Create output directory
@@ -361,3 +339,60 @@ class RenderMSECardsExecutor(StepExecutor):
             output_paths=exported_images,
             duration_ms=duration,
         )
+    
+    @staticmethod
+    def _enrich_card(
+        card_data: dict,
+        asset_id: str,
+        state_dir: Path,
+        flavor_text_step: str,
+        art_direction_step: str,
+        art_step: str,
+    ) -> None:
+        """Enrich card_data in-place with flavor text, art direction, and image path from step outputs."""
+        # Flavor text
+        flavor_path = state_dir / flavor_text_step / asset_id / "output.json"
+        if flavor_path.exists():
+            with open(flavor_path) as f:
+                flavor_output = json.load(f)
+            card_data["flavor_text"] = flavor_output.get("data", {}).get("content", "")
+        
+        # Art direction → artist credit
+        art_dir_path = state_dir / art_direction_step / asset_id / "output.json"
+        if art_dir_path.exists():
+            with open(art_dir_path) as f:
+                art_dir_output = json.load(f)
+            art_direction = art_dir_output.get("data", {}).get("content", "")
+            card_data["artist_credit"] = extract_artist_credit(art_direction)
+        
+        # Card art image path
+        art_output_path = state_dir / art_step / asset_id / "output.json"
+        if art_output_path.exists():
+            with open(art_output_path) as f:
+                art_output = json.load(f)
+            paths = art_output.get("data", {}).get("paths", [])
+            if paths:
+                art_path_str = paths[0]
+                art_path = Path(art_path_str)
+                
+                candidates = [
+                    art_path if art_path.is_absolute() else None,
+                    art_path,
+                ]
+                
+                if ".artgen/" in art_path_str:
+                    path_parts = art_path_str.split(".artgen/")
+                    if len(path_parts) > 1:
+                        candidates.append(state_dir / path_parts[1])
+                
+                if "generate_image" in art_path_str:
+                    parts = art_path_str.split("generate_image/")
+                    if len(parts) > 1:
+                        candidates.append(state_dir / "generate_image" / parts[1])
+                
+                candidates.append(state_dir / "generate_image" / asset_id / "v1.png")
+                
+                for candidate in candidates:
+                    if candidate and candidate.exists():
+                        card_data["image_path"] = str(candidate.resolve())
+                        break

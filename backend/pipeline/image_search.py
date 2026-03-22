@@ -141,9 +141,14 @@ class SerpAPISearchProvider(ImageSearchProvider):
             return []
 
         results = []
-        for item in items[:count]:
+        for item in items:
+            if len(results) >= count:
+                break
+            url = item.get("original", "")
+            if not url or not url.startswith(("http://", "https://")):
+                continue
             results.append(ImageSearchResult(
-                url=item.get("original", ""),
+                url=url,
                 width=item.get("original_width", 0),
                 height=item.get("original_height", 0),
                 title=item.get("title", ""),
@@ -233,5 +238,11 @@ async def download_image(url: str, timeout: float = 30) -> Image.Image:
     async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
         resp = await client.get(url)
         resp.raise_for_status()
+
+    content_type = resp.headers.get("content-type", "")
+    if content_type and not content_type.startswith("image/"):
+        raise ValueError(
+            f"URL returned non-image content-type: {content_type}"
+        )
 
     return Image.open(io.BytesIO(resp.content))

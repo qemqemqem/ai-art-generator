@@ -1,0 +1,164 @@
+# Mock Magic Cards
+# Custom MTG-style cards with AI-generated art.
+#
+# Pipeline:
+#   1. Generate flavor text
+#   2. Generate an art prompt from card mechanics and flavor
+#   3. Generate card art via AI image generation
+#   4. Render full cards via Magic Set Editor
+#   5. Collect outputs
+
+name: "Mock Cards – Phasing Lands"
+version: "1.0"
+description: |
+  A small set of custom Magic: The Gathering cards themed around
+  phasing counters on lands. Each card gets:
+    - AI-generated flavor text
+    - AI-generated art prompt tailored to the card's flavor
+    - AI-generated card art
+    - Full card render via Magic Set Editor
+
+# =============================================================================
+# Type Definitions
+# =============================================================================
+
+types:
+  MockCard:
+    id: text
+    name: text
+    mana_cost: text
+    type_line: text
+    oracle_text: text
+
+# =============================================================================
+# Context
+# =============================================================================
+
+context:
+  set_name: "Phasing Lands"
+  theme: |
+    Land destruction reimagined as phasing — lands flicker out of existence
+    rather than being destroyed outright. A gentler apocalypse.
+  art_style: |
+    Dark fantasy illustration. Dramatic lighting with an ethereal,
+    otherworldly glow. Landscapes and terrain warping, shimmering,
+    half-fading from reality. Rich color palette: deep reds, warm golds,
+    and spectral blues. No text, no card frames, no watermarks.
+
+# =============================================================================
+# Assets
+# =============================================================================
+
+assets:
+  type: MockCard
+  from_file: cards.csv
+
+# =============================================================================
+# Output
+# =============================================================================
+
+output:
+  directory: output/
+  flatten: true
+  copy: true
+
+# =============================================================================
+# Steps
+# =============================================================================
+
+steps:
+
+  # ---------------------------------------------------------------------------
+  # Phase 1: Generate flavor text
+  # ---------------------------------------------------------------------------
+
+  - id: flavor_text
+    type: generate_text
+    for_each: asset
+    config:
+      prompt: |
+        Write a short flavor text for a custom Magic: The Gathering card.
+
+        Card name: {asset.name}
+        Mana cost: {asset.mana_cost}
+        Type: {asset.type_line}
+        Rules text: {asset.oracle_text}
+
+        Theme: {context.theme}
+
+        The flavor text should:
+        - Evoke the feeling of lands phasing out of existence
+        - Be 1-2 sentences, max 120 characters
+        - Match the tone of real MTG flavor text (poetic, ominous, evocative)
+        - Not repeat the rules text
+
+        Respond with ONLY the flavor text, nothing else.
+
+  # ---------------------------------------------------------------------------
+  # Phase 2: Generate art prompt and card art
+  # ---------------------------------------------------------------------------
+
+  - id: art_prompt
+    type: generate_prompt
+    for_each: asset
+    requires: [flavor_text]
+    config:
+      prompt: |
+        Create a detailed image generation prompt for a Magic: The Gathering
+        card illustration.
+
+        Card name: {asset.name}
+        Type: {asset.type_line}
+        Rules text: {asset.oracle_text}
+        Flavor text: {flavor_text.output}
+
+        Art direction: {context.art_style}
+
+        The prompt should describe a single dramatic scene that captures the
+        card's mechanical identity — lands phasing, flickering, or vanishing.
+        Include specific details about lighting, composition, color palette,
+        and mood. The scene should work as a card illustration (subject
+        centered, vertical composition friendly).
+
+  - id: card_art
+    type: generate_image
+    for_each: asset
+    requires: [art_prompt]
+    config:
+      prompt: "{art_prompt.output}"
+      size: 1024
+      aspect_ratio: "4:3"
+
+  # ---------------------------------------------------------------------------
+  # Phase 3: Render full cards via Magic Set Editor
+  # ---------------------------------------------------------------------------
+
+  - id: render_full_cards
+    type: render_mse_cards
+    requires: [card_art, flavor_text]
+    is_output: true
+    config:
+      set_name: phasing_lands
+      flavor_text_step: flavor_text
+      art_step: card_art
+
+  # ---------------------------------------------------------------------------
+  # Phase 4: Done
+  # ---------------------------------------------------------------------------
+
+  - id: finish
+    type: fin
+    requires: [render_full_cards]
+    config:
+      title: "Phasing Lands – Complete!"
+      message: "Your custom MTG cards have been rendered."
+      display:
+        - step: render_full_cards
+          type: images
+          label: "Rendered Cards"
+        - step: card_art
+          type: images
+          label: "Card Art"
+        - step: flavor_text
+          type: text
+          label: "Flavor Text"

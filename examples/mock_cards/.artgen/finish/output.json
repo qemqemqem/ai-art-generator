@@ -1,0 +1,67 @@
+{
+  "step_id": "finish",
+  "asset_id": null,
+  "timestamp": "2026-03-22T23:00:30.691159",
+  "data": {
+    "title": "Phasing Lands \u2013 Complete!",
+    "message": "Your custom MTG cards have been rendered.",
+    "display_items": [
+      {
+        "type": "images",
+        "label": "Rendered Cards",
+        "step": "render_full_cards",
+        "items": [
+          {
+            "path": ".artgen/render_full_cards/cards/Parboil.png"
+          },
+          {
+            "path": ".artgen/render_full_cards/cards/Semigeddon.png"
+          },
+          {
+            "path": ".artgen/render_full_cards/cards/Stone Drizzle.png"
+          }
+        ]
+      },
+      {
+        "type": "images",
+        "label": "Card Art",
+        "step": "card_art",
+        "items": [
+          {
+            "path": ".artgen/generate_image/semigeddon/v1.png",
+            "asset_id": "semigeddon"
+          },
+          {
+            "path": ".artgen/generate_image/stone-drizzle/v1.png",
+            "asset_id": "stone-drizzle"
+          },
+          {
+            "path": ".artgen/generate_image/parboil/v1.png",
+            "asset_id": "parboil"
+          }
+        ]
+      },
+      {
+        "type": "text",
+        "label": "Flavor Text",
+        "step": "flavor_text",
+        "items": [
+          {
+            "content": "Not destroyed, but merely\u2026 deferred. The world shimmered, then slipped away.",
+            "asset_id": "semigeddon"
+          },
+          {
+            "content": "Not shattered, but softened. The peaks blurred, then shimmered, into whispers of what they were.",
+            "asset_id": "stone-drizzle"
+          },
+          {
+            "content": "The seas themselves began to parboil, and every shore shimmered, half-fading into the ethereal.",
+            "asset_id": "parboil"
+          }
+        ]
+      }
+    ],
+    "total_images": 6,
+    "total_text_items": 3
+  }
+}

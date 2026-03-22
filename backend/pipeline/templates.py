@@ -176,6 +176,8 @@ def substitute_template(
             
             if subfield:
                 value = get_nested_value(step_output, subfield)
+                if value is None and isinstance(step_output, dict):
+                    value = _resolve_structured_fallback(step_output, subfield)
             else:
                 # Get the primary content from the step output
                 if isinstance(step_output, dict):
@@ -206,6 +208,8 @@ def substitute_template(
                 value = step_output.get("output") or step_output.get("content") or step_output
             else:
                 value = get_nested_value(step_output, field)
+                if value is None and isinstance(step_output, dict):
+                    value = _resolve_structured_fallback(step_output, field)
             
             if value is None:
                 return ""
@@ -215,6 +219,46 @@ def substitute_template(
     pattern = r'\{([a-zA-Z_][a-zA-Z0-9_]*)\.([a-zA-Z0-9_.]+)\}'
     
     return re.sub(pattern, replacer, template)
+
+
+def _parse_structured_fields(text: str) -> dict[str, str]:
+    """
+    Parse KEY: value patterns from structured LLM output.
+
+    Recognizes lines starting with an UPPERCASE_KEY: and captures everything
+    until the next key or end of text. Keys are lowercased in the result.
+
+    Example:
+        "BIRD: Great Horned Owl\\nRATIONALE: Because..."
+        -> {"bird": "Great Horned Owl", "rationale": "Because..."}
+    """
+    if not isinstance(text, str) or not text:
+        return {}
+
+    pattern = r'^([A-Z][A-Z0-9_]*)\s*:\s*'
+    parts = re.split(pattern, text.strip(), flags=re.MULTILINE)
+
+    fields: dict[str, str] = {}
+    i = 1
+    while i + 1 < len(parts):
+        key = parts[i].strip().lower()
+        value = parts[i + 1].strip()
+        fields[key] = value
+        i += 2
+
+    return fields
+
+
+def _resolve_structured_fallback(step_output: dict, field: str) -> str | None:
+    """
+    When a field isn't found directly in a step output dict, try parsing
+    KEY: value structured fields from the 'content' string.
+    """
+    content = step_output.get("content")
+    if not isinstance(content, str):
+        return None
+    parsed = _parse_structured_fields(content)
+    return parsed.get(field)
 
 
 def format_value(value: Any) -> str:

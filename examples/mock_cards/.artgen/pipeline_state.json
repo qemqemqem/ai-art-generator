@@ -1,0 +1,93 @@
+{
+  "pipeline_hash": "f7b2d7ad0eb5b9ff",
+  "updated_at": "2026-03-22T23:00:30.691290",
+  "steps": {
+    "flavor_text:semigeddon": {
+      "completed": true,
+      "completed_at": "2026-03-22T22:59:49.339382",
+      "output_path": "flavor_text/semigeddon/output.json",
+      "output_files": [],
+      "cost_usd": 0.0026119
+    },
+    "flavor_text:stone-drizzle": {
+      "completed": true,
+      "completed_at": "2026-03-22T22:59:50.571372",
+      "output_path": "flavor_text/stone-drizzle/output.json",
+      "output_files": [],
+      "cost_usd": 0.0031838
+    },
+    "flavor_text:parboil": {
+      "completed": true,
+      "completed_at": "2026-03-22T22:59:50.982069",
+      "output_path": "flavor_text/parboil/output.json",
+      "output_files": [],
+      "cost_usd": 0.0033957
+    },
+    "art_prompt:parboil": {
+      "completed": true,
+      "completed_at": "2026-03-22T23:00:03.450020",
+      "output_path": "art_prompt/parboil/output.json",
+      "output_files": [],
+      "cost_usd": 0.0060714
+    },
+    "art_prompt:semigeddon": {
+      "completed": true,
+      "completed_at": "2026-03-22T23:00:05.227723",
+      "output_path": "art_prompt/semigeddon/output.json",
+      "output_files": [],
+      "cost_usd": 0.0072852
+    },
+    "art_prompt:stone-drizzle": {
+      "completed": true,
+      "completed_at": "2026-03-22T23:00:07.201864",
+      "output_path": "art_prompt/stone-drizzle/output.json",
+      "output_files": [],
+      "cost_usd": 0.0074586
+    },
+    "card_art:semigeddon": {
+      "completed": true,
+      "completed_at": "2026-03-22T23:00:13.578538",
+      "output_path": "card_art/semigeddon/output.json",
+      "output_files": [
+        "/home/keenan/Dev/ai-art-generator/examples/mock_cards/.artgen/generate_image/semigeddon/v1.png"
+      ],
+      "cost_usd": 0.0
+    },
+    "card_art:stone-drizzle": {
+      "completed": true,
+      "completed_at": "2026-03-22T23:00:21.074008",
+      "output_path": "card_art/stone-drizzle/output.json",
+      "output_files": [
+        "/home/keenan/Dev/ai-art-generator/examples/mock_cards/.artgen/generate_image/stone-drizzle/v1.png"
+      ],
+      "cost_usd": 0.0
+    },
+    "card_art:parboil": {
+      "completed": true,
+      "completed_at": "2026-03-22T23:00:27.175611",
+      "output_path": "card_art/parboil/output.json",
+      "output_files": [
+        "/home/keenan/Dev/ai-art-generator/examples/mock_cards/.artgen/generate_image/parboil/v1.png"
+      ],
+      "cost_usd": 0.0
+    },
+    "render_full_cards": {
+      "completed": true,
+      "completed_at": "2026-03-22T23:00:30.688278",
+      "output_path": "render_full_cards/output.json",
+      "output_files": [
+        "/home/keenan/Dev/ai-art-generator/examples/mock_cards/.artgen/render_full_cards/cards/Parboil.png",
+        "/home/keenan/Dev/ai-art-generator/examples/mock_cards/.artgen/render_full_cards/cards/Semigeddon.png",
+        "/home/keenan/Dev/ai-art-generator/examples/mock_cards/.artgen/render_full_cards/cards/Stone Drizzle.png"
+      ],
+      "cost_usd": 0.0
+    },
+    "finish": {
+      "completed": true,
+      "completed_at": "2026-03-22T23:00:30.691281",
+      "output_path": "finish/output.json",
+      "output_files": [],
+      "cost_usd": 0.0
+    }
+  }
+}

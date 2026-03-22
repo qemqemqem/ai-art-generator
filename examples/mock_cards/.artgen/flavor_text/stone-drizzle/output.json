@@ -1,0 +1,15 @@
+{
+  "step_id": "flavor_text",
+  "asset_id": "stone-drizzle",
+  "timestamp": "2026-03-22T22:59:50.571085",
+  "data": {
+    "content": "Not shattered, but softened. The peaks blurred, then shimmered, into whispers of what they were."
+  },
+  "prompt": "Background Context:\nProject Context:\n- set_name: Phasing Lands\n- theme: Land destruction reimagined as phasing \u2014 lands flicker out of existence\nrather than being destroyed outright. A gentler apocalypse.\n\n- art_style: Dark fantasy illustration. Dramatic lighting with an ethereal,\notherworldly glow. Landscapes and terrain warping, shimmering,\nhalf-fading from reality. Rich color palette: deep reds, warm golds,\nand spectral blues. No text, no card frames, no watermarks.\n\n\nCurrent Asset:\n- name: Stone Drizzle\n- mana_cost: 2R\n- type_line: Sorcery\n- oracle_text: Put a phasing counter on target land.\n\n\nTask:\nWrite a short flavor text for a custom Magic: The Gathering card.\n\nCard name: Stone Drizzle\nMana cost: 2R\nType: Sorcery\nRules text: Put a phasing counter on target land.\n\nTheme: Land destruction reimagined as phasing \u2014 lands flicker out of existence\nrather than being destroyed outright. A gentler apocalypse.\n\n\nThe flavor text should:\n- Evoke the feeling of lands phasing out of existence\n- Be 1-2 sentences, max 120 characters\n- Match the tone of real MTG flavor text (poetic, ominous, evocative)\n- Not repeat the rules text\n\nRespond with ONLY the flavor text, nothing else.\n",
+  "cost_usd": 0.0031838,
+  "tokens_used": {
+    "prompt_tokens": 296,
+    "completion_tokens": 1238,
+    "total_tokens": 1534
+  }
+}

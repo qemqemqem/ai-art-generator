@@ -28,6 +28,9 @@ class ExecutorContext:
     context: dict[str, Any]
     step_outputs: dict[str, Any]
     
+    # All loaded assets (for global steps that need to iterate)
+    assets: list[dict[str, Any]] = field(default_factory=list)
+    
     # Current asset (for per-asset steps)
     asset: dict[str, Any] | None = None
     asset_index: int = 0

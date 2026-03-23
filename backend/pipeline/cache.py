@@ -250,6 +250,161 @@ class CacheManager:
         
         self._save_state()
     
+    def cache_step_error(
+        self,
+        step_id: str,
+        error_message: str,
+        asset_id: str | None = None,
+        error_type: str | None = None,
+        traceback_str: str | None = None,
+        provider: str | None = None,
+        model: str | None = None,
+        retry_attempts: int = 0,
+    ) -> None:
+        """
+        Persist an irrecoverable step error to disk.
+
+        Writes to errors/{step_id}/error.json (global) or
+        errors/{step_id}/{asset_id}/error.json (per-asset), and records
+        a failed entry in pipeline_state.json.
+        """
+        if asset_id:
+            cache_key = f"{step_id}:{asset_id}"
+            error_file = f"errors/{step_id}/{asset_id}/error.json"
+        else:
+            cache_key = step_id
+            error_file = f"errors/{step_id}/error.json"
+
+        (self.state_dir / error_file).parent.mkdir(parents=True, exist_ok=True)
+
+        error_data: dict[str, Any] = {
+            "step_id": step_id,
+            "asset_id": asset_id,
+            "timestamp": datetime.utcnow().isoformat(),
+            "error": error_message,
+        }
+        if error_type:
+            error_data["error_type"] = error_type
+        if traceback_str:
+            error_data["traceback"] = traceback_str
+        if provider:
+            error_data["provider"] = provider
+        if model:
+            error_data["model"] = model
+        if retry_attempts:
+            error_data["retry_attempts"] = retry_attempts
+
+        with open(self.state_dir / error_file, "w") as f:
+            json.dump(error_data, f, indent=2, default=str)
+
+        self._step_states[cache_key] = {
+            "completed": False,
+            "failed_at": datetime.utcnow().isoformat(),
+            "error": error_message,
+            "error_path": error_file,
+        }
+        self._save_state()
+
+    def cache_pipeline_error(
+        self,
+        error_message: str,
+        error_type: str | None = None,
+        traceback_str: str | None = None,
+        phase: str = "execution",
+    ) -> None:
+        """Persist a catastrophic pipeline-level error (outside any step)."""
+        error_dir = self.state_dir / "errors" / "_pipeline"
+        error_dir.mkdir(parents=True, exist_ok=True)
+
+        error_data: dict[str, Any] = {
+            "step_id": None,
+            "timestamp": datetime.utcnow().isoformat(),
+            "error": error_message,
+            "phase": phase,
+        }
+        if error_type:
+            error_data["error_type"] = error_type
+        if traceback_str:
+            error_data["traceback"] = traceback_str
+
+        with open(error_dir / "error.json", "w") as f:
+            json.dump(error_data, f, indent=2, default=str)
+
+    def save_error_summary(
+        self,
+        errors: list[str],
+        failed_steps: set[str],
+        failed_assets: dict[str, set[str]],
+        pipeline_success: bool,
+    ) -> None:
+        """Write a run-level errors.json summary. Skipped when there are no errors."""
+        if not errors:
+            summary_path = self.state_dir / "errors.json"
+            if summary_path.exists():
+                summary_path.unlink()
+            return
+
+        error_entries: list[dict[str, Any]] = []
+        errors_dir = self.state_dir / "errors"
+
+        for step_id in failed_steps:
+            error_file = f"errors/{step_id}/error.json"
+            entry: dict[str, Any] = {"step_id": step_id, "asset_id": None}
+            if (errors_dir / step_id / "error.json").exists():
+                entry["error_file"] = error_file
+            error_entries.append(entry)
+
+        for step_id, asset_ids in failed_assets.items():
+            for asset_id in sorted(asset_ids):
+                error_file = f"errors/{step_id}/{asset_id}/error.json"
+                entry = {"step_id": step_id, "asset_id": asset_id}
+                if (errors_dir / step_id / asset_id / "error.json").exists():
+                    entry["error_file"] = error_file
+                error_entries.append(entry)
+
+        # Attach the human-readable error string to matching entries
+        for err_str in errors:
+            matched = False
+            for entry in error_entries:
+                if entry["step_id"] and entry["step_id"] in err_str:
+                    entry.setdefault("error", err_str)
+                    matched = True
+                    break
+            if not matched:
+                error_entries.append({"error": err_str})
+
+        summary = {
+            "run_timestamp": datetime.utcnow().isoformat(),
+            "pipeline_success": pipeline_success,
+            "total_errors": len(errors),
+            "failed_steps": sorted(failed_steps),
+            "failed_assets": {k: sorted(v) for k, v in failed_assets.items()},
+            "errors": error_entries,
+        }
+
+        with open(self.state_dir / "errors.json", "w") as f:
+            json.dump(summary, f, indent=2, default=str)
+
+    def clear_errors(self) -> None:
+        """Remove error artifacts from a previous run."""
+        errors_dir = self.state_dir / "errors"
+        if errors_dir.exists():
+            shutil.rmtree(errors_dir)
+
+        summary_path = self.state_dir / "errors.json"
+        if summary_path.exists():
+            summary_path.unlink()
+
+        # Purge failed (non-completed) entries from pipeline_state
+        to_remove = [
+            key for key, state in self._step_states.items()
+            if not state.get("completed", False)
+        ]
+        for key in to_remove:
+            del self._step_states[key]
+        if to_remove:
+            self._save_state()
+
     def invalidate_step(
         self,
         step_id: str,

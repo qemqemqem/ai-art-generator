@@ -15,6 +15,7 @@ import asyncio
 import json
 import shutil
 import time
+import traceback as tb
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
@@ -787,6 +788,9 @@ class PipelineExecutor:
                 from .web_bridge import PipelinePhase
                 self.web_bridge.set_phase(PipelinePhase.RUNNING, "Executing pipeline...")
             
+            # Clear error artifacts from previous runs
+            self.cache.clear_errors()
+            
             # Execute each tier (tiers must run sequentially, steps within can be parallel)
             for tier_idx, tier in enumerate(tiers):
                 console.print(f"\n[bold]Tier {tier_idx}[/bold] ({len(tier)} step{'s' if len(tier) > 1 else ''})")
@@ -980,8 +984,14 @@ class PipelineExecutor:
                     completed_assets=len(self.assets),
                 )
             
+            # Persist error summary for post-mortem analysis
+            pipeline_success = len(errors) == 0
+            self.cache.save_error_summary(
+                errors, failed_steps, self.failed_assets, pipeline_success,
+            )
+            
             return ExecutionResult(
-                success=len(errors) == 0,
+                success=pipeline_success,
                 assets_processed=len(self.assets),
                 steps_completed=steps_completed,
                 steps_skipped=steps_skipped,
@@ -994,11 +1004,21 @@ class PipelineExecutor:
             )
             
         except Exception as e:
-            import traceback
             if self.verbose:
-                traceback.print_exc()
+                tb.print_exc()
             
             duration_ms = int((time.time() - start_time) * 1000)
+            
+            # Persist catastrophic pipeline error
+            if hasattr(self, "cache"):
+                self.cache.cache_pipeline_error(
+                    str(e),
+                    error_type=type(e).__name__,
+                    traceback_str=tb.format_exc(),
+                )
+                self.cache.save_error_summary(
+                    [str(e)], set(), {}, pipeline_success=False,
+                )
             
             # Update web bridge to failed phase
             if self.web_bridge:
@@ -1120,6 +1140,12 @@ class PipelineExecutor:
             )
         except TemplateError as e:
             console.print(f"    [red]✗[/red] Template error: {e}")
+            self.cache.cache_step_error(
+                step.id,
+                str(e),
+                error_type=type(e).__name__,
+                traceback_str=tb.format_exc(),
+            )
             return StepResult(success=False, error=str(e))
         config["_step_id"] = step.id
         
@@ -1132,6 +1158,15 @@ class PipelineExecutor:
                 max_retries=DEFAULT_MAX_RETRIES,
             )
         except Exception as e:
+            self.cache.cache_step_error(
+                step.id,
+                format_api_error(e),
+                error_type=type(e).__name__,
+                traceback_str=tb.format_exc(),
+                provider=text_provider,
+                model=text_model or image_model,
+                retry_attempts=DEFAULT_MAX_RETRIES,
+            )
             result = StepResult(success=False, error=format_api_error(e))
         
         if result.success:
@@ -1174,6 +1209,12 @@ class PipelineExecutor:
                     console.print(f"    [yellow]Warning: Step '{step.id}' has creates_assets but output didn't contain a list[/yellow]")
         else:
             console.print(f"    [red]✗[/red] Failed: {result.error}")
+            self.cache.cache_step_error(
+                step.id,
+                result.error or "Unknown error",
+                provider=text_provider,
+                model=text_model or image_model,
+            )
         
         return result
     
@@ -1542,6 +1583,16 @@ class PipelineExecutor:
                             on_retry=_on_retry,
                         )
                     except Exception as e:
+                        self.cache.cache_step_error(
+                            step.id,
+                            format_api_error(e),
+                            asset_id=asset_id,
+                            error_type=type(e).__name__,
+                            traceback_str=tb.format_exc(),
+                            provider=text_provider,
+                            model=text_model or image_model,
+                            retry_attempts=DEFAULT_MAX_RETRIES,
+                        )
                         result = StepResult(success=False, error=format_api_error(e))
                     
                     if result.success:
@@ -1598,6 +1649,13 @@ class PipelineExecutor:
                     # Mark asset as failed and track it for downstream steps
                     self._update_asset_status(asset_id, "failed")
                     error_text = result.error or "Unknown error"
+                    self.cache.cache_step_error(
+                        step.id,
+                        error_text,
+                        asset_id=asset_id,
+                        provider=text_provider,
+                        model=text_model or image_model,
+                    )
                     if is_web_mode:
                         console.print(f"    [red]✗[/red] {asset_name}: {error_text}")
                     else:
@@ -1605,7 +1663,6 @@ class PipelineExecutor:
                             console.print(f"    [red]✗[/red] {asset_name}: {error_text}")
                     async with results_lock:
                         failures.append((asset_id, asset_name, error_text))
-                        # Track this asset as failed for downstream steps
                         if step.id not in self.failed_assets:
                             self.failed_assets[step.id] = set()
                         self.failed_assets[step.id].add(asset_id)
@@ -1641,12 +1698,19 @@ class PipelineExecutor:
             for i, res in enumerate(gather_results):
                 if isinstance(res, Exception):
                     console.print(f"    [red]Task {i} exception: {res}[/red]")
-                    import traceback
-                    traceback.print_exception(type(res), res, res.__traceback__)
+                    tb.print_exception(type(res), res, res.__traceback__)
                     results.append(StepResult(success=False, error=str(res)))
                     asset_idx, asset = pending_assets[i]
                     asset_id = asset.get("id", f"asset-{asset_idx}")
                     asset_name = asset.get("name", asset_id)
+                    tb_str = "".join(tb.format_exception(type(res), res, res.__traceback__))
+                    self.cache.cache_step_error(
+                        step.id,
+                        str(res),
+                        asset_id=asset_id,
+                        error_type=type(res).__name__,
+                        traceback_str=tb_str,
+                    )
                     failures.append((asset_id, asset_name, str(res)))
                     if step.id not in self.failed_assets:
                         self.failed_assets[step.id] = set()

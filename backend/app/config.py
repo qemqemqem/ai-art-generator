@@ -72,7 +72,7 @@ class ProviderConfig(BaseModel):
     # Google/Gemini (default image generator)
     # Supports both GOOGLE_API_KEY and GEMINI_API_KEY
     google_api_key: Optional[str] = Field(default_factory=_get_google_api_key)
-    gemini_model: str = "gemini-2.5-flash-image"
+    gemini_model: str = "gemini-2.5-flash-preview-image-generation"
     gemini_pro_model: str = "gemini-3-pro-image-preview"
     
     # OpenAI (DALL-E, text generation)
@@ -81,7 +81,7 @@ class ProviderConfig(BaseModel):
     
     # Anthropic (text generation)
     anthropic_api_key: Optional[str] = Field(default_factory=lambda: os.getenv("ANTHROPIC_API_KEY"))
-    claude_model: str = "claude-sonnet-4-20250514"
+    claude_model: str = "anthropic/claude-opus-4-6"
     
     # Tavily (research)
     tavily_api_key: Optional[str] = Field(default_factory=lambda: os.getenv("TAVILY_API_KEY"))

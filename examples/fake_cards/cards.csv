@@ -1,0 +1,4 @@
+id,real_name,fake_name,twist
+desecrated-sphinx,Consecrated Sphinx,Desecrated Sphinx,"Costs 4UB, doesn't say you 'may' draw the cards (making it a must), and you lose 2 life when it triggers"
+funnel,Channel,Funnel,"Costs 2 life per mana instead of 1. Text becomes: As an additional cost to cast this spell, pay any amount of life. Add {C} for every 2 life paid this way, rounded down."
+emrakul-aeons-repaired,Emrakul the Aeons Torn,Emrakul the Aeons Repaired,"Add: When this creature enters the battlefield, if it wasn't cast, its owner loses the game."

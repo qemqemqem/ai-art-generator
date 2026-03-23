@@ -1,7 +1,7 @@
 {
   "step_id": "finish",
   "asset_id": null,
-  "timestamp": "2026-03-23T02:16:34.350710",
+  "timestamp": "2026-03-23T02:42:06.742744",
   "data": {
     "title": "Aviary of the Ancients \u2013 Complete!",
     "message": "Your bird-themed MTG cards have been rendered.",
@@ -16,15 +16,6 @@
           },
           {
             "path": ".artgen/render_full_cards/cards/Baleful Strix.png"
-          },
-          {
-            "path": ".artgen/render_full_cards/cards/Baleful Strix.png"
-          },
-          {
-            "path": ".artgen/render_full_cards/cards/Aven Mindcensor.png"
-          },
-          {
-            "path": ".artgen/render_full_cards/cards/Birds of Paradise.png"
           },
           {
             "path": ".artgen/render_full_cards/cards/Aven Mindcensor.png"
@@ -53,6 +44,22 @@
             "asset_id": "aven-mindcensor"
           },
           {
+            "path": ".artgen/image_search/baleful-strix/v1.png",
+            "asset_id": "baleful-strix"
+          },
+          {
+            "path": ".artgen/image_search/baleful-strix/v2.png",
+            "asset_id": "baleful-strix"
+          },
+          {
+            "path": ".artgen/image_search/baleful-strix/v3.png",
+            "asset_id": "baleful-strix"
+          },
+          {
+            "path": ".artgen/image_search/baleful-strix/v2.png",
+            "asset_id": "baleful-strix"
+          },
+          {
             "path": ".artgen/image_search/birds-of-paradise/v1.png",
             "asset_id": "birds-of-paradise"
           },
@@ -67,22 +74,6 @@
           {
             "path": ".artgen/image_search/birds-of-paradise/v1.png",
             "asset_id": "birds-of-paradise"
-          },
-          {
-            "path": ".artgen/image_search/baleful-strix/v1.png",
-            "asset_id": "baleful-strix"
-          },
-          {
-            "path": ".artgen/image_search/baleful-strix/v2.png",
-            "asset_id": "baleful-strix"
-          },
-          {
-            "path": ".artgen/image_search/baleful-strix/v3.png",
-            "asset_id": "baleful-strix"
-          },
-          {
-            "path": ".artgen/image_search/baleful-strix/v1.png",
-            "asset_id": "baleful-strix"
           }
         ]
       },
@@ -92,21 +83,17 @@
         "step": "generate_flavor_text",
         "items": [
           {
-            "content": "From its tundra perch, the Snowy Owl's gaze limits all searches to what is seen, and nothing more.",
-            "asset_id": "aven-mindcensor"
-          },
-          {
-            "content": "Every brilliant feather of the Raggiana glows, an unbound beacon of the jungle's prismatic energy.",
-            "asset_id": "birds-of-paradise"
-          },
-          {
-            "content": "Perched silently in the canopy, a Spectacled Owl's keen yellow gaze misses no detail of the forest floor, marking every potential meal and unseen threat.",
+            "content": "South Africa put it on the coat of arms for a reason: it walks calmly toward venomous things and kills them with its feet.",
             "asset_id": "baleful-strix"
+          },
+          {
+            "content": "It lacks talons, so it wedges prey into the fork of a branch and uses its hooked bill to sever the spinal cord. The butcher bird doesn't need claws when it knows every thorn in its domain.",
+            "asset_id": "aven-mindcensor"
           }
         ]
       }
     ],
-    "total_images": 18,
-    "total_text_items": 3
+    "total_images": 15,
+    "total_text_items": 2
   }
 }

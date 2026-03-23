@@ -74,8 +74,8 @@ class GenerateImageExecutor(StepExecutor):
             ctx.step_outputs,
         )
         
-        # Get image provider (use context's configured provider)
-        provider = ctx.providers.get_image_provider(ctx.image_provider)
+        # Get image provider (use context's configured provider, with optional model override)
+        provider = ctx.providers.get_image_provider(ctx.image_provider, model=ctx.image_model)
         
         from app.models import StyleConfig
         
@@ -147,8 +147,8 @@ class GenerateSpriteExecutor(StepExecutor):
         # Use solid white background since AI can't create true transparency
         enhanced_prompt = f"Pixel art sprite, {prompt}, clean edges, suitable for video games, isolated on solid white background"
         
-        # Get image provider (use context's configured provider)
-        provider = ctx.providers.get_image_provider(ctx.image_provider)
+        # Get image provider (use context's configured provider, with optional model override)
+        provider = ctx.providers.get_image_provider(ctx.image_provider, model=ctx.image_model)
         
         from app.models import StyleConfig
         

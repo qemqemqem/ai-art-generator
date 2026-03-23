@@ -1,0 +1,256 @@
+# Fake Magic Cards
+# Real MTG cards with twisted names, modified stats, and AI-generated art.
+#
+# Pipeline:
+#   1. Fetch real card stats from Scryfall
+#   2. Generate modified stats based on the twist description
+#   3. Generate flavor text
+#   4. Generate an art prompt from fake card concept
+#   5. Generate card art via AI image generation
+#   6. Render full cards via Magic Set Editor
+
+name: "Fake Cards"
+version: "1.0"
+description: |
+  Takes a list of real Magic: The Gathering cards and creates twisted versions:
+    - Each card has a fake name and a description of how it differs
+    - Real card stats are fetched from Scryfall, then modified per the twist
+    - AI generates flavor text, art prompt, and card art
+    - Full cards are rendered via Magic Set Editor
+
+  No human choices — everything is generated automatically.
+
+# =============================================================================
+# AI Providers
+# =============================================================================
+
+providers:
+  text: litellm
+  text_model: "anthropic/claude-sonnet-4-20250514"
+  image: gemini
+  image_model: "gemini-2.5-flash-preview-image-generation"
+
+# =============================================================================
+# Type Definitions
+# =============================================================================
+
+types:
+  FakeCard:
+    id: text
+    real_name: text              # Original MTG card name (e.g. "Consecrated Sphinx")
+    fake_name: text              # Twisted name (e.g. "Desecrated Sphinx")
+    twist: text                  # How this fake card differs from the real one
+
+# =============================================================================
+# Context
+# =============================================================================
+
+context:
+  set_name: "Twisted Reflections"
+  theme: |
+    Familiar Magic cards gone wrong. Each card is a dark-mirror version of a
+    real card — same bones, different soul. The twist should feel like the card
+    was designed by someone who wanted the original to be meaner, weirder, or
+    more dangerous.
+  art_style: |
+    Dark fantasy illustration with a sinister twist. The art should evoke the
+    original card's identity but feel warped — wrong colors, unsettling details,
+    corrupted versions of familiar imagery. Dramatic lighting, rich shadows,
+    slightly unnerving atmosphere. No text, no card frames, no watermarks.
+
+# =============================================================================
+# Assets
+# =============================================================================
+
+assets:
+  type: FakeCard
+  from_file: cards.csv
+
+# =============================================================================
+# Output
+# =============================================================================
+
+output:
+  directory: output/
+  flatten: true
+  copy: true
+
+# =============================================================================
+# Steps
+# =============================================================================
+
+steps:
+
+  # ---------------------------------------------------------------------------
+  # Phase 1: Fetch real card data from Scryfall
+  # ---------------------------------------------------------------------------
+
+  - id: fetch_card_stats
+    type: script
+    for_each: asset
+    output: card_stats
+    config:
+      command: "python3 scripts/scryfall_lookup.py"
+      input: json
+      output_format: json
+      timeout: 10
+
+  # ---------------------------------------------------------------------------
+  # Phase 2: Generate the fake card's modified stats
+  # ---------------------------------------------------------------------------
+
+  - id: generate_fake_stats
+    type: generate_text
+    for_each: asset
+    requires: [fetch_card_stats]
+    config:
+      response_format: json
+      prompt: |
+        You are modifying a real Magic: The Gathering card to create a twisted
+        fake version.
+
+        # Original Card
+
+        Name: {asset.real_name}
+        Mana cost: {fetch_card_stats.mana_cost}
+        Type: {fetch_card_stats.type_line}
+        Rules text: {fetch_card_stats.oracle_text}
+        Power/Toughness: {fetch_card_stats.power}/{fetch_card_stats.toughness}
+        Colors: {fetch_card_stats.colors}
+
+        # Fake Version
+
+        New name: {asset.fake_name}
+        How it differs: {asset.twist}
+
+        Apply the twist to the original card's stats. Keep everything that isn't
+        mentioned in the twist identical to the original. Produce the complete
+        card stats for the fake version.
+
+        Respond with JSON:
+        {
+          "name": "<the fake card name>",
+          "mana_cost": "<modified or original mana cost>",
+          "type_line": "<modified or original type line>",
+          "oracle_text": "<modified rules text reflecting the twist>",
+          "power": "<power or null if not a creature>",
+          "toughness": "<toughness or null if not a creature>",
+          "colors": ["<list of colors>"]
+        }
+
+  # ---------------------------------------------------------------------------
+  # Phase 3: Generate flavor text
+  # ---------------------------------------------------------------------------
+
+  - id: flavor_text
+    type: generate_text
+    for_each: asset
+    requires: [generate_fake_stats]
+    config:
+      response_format: json
+      prompt: |
+        Write flavor text for a fake Magic: The Gathering card — a twisted
+        version of a real card.
+
+        # The Original
+        Real card: {asset.real_name}
+
+        # The Fake
+        Fake name: {asset.fake_name}
+        Mana cost: {generate_fake_stats.mana_cost}
+        Type: {generate_fake_stats.type_line}
+        Rules text: {generate_fake_stats.oracle_text}
+        How it differs: {asset.twist}
+
+        Theme: {context.theme}
+
+        # Guidelines
+
+        The flavor text should:
+        - Lean into the twist — make the reader feel WHY this card is wrong
+        - Be 1-2 sentences, max 140 characters
+        - Sound like real MTG flavor text (evocative, specific, punchy)
+        - Not repeat or explain the rules text
+        - End on a strong word
+
+        Write 3 drafts, then pick the best one.
+
+        Respond with JSON:
+        {
+          "drafts": ["<draft 1>", "<draft 2>", "<draft 3>"],
+          "chosen": "<index and why>",
+          "content": "<your final polished flavor text>"
+        }
+
+  # ---------------------------------------------------------------------------
+  # Phase 4: Generate art prompt and card art
+  # ---------------------------------------------------------------------------
+
+  - id: art_prompt
+    type: generate_prompt
+    for_each: asset
+    requires: [generate_fake_stats, flavor_text]
+    config:
+      prompt: |
+        Create a detailed image generation prompt for a fake Magic: The
+        Gathering card — a twisted version of a real card.
+
+        Real card: {asset.real_name}
+        Fake name: {asset.fake_name}
+        Type: {generate_fake_stats.type_line}
+        Rules text: {generate_fake_stats.oracle_text}
+        Flavor text: {flavor_text.content}
+        How it differs from the original: {asset.twist}
+
+        Art direction: {context.art_style}
+
+        The prompt should describe a single dramatic scene that captures the
+        fake card's twisted identity. Think of it as the original card's art
+        seen through a dark mirror — recognizable but wrong. Include specific
+        details about lighting, composition, color palette, and mood. The scene
+        should work as a card illustration (subject centered, vertical
+        composition friendly).
+
+  - id: card_art
+    type: generate_image
+    for_each: asset
+    requires: [art_prompt]
+    config:
+      prompt: "{art_prompt.output}"
+      size: 1024
+      aspect_ratio: "4:3"
+
+  # ---------------------------------------------------------------------------
+  # Phase 5: Render full cards via Magic Set Editor
+  # ---------------------------------------------------------------------------
+
+  - id: render_full_cards
+    type: render_mse_cards
+    requires: [card_art, flavor_text, generate_fake_stats]
+    is_output: true
+    config:
+      set_name: twisted_reflections
+      stats_field: generate_fake_stats
+      flavor_text_step: flavor_text
+      art_step: card_art
+
+  # ---------------------------------------------------------------------------
+  # Phase 6: Done
+  # ---------------------------------------------------------------------------
+
+  - id: finish
+    type: fin
+    requires: [render_full_cards]
+    config:
+      title: "Twisted Reflections – Complete!"
+      message: "Your fake MTG cards have been rendered."
+      display:
+        - step: render_full_cards
+          type: images
+          label: "Rendered Cards"
+        - step: card_art
+          type: images
+          label: "Card Art"
+        - step: flavor_text
+          type: text
+          label: "Flavor Text"

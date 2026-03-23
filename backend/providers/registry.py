@@ -22,35 +22,36 @@ class ProviderRegistry:
     
     def _register_defaults(self):
         """Register the default providers."""
-        # Image providers
-        self._image_providers["gemini"] = GeminiImageProvider(use_pro=False)
+        # Image providers - gemini-3-pro is the best available
+        self._image_providers["gemini"] = GeminiImageProvider(use_pro=True)
         self._image_providers["gemini_pro"] = GeminiImageProvider(use_pro=True)
+        self._image_providers["gemini_flash"] = GeminiImageProvider(use_pro=False)
         
-        # Text providers - LiteLLM with structured output is preferred
+        # Text providers - Claude Opus 4.6 via LiteLLM is the best available
         self._text_providers["litellm"] = LiteLLMTextProvider()
         self._text_providers["gemini"] = LiteLLMTextProvider(model="gemini/gemini-2.5-flash")
-        self._text_providers["gemini_legacy"] = GeminiTextProvider()  # Old unstructured
+        self._text_providers["gemini_legacy"] = GeminiTextProvider()
         
         # Perplexity for research (grounded in web search)
         self._text_providers["perplexity"] = LiteLLMTextProvider(model="perplexity/sonar-pro")
-        
-        # TODO: Add more providers as needed
-        # self._image_providers["dalle"] = DalleImageProvider()
-        # self._text_providers["claude"] = LiteLLMTextProvider(model="claude-3-5-sonnet-latest")
-        # self._research_providers["tavily"] = TavilyResearchProvider()
     
-    def get_image_provider(self, name: str) -> BaseImageProvider:
-        """Get an image provider by name."""
+    def get_image_provider(self, name: str, model: str | None = None) -> BaseImageProvider:
+        """Get an image provider by name, optionally overriding the model."""
         if name not in self._image_providers:
             available = list(self._image_providers.keys())
             raise ValueError(f"Unknown image provider: {name}. Available: {available}")
-        return self._image_providers[name]
+        provider = self._image_providers[name]
+        if model and isinstance(provider, GeminiImageProvider):
+            return GeminiImageProvider(use_pro=provider.use_pro, model_override=model)
+        return provider
     
-    def get_text_provider(self, name: str) -> BaseTextProvider:
-        """Get a text provider by name."""
+    def get_text_provider(self, name: str, model: str | None = None) -> BaseTextProvider:
+        """Get a text provider by name, optionally overriding the model."""
         if name not in self._text_providers:
             available = list(self._text_providers.keys())
             raise ValueError(f"Unknown text provider: {name}. Available: {available}")
+        if model:
+            return LiteLLMTextProvider(model=model)
         return self._text_providers[name]
     
     def get_research_provider(self, name: str) -> BaseResearchProvider:

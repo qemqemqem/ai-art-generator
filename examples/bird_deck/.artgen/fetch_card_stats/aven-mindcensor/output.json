@@ -1,7 +1,7 @@
 {
   "step_id": "fetch_card_stats",
   "asset_id": "aven-mindcensor",
-  "timestamp": "2026-03-23T02:03:29.759941",
+  "timestamp": "2026-03-23T02:38:13.962174",
   "data": {
     "mana_cost": "{2}{W}",
     "type_line": "Creature \u2014 Bird Wizard",

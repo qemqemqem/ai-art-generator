@@ -239,9 +239,9 @@ class ProvidersConfig:
     text: str = "litellm"  # Default text provider: litellm, gemini
     image: str = "gemini"  # Default image provider: gemini, dalle, pixellab
     
-    # Provider-specific settings (optional)
-    text_model: str | None = None  # e.g., "gpt-4", "gemini-1.5-flash"
-    image_model: str | None = None  # e.g., "imagen-3", "dall-e-3"
+    # Model overrides (None = use provider's default)
+    text_model: str | None = None  # e.g., "anthropic/claude-opus-4-6", "gemini/gemini-2.5-flash"
+    image_model: str | None = None  # e.g., "gemini-3-pro-image-preview", "dall-e-3"
 
 
 # =============================================================================

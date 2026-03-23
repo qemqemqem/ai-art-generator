@@ -86,7 +86,7 @@ class LiteLLMTextProvider(BaseTextProvider):
     
     name = "litellm"
     
-    def __init__(self, model: str = "gemini/gemini-2.5-flash"):
+    def __init__(self, model: str = "anthropic/claude-opus-4-6"):
         """Initialize the LiteLLM provider.
         
         Args:
@@ -96,24 +96,27 @@ class LiteLLMTextProvider(BaseTextProvider):
         self._initialized = False
         
     def _ensure_init(self):
-        """Ensure litellm is configured with API keys."""
+        """Ensure litellm is configured with API keys via environment variables.
+        
+        LiteLLM reads per-provider keys from env vars automatically.
+        We must NOT set litellm.api_key globally -- that overrides
+        provider-specific keys and sends the wrong key to the wrong API.
+        """
         if self._initialized:
             return
             
-        import litellm
+        import os
         config = get_config()
         
-        # Set API keys for various providers
         if config.providers.google_api_key:
-            litellm.api_key = config.providers.google_api_key
-            # Keep Google/Gemini keys in sync for downstream libs
-            import os
             os.environ["GEMINI_API_KEY"] = config.providers.google_api_key
             os.environ["GOOGLE_API_KEY"] = config.providers.google_api_key
             
         if config.providers.openai_api_key:
-            import os
             os.environ["OPENAI_API_KEY"] = config.providers.openai_api_key
+        
+        if config.providers.anthropic_api_key:
+            os.environ["ANTHROPIC_API_KEY"] = config.providers.anthropic_api_key
             
         self._initialized = True
     

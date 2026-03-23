@@ -1,22 +1,22 @@
 {
   "step_id": "card_art",
   "asset_id": "baleful-strix",
-  "timestamp": "2026-03-23T02:15:49.299930",
+  "timestamp": "2026-03-23T02:40:21.119657",
   "data": {
-    "query": "Spectacled Owl wildlife photography",
+    "query": "Secretary Bird wildlife photography",
     "paths": [
       "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/baleful-strix/v1.png",
       "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/baleful-strix/v2.png",
       "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/baleful-strix/v3.png"
     ],
     "urls": [
-      "https://www.shutterstock.com/image-photo/spectacled-owl-perched-costa-rica-260nw-2679370503.jpg",
-      "https://www.shutterstock.com/image-photo/spectacled-owl-perched-costa-rica-260nw-2679370499.jpg",
-      "https://thumbs.dreamstime.com/z/majestic-spectacled-owl-portrait-stunning-closeup-wise-bird-captured-exquisite-wildlife-photography-captivating-close-351273557.jpg"
+      "https://animals.sandiegozoo.org/sites/default/files/2016-10/animals_hero_secretary_bird.jpg",
+      "https://www.serengetitanzaniapark.com/wp-content/uploads/2025/05/Secretary-Bird.jpg",
+      "https://animals.sandiegozoo.org/sites/default/files/inline-images/secretary_bird_stick.jpg"
     ],
-    "selected_index": 0,
-    "selected_path": "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/baleful-strix/v1.png",
-    "content": "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/baleful-strix/v1.png"
+    "selected_index": 1,
+    "selected_path": "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/baleful-strix/v2.png",
+    "content": "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/baleful-strix/v2.png"
   },
-  "prompt": "Spectacled Owl wildlife photography"
+  "prompt": "Secretary Bird wildlife photography"
 }

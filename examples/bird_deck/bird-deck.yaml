@@ -18,6 +18,16 @@ description: |
   The original card's stats (mana cost, type, abilities) stay unchanged.
 
 # =============================================================================
+# AI Providers
+# =============================================================================
+
+providers:
+  text: litellm
+  text_model: "anthropic/claude-opus-4-6"
+  image: gemini
+  image_model: "gemini-3-pro-image-preview"
+
+# =============================================================================
 # Type Definitions
 # =============================================================================
 

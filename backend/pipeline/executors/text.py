@@ -122,8 +122,8 @@ class ResearchExecutor(StepExecutor):
             ctx.step_outputs,
         )
         
-        # Get text provider (use context's configured provider)
-        provider = ctx.providers.get_text_provider(ctx.text_provider)
+        # Get text provider (use context's configured provider, with optional model override)
+        provider = ctx.providers.get_text_provider(ctx.text_provider, model=ctx.text_model)
         
         # Build context section
         context_section = _build_context_section(ctx)
@@ -224,8 +224,8 @@ Task:
         else:
             full_prompt = prompt
         
-        # Get text provider (use context's configured provider)
-        provider = ctx.providers.get_text_provider(ctx.text_provider)
+        # Get text provider (use context's configured provider, with optional model override)
+        provider = ctx.providers.get_text_provider(ctx.text_provider, model=ctx.text_model)
         
         results = []
         total_cost = 0.0
@@ -343,8 +343,8 @@ The name should be:
 
 Respond with just the name, nothing else."""
         
-        # Get text provider (use context's configured provider)
-        provider = ctx.providers.get_text_provider(ctx.text_provider)
+        # Get text provider (use context's configured provider, with optional model override)
+        provider = ctx.providers.get_text_provider(ctx.text_provider, model=ctx.text_model)
         
         results = []
         total_cost = 0.0
@@ -450,8 +450,8 @@ Task:
         else:
             full_prompt = prompt_template
 
-        # Get text provider (use context's configured provider)
-        provider = ctx.providers.get_text_provider(ctx.text_provider)
+        # Get text provider (use context's configured provider, with optional model override)
+        provider = ctx.providers.get_text_provider(ctx.text_provider, model=ctx.text_model)
 
         results = []
         total_cost = 0.0

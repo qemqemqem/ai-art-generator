@@ -15,9 +15,9 @@ styling:
 		overlay:
 card:
 	has_styling: false
-	time_created: 2026-03-22 19:16:31
-	time_modified: 2026-03-22 19:16:31
-	name: Spectacled Owl
+	time_created: 2026-03-22 19:42:03
+	time_modified: 2026-03-22 19:42:03
+	name: Secretary Bird
 	alias: Baleful Strix
 	image: image0
 	super_type: <word-list-type>Artifact Creature</word-list-type>
@@ -26,7 +26,7 @@ card:
 	rule_text:
 		Flying, deathtouch
 		When this creature enters, draw a card.
-	flavor_text: <i-flavor>Perched silently in the canopy, a Spectacled Owl's keen yellow gaze misses no detail of the forest floor, marking every potential meal and unseen threat.</i-flavor>
+	flavor_text: <i-flavor>South Africa put it on the coat of arms for a reason: it walks calmly toward venomous things and kills them with its feet.</i-flavor>
 	power: 1
 	toughness: 1
 	loyalty: 
@@ -34,9 +34,9 @@ card:
 	rarity: rare
 card:
 	has_styling: false
-	time_created: 2026-03-22 19:16:31
-	time_modified: 2026-03-22 19:16:31
-	name: Snowy Owl
+	time_created: 2026-03-22 19:42:03
+	time_modified: 2026-03-22 19:42:03
+	name: Northern Shrike
 	alias: Aven Mindcensor
 	image: image1
 	super_type: <word-list-type>Creature</word-list-type>
@@ -46,7 +46,7 @@ card:
 		Flash
 		Flying
 		If an opponent would search a library, that player searches the top four cards of that library instead.
-	flavor_text: <i-flavor>From its tundra perch, the Snowy Owl's gaze limits all searches to what is seen, and nothing more.</i-flavor>
+	flavor_text: <i-flavor>It lacks talons, so it wedges prey into the fork of a branch and uses its hooked bill to sever the spinal cord. The butcher bird doesn't need claws when it knows every thorn in its domain.</i-flavor>
 	power: 2
 	toughness: 1
 	loyalty: 
@@ -54,10 +54,9 @@ card:
 	rarity: uncommon
 card:
 	has_styling: false
-	time_created: 2026-03-22 19:16:31
-	time_modified: 2026-03-22 19:16:31
-	name: Raggiana Bird-of-Paradise
-	alias: Birds of Paradise
+	time_created: 2026-03-22 19:42:03
+	time_modified: 2026-03-22 19:42:03
+	name: Birds of Paradise
 	image: image2
 	super_type: <word-list-type>Creature</word-list-type>
 	sub_type: <word-list-type>Bird</word-list-type>
@@ -65,7 +64,7 @@ card:
 	rule_text:
 		Flying
 		<sym>T</sym>: Add one mana of any color.
-	flavor_text: <i-flavor>Every brilliant feather of the Raggiana glows, an unbound beacon of the jungle's prismatic energy.</i-flavor>
+	flavor_text: <i-flavor></i-flavor>
 	power: 0
 	toughness: 1
 	loyalty: 

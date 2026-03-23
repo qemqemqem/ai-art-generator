@@ -24,15 +24,17 @@ class GeminiImageProvider(BaseImageProvider):
     
     name = "gemini"
     
-    def __init__(self, use_pro: bool = False):
+    def __init__(self, use_pro: bool = False, model_override: str | None = None):
         """Initialize the Gemini provider.
         
         Args:
             use_pro: If True, use gemini-3-pro-image-preview for higher quality
+            model_override: Explicit model string that takes precedence over config defaults
         """
         self.use_pro = use_pro
+        self._model_override = model_override
         self._client = None
-        
+    
     @property
     def client(self):
         """Lazy-load the Gemini client."""
@@ -45,6 +47,8 @@ class GeminiImageProvider(BaseImageProvider):
     @property
     def model(self) -> str:
         """Get the model name to use."""
+        if self._model_override:
+            return self._model_override
         config = get_config()
         return config.providers.gemini_pro_model if self.use_pro else config.providers.gemini_model
     

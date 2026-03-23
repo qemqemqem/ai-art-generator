@@ -74,7 +74,7 @@ steps:
         - id: generate
           type: generate_image
           config:
-            prompt: "{current_prompt}"
+            prompt: "{current_prompt.content}"
             variations: 3
             size: 1024
             quality: high
@@ -146,7 +146,7 @@ steps:
             prompt: |
               The current portrait prompt didn't meet expectations.
               
-              Current prompt: {current_prompt}
+              Current prompt: {current_prompt.content}
               Assessment feedback: {assess.assessment}
               Iteration: {loop.iteration}
               
@@ -171,7 +171,7 @@ steps:
     config:
       prompt: |
         Same character as approved portrait: {context.character.name}
-        Using refined prompt style: {current_prompt}
+        Using refined prompt style: {current_prompt.content}
         
         Generate additional poses:
         1. Action pose (drawing bow)

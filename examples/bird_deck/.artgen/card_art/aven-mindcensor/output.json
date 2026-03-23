@@ -1,21 +1,21 @@
 {
   "step_id": "card_art",
   "asset_id": "aven-mindcensor",
-  "timestamp": "2026-03-22T23:28:16.874417",
+  "timestamp": "2026-03-23T01:03:16.202634",
   "data": {
-    "query": "Northern Goshawk wildlife photography",
+    "query": "Common Raven wildlife photography",
     "paths": [
       "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/aven-mindcensor/v1.png",
       "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/aven-mindcensor/v2.png",
       "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/aven-mindcensor/v3.png"
     ],
     "urls": [
-      "https://wordsanddeeds.co.uk/wp-content/uploads/2022/12/Northern-Goshawk-image-by-Melani-Marfeld-from-Pixabay-.jpg",
-      "https://urbanraptorconservancy.org/wp-content/uploads/2019/05/GH1a.jpg",
-      "https://i.redd.it/r77ehc90sw991.jpg"
+      "https://www.allaboutbirds.org/guide/assets/photo/300152741-480px.jpg",
+      "https://images.squarespace-cdn.com/content/v1/5e11e82c0efb8f0d16a5dbc8/52cb44f2-875c-4a9d-a339-af22e965fc88/common-raven-autumn-portrait-northern-ontario-sony-a1ii-400-800-christopher-dodds_CID3426b.jpg",
+      "https://www.ndow.org/wp-content/uploads/2021/10/corvus_corax-992x661.jpeg"
     ],
-    "selected_index": 0,
-    "selected_path": "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/aven-mindcensor/v1.png"
+    "selected_index": 2,
+    "selected_path": "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/aven-mindcensor/v3.png"
   },
-  "prompt": "Northern Goshawk wildlife photography"
+  "prompt": "Common Raven wildlife photography"
 }

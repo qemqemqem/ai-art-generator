@@ -183,7 +183,12 @@ class GenerateTextExecutor(StepExecutor):
             max_tokens: Maximum output tokens (optional, no limit if not specified)
             variations: Number of variations to generate
             include_context: Whether to include rich context (default: True)
+            response_format: "json" to parse the LLM response as JSON and return
+                the parsed dict directly (instead of wrapping in {"content": ...}).
+                Useful when the step's output will be merged onto an asset via
+                the ``output`` YAML key.
         """
+        import json
         import time
         start = time.time()
         
@@ -191,6 +196,7 @@ class GenerateTextExecutor(StepExecutor):
         variations = config.get("variations", 1)
         include_context = config.get("include_context", True)
         max_tokens = config.get("max_tokens")  # None = no limit
+        response_format = config.get("response_format")
         
         # Substitute template variables
         prompt = substitute_template(
@@ -235,9 +241,20 @@ Task:
         
         duration = int((time.time() - start) * 1000)
         
-        output = {"content": results[0]}
-        if len(results) > 1:
-            output["variations"] = results
+        if response_format == "json":
+            parsed = self._parse_json_response(results[0])
+            if parsed is None:
+                return StepResult(
+                    success=False,
+                    error=f"response_format is 'json' but LLM output is not valid JSON:\n{results[0][:500]}",
+                    duration_ms=int((time.time() - start) * 1000),
+                    prompt=full_prompt,
+                )
+            output = parsed
+        else:
+            output = {"content": results[0]}
+            if len(results) > 1:
+                output["variations"] = results
         
         return StepResult(
             success=True,
@@ -248,6 +265,25 @@ Task:
             cost_usd=total_cost,
             tokens_used=total_tokens if total_cost > 0 else None,
         )
+
+    @staticmethod
+    def _parse_json_response(text: str) -> dict | None:
+        """Parse a JSON dict from LLM output, stripping markdown fences if present."""
+        import json
+        import re
+
+        # Try to extract from ```json ... ``` fences first
+        fence_match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', text, re.DOTALL)
+        if fence_match:
+            try:
+                return json.loads(fence_match.group(1).strip())
+            except json.JSONDecodeError:
+                pass
+
+        try:
+            return json.loads(text.strip())
+        except json.JSONDecodeError:
+            return None
 
 
 @register_executor("generate_name")

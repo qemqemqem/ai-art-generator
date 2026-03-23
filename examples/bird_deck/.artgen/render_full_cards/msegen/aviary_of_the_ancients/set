@@ -1,23 +1,22 @@
 mse_version: 2.0.2
 game: magic
 game_version: 2020-04-25
-stylesheet: m15-altered
-stylesheet_version: 2020-09-04
+stylesheet: m15-godzilla
+stylesheet_version: 2024-06-06
 set_info:
 	title: aviary_of_the_ancients
 	symbol:
 	masterpiece_symbol:
 styling:
-	magic-m15-altered:
-		other_options: auto vehicles, auto nyx crowns
+	magic-m15-godzilla:
 		text_box_mana_symbols: magic-mana-small.mse-symbol-font
-		level_mana_symbols: magic-mana-large.mse-symbol-font
 		overlay:
 card:
 	has_styling: false
-	time_created: 2026-03-22 16:28:42
-	time_modified: 2026-03-22 16:28:42
-	name: Baleful Strix
+	time_created: 2026-03-22 18:04:16
+	time_modified: 2026-03-22 18:04:16
+	name: Greater Sooty Owl
+	alias: Baleful Strix
 	image: image0
 	super_type: <word-list-type>Artifact Creature</word-list-type>
 	sub_type: <word-list-type>Bird</word-list-type>
@@ -25,7 +24,7 @@ card:
 	rule_text:
 		Flying, deathtouch
 		When this creature enters, draw a card.
-	flavor_text: <i-flavor>From the shadowed canopy, the Black-banded Owl descends on silent wings, a dark omen of swift insight.</i-flavor>
+	flavor_text: <i-flavor>Strictly nocturnal, the Greater Sooty Owl's eerie shriek pierces the midnight silence of ancient forests.</i-flavor>
 	power: 1
 	toughness: 1
 	loyalty: 
@@ -33,9 +32,10 @@ card:
 	rarity: rare
 card:
 	has_styling: false
-	time_created: 2026-03-22 16:28:42
-	time_modified: 2026-03-22 16:28:42
-	name: Aven Mindcensor
+	time_created: 2026-03-22 18:04:16
+	time_modified: 2026-03-22 18:04:16
+	name: Common Raven
+	alias: Aven Mindcensor
 	image: image1
 	super_type: <word-list-type>Creature</word-list-type>
 	sub_type: <word-list-type>Bird Wizard</word-list-type>
@@ -44,7 +44,7 @@ card:
 		Flash
 		Flying
 		If an opponent would search a library, that player searches the top four cards of that library instead.
-	flavor_text: <i-flavor>With unrivaled agility, the goshawk weaves through the densest woods, shrinking its prey's world to a single fatal point.</i-flavor>
+	flavor_text: <i-flavor>Few secrets escape the raven's ancient gaze, for its mind perceives what others overlook.</i-flavor>
 	power: 2
 	toughness: 1
 	loyalty: 
@@ -52,9 +52,10 @@ card:
 	rarity: uncommon
 card:
 	has_styling: false
-	time_created: 2026-03-22 16:28:42
-	time_modified: 2026-03-22 16:28:42
-	name: Birds of Paradise
+	time_created: 2026-03-22 18:04:16
+	time_modified: 2026-03-22 18:04:16
+	name: Wilson's Bird-of-paradise
+	alias: Birds of Paradise
 	image: image2
 	super_type: <word-list-type>Creature</word-list-type>
 	sub_type: <word-list-type>Bird</word-list-type>
@@ -62,7 +63,7 @@ card:
 	rule_text:
 		Flying
 		<sym>T</sym>: Add one mana of any color.
-	flavor_text: <i-flavor>Its plumes, vibrant with every forest hue, channel the primordial energies of the world.</i-flavor>
+	flavor_text: <i-flavor>Its colors encompass all the wild, a living spectrum danced through ancient trees.</i-flavor>
 	power: 0
 	toughness: 1
 	loyalty: 

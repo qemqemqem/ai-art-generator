@@ -9,11 +9,14 @@ For the bird deck, this means:
   - name = "Northern Goshawk" (the bird species)
   - alias = "Aven Mindcensor" (the real MTG card name)
 
+The bird name reaches the renderer via structured JSON output from the
+suggest_bird_name step (response_format: json), which is merged onto the
+asset as ``bird_name``.  The renderer reads it via ``name_field: bird_name.bird``.
+
 Run: python -m pytest tests/test_mse_godzilla.py -v
 """
 
 import json
-import re
 from pathlib import Path
 
 import pytest
@@ -24,37 +27,13 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 # ---------------------------------------------------------------------------
-# Real bird deck data (copied from examples/bird_deck/.artgen/)
+# Sample data (mirrors real bird deck outputs)
 # ---------------------------------------------------------------------------
 
-SUGGEST_BIRD_NAME_OUTPUTS = {
-    "baleful-strix": {
-        "data": {
-            "content": (
-                "BIRD: Black-banded Owl\n"
-                "RATIONALE: This nocturnal owl's dark, barred plumage perfectly captures "
-                "the shadowy colors and mystery associated with Baleful Strix."
-            ),
-        },
-    },
-    "aven-mindcensor": {
-        "data": {
-            "content": (
-                "BIRD: Northern Goshawk\n"
-                "RATIONALE: The Northern Goshawk is a formidable and highly agile predator "
-                "renowned for its relentless pursuit through dense environments."
-            ),
-        },
-    },
-    "birds-of-paradise": {
-        "data": {
-            "content": (
-                "BIRD: Raggiana Bird-of-paradise\n"
-                "RATIONALE: The Raggiana Bird-of-paradise is famed for its spectacular "
-                "and diverse plumage."
-            ),
-        },
-    },
+BIRD_NAME_OUTPUTS = {
+    "baleful-strix": {"bird": "Black-banded Owl", "rationale": "Nocturnal owl..."},
+    "aven-mindcensor": {"bird": "Northern Goshawk", "rationale": "Agile predator..."},
+    "birds-of-paradise": {"bird": "Raggiana Bird-of-paradise", "rationale": "Vibrant plumage..."},
 }
 
 CARD_STATS = {
@@ -62,81 +41,51 @@ CARD_STATS = {
         "mana_cost": "{U}{B}",
         "type_line": "Artifact Creature \u2014 Bird",
         "oracle_text": "Flying, deathtouch\nWhen this creature enters, draw a card.",
-        "power": "1",
-        "toughness": "1",
-        "rarity": "rare",
+        "power": "1", "toughness": "1", "rarity": "rare",
     },
     "aven-mindcensor": {
         "mana_cost": "{2}{W}",
         "type_line": "Creature \u2014 Bird Wizard",
-        "oracle_text": (
-            "Flash\nFlying\nIf an opponent would search a library, "
-            "that player searches the top four cards of that library instead."
-        ),
-        "power": "2",
-        "toughness": "1",
-        "rarity": "uncommon",
+        "oracle_text": "Flash\nFlying\nIf an opponent would search a library, "
+                       "that player searches the top four cards of that library instead.",
+        "power": "2", "toughness": "1", "rarity": "uncommon",
     },
     "birds-of-paradise": {
         "mana_cost": "{G}",
         "type_line": "Creature \u2014 Bird",
         "oracle_text": "Flying\n{T}: Add one mana of any color.",
-        "power": "0",
-        "toughness": "1",
-        "rarity": "rare",
+        "power": "0", "toughness": "1", "rarity": "rare",
     },
 }
 
 
 # ---------------------------------------------------------------------------
-# Tests: Name extraction
+# Tests: get_nested_value
 # ---------------------------------------------------------------------------
 
-class TestExtractNameFromStep:
-    """Test extracting an alternate name from a pipeline step's output content."""
+class TestGetNestedValue:
+    """Test dot-path resolution on nested dicts."""
 
-    def test_extracts_bird_name_default_pattern(self):
-        """The default BIRD: pattern should pull out the species name."""
-        from pipeline.executors.mse import extract_name_from_step_content
+    def test_single_key(self):
+        from pipeline.executors.mse import get_nested_value
+        assert get_nested_value({"name": "Baleful Strix"}, "name") == "Baleful Strix"
 
-        content = SUGGEST_BIRD_NAME_OUTPUTS["aven-mindcensor"]["data"]["content"]
-        name = extract_name_from_step_content(content)
+    def test_nested_path(self):
+        from pipeline.executors.mse import get_nested_value
+        data = {"bird_name": {"bird": "Northern Goshawk", "rationale": "..."}}
+        assert get_nested_value(data, "bird_name.bird") == "Northern Goshawk"
 
-        assert name == "Northern Goshawk"
+    def test_missing_key_returns_none(self):
+        from pipeline.executors.mse import get_nested_value
+        assert get_nested_value({"a": 1}, "b") is None
 
-    def test_extracts_hyphenated_bird_name(self):
-        """Should handle hyphenated names like 'Bird-of-paradise'."""
-        from pipeline.executors.mse import extract_name_from_step_content
+    def test_missing_nested_key_returns_none(self):
+        from pipeline.executors.mse import get_nested_value
+        assert get_nested_value({"a": {"b": 1}}, "a.c") is None
 
-        content = SUGGEST_BIRD_NAME_OUTPUTS["birds-of-paradise"]["data"]["content"]
-        name = extract_name_from_step_content(content)
-
-        assert name == "Raggiana Bird-of-paradise"
-
-    def test_extracts_with_custom_pattern(self):
-        """A custom regex pattern should work for non-bird pipelines."""
-        from pipeline.executors.mse import extract_name_from_step_content
-
-        content = "ALTERNATE NAME: Optimus Prime\nDESCRIPTION: A cool robot."
-        name = extract_name_from_step_content(
-            content, pattern=r"ALTERNATE NAME:\s*(.+)"
-        )
-
-        assert name == "Optimus Prime"
-
-    def test_returns_none_when_no_match(self):
-        """Should return None when the pattern doesn't match."""
-        from pipeline.executors.mse import extract_name_from_step_content
-
-        name = extract_name_from_step_content("No bird here, just vibes.")
-        assert name is None
-
-    def test_strips_whitespace(self):
-        """Should strip leading/trailing whitespace from the extracted name."""
-        from pipeline.executors.mse import extract_name_from_step_content
-
-        name = extract_name_from_step_content("BIRD:   Snowy Owl   \nRATIONALE: ...")
-        assert name == "Snowy Owl"
+    def test_non_dict_intermediate_returns_none(self):
+        from pipeline.executors.mse import get_nested_value
+        assert get_nested_value({"a": "string"}, "a.b") is None
 
 
 # ---------------------------------------------------------------------------
@@ -147,14 +96,10 @@ class TestGodzillaSetFile:
     """Test that the MSE set file uses the Godzilla stylesheet and alias field."""
 
     def _build_godzilla_cards(self) -> list[dict]:
-        """Build card dicts the way the executor would for Godzilla mode."""
+        """Build card dicts as the executor would when name_field is set."""
         cards = []
         for asset_id, stats in CARD_STATS.items():
-            bird_content = SUGGEST_BIRD_NAME_OUTPUTS[asset_id]["data"]["content"]
-            # Extract bird name
-            match = re.search(r"BIRD:\s*(.+)", bird_content)
-            bird_name = match.group(1).strip() if match else "Unknown Bird"
-
+            bird_data = BIRD_NAME_OUTPUTS[asset_id]
             original_name = asset_id.replace("-", " ").title()
 
             type_line = stats["type_line"]
@@ -164,7 +109,7 @@ class TestGodzillaSetFile:
                 supertype, subtype = type_line, ""
 
             cards.append({
-                "name": bird_name,
+                "name": bird_data["bird"],
                 "alias": original_name,
                 "supertype": supertype.strip(),
                 "subtype": subtype.strip(),
@@ -208,7 +153,6 @@ class TestGodzillaSetFile:
         write_mse_set_file(cards, set_file, "test_set", stylesheet="m15-godzilla")
 
         content = set_file.read_text()
-
         assert "\talias: Baleful Strix" in content
         assert "\talias: Aven Mindcensor" in content
         assert "\talias: Birds Of Paradise" in content
@@ -222,7 +166,6 @@ class TestGodzillaSetFile:
         write_mse_set_file(cards, set_file, "test_set", stylesheet="m15-godzilla")
 
         content = set_file.read_text()
-
         assert "\tname: Black-banded Owl" in content
         assert "\tname: Northern Goshawk" in content
         assert "\tname: Raggiana Bird-of-paradise" in content
@@ -268,7 +211,48 @@ class TestGodzillaSetFile:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Full card assembly (integration-style, uses real bird_deck data)
+# Tests: JSON response parsing (generate_text with response_format: json)
+# ---------------------------------------------------------------------------
+
+class TestJsonResponseParsing:
+    """Test that generate_text's JSON parsing handles LLM output correctly."""
+
+    def test_parses_plain_json(self):
+        from pipeline.executors.text import GenerateTextExecutor
+        result = GenerateTextExecutor._parse_json_response(
+            '{"bird": "Northern Goshawk", "rationale": "Agile predator."}'
+        )
+        assert result == {"bird": "Northern Goshawk", "rationale": "Agile predator."}
+
+    def test_parses_json_in_code_fence(self):
+        from pipeline.executors.text import GenerateTextExecutor
+        result = GenerateTextExecutor._parse_json_response(
+            '```json\n{"bird": "Snowy Owl", "rationale": "White plumage."}\n```'
+        )
+        assert result == {"bird": "Snowy Owl", "rationale": "White plumage."}
+
+    def test_parses_json_in_bare_fence(self):
+        from pipeline.executors.text import GenerateTextExecutor
+        result = GenerateTextExecutor._parse_json_response(
+            '```\n{"bird": "Snowy Owl"}\n```'
+        )
+        assert result == {"bird": "Snowy Owl"}
+
+    def test_returns_none_for_invalid_json(self):
+        from pipeline.executors.text import GenerateTextExecutor
+        result = GenerateTextExecutor._parse_json_response("BIRD: Snowy Owl\nRATIONALE: ...")
+        assert result is None
+
+    def test_strips_whitespace(self):
+        from pipeline.executors.text import GenerateTextExecutor
+        result = GenerateTextExecutor._parse_json_response(
+            '  \n  {"bird": "Snowy Owl"}  \n  '
+        )
+        assert result == {"bird": "Snowy Owl"}
+
+
+# ---------------------------------------------------------------------------
+# Tests: Full integration with real bird_deck data on disk
 # ---------------------------------------------------------------------------
 
 BIRD_DECK_STATE_DIR = (
@@ -283,36 +267,22 @@ def has_bird_deck_data():
 
 @pytest.mark.skipif(not has_bird_deck_data(), reason="No bird_deck data")
 class TestGodzillaBirdDeckIntegration:
-    """Integration test using actual bird_deck pipeline output."""
-
-    def test_builds_godzilla_cards_from_bird_deck(self):
-        """Should assemble cards with bird name as name and MTG name as alias."""
-        from pipeline.executors.mse import extract_name_from_step_content
-
-        name_step_dir = BIRD_DECK_STATE_DIR / "suggest_bird_name"
-
-        for asset_dir in sorted(name_step_dir.iterdir()):
-            if not asset_dir.is_dir():
-                continue
-
-            with open(asset_dir / "output.json") as f:
-                output = json.load(f)
-
-            content = output["data"]["content"]
-            bird_name = extract_name_from_step_content(content)
-
-            assert bird_name is not None, f"Should extract bird name for {asset_dir.name}"
-            assert len(bird_name) > 2, f"Bird name too short: {bird_name!r}"
-            assert "RATIONALE" not in bird_name, "Should not include rationale text"
+    """Integration test using actual bird_deck pipeline output on disk."""
 
     def test_generates_full_godzilla_set_file(self):
-        """Should generate a complete Godzilla-style set file from bird deck data."""
-        from pipeline.executors.mse import (
-            extract_name_from_step_content,
-            write_mse_set_file,
-        )
+        """Should generate a complete Godzilla-style set file from bird deck data.
+
+        This test simulates what the executor does: reads stats from
+        fetch_card_stats, reads the bird name from suggest_bird_name
+        (simulating structured JSON by parsing the BIRD: prefix), and
+        writes a Godzilla-style set file.
+        """
+        from pipeline.executors.mse import get_nested_value, write_mse_set_file
+
+        import re
 
         cards = []
+        assets = []
         name_step_dir = BIRD_DECK_STATE_DIR / "suggest_bird_name"
         stats_step_dir = BIRD_DECK_STATE_DIR / "fetch_card_stats"
 
@@ -323,10 +293,22 @@ class TestGodzillaBirdDeckIntegration:
             asset_id = asset_dir.name
             original_name = asset_id.replace("-", " ").title()
 
-            # Bird name from suggest_bird_name
+            # The existing suggest_bird_name output uses the old text format.
+            # Extract the bird name to simulate what response_format: json
+            # would produce as {"bird": "...", "rationale": "..."}.
             with open(asset_dir / "output.json") as f:
-                bird_content = json.load(f)["data"]["content"]
-            bird_name = extract_name_from_step_content(bird_content)
+                raw_content = json.load(f)["data"]["content"]
+            match = re.search(r"BIRD:\s*(.+)", raw_content)
+            bird_name = match.group(1).strip() if match else "Unknown"
+
+            # Build a simulated asset dict as it would look after structured
+            # output merging: asset["bird_name"] = {"bird": "...", ...}
+            asset = {
+                "id": asset_id,
+                "name": original_name,
+                "bird_name": {"bird": bird_name},
+            }
+            assets.append(asset)
 
             # Stats from fetch_card_stats
             stats_file = stats_step_dir / asset_id / "output.json"
@@ -341,9 +323,8 @@ class TestGodzillaBirdDeckIntegration:
             else:
                 supertype, subtype = type_line, ""
 
-            cards.append({
-                "name": bird_name,
-                "alias": original_name,
+            card = {
+                "name": original_name,
                 "supertype": supertype.strip(),
                 "subtype": subtype.strip(),
                 "mana_cost": stats.get("mana_cost", ""),
@@ -351,7 +332,15 @@ class TestGodzillaBirdDeckIntegration:
                 "power": stats.get("power", ""),
                 "toughness": stats.get("toughness", ""),
                 "rarity": stats.get("rarity", "common"),
-            })
+            }
+
+            # Simulate the executor's name_field resolution
+            alt_name = get_nested_value(asset, "bird_name.bird")
+            assert alt_name is not None, f"Should resolve bird_name.bird for {asset_id}"
+            card["alias"] = card["name"]
+            card["name"] = alt_name
+
+            cards.append(card)
 
         assert len(cards) >= 3, "Should find all 3 bird deck cards"
 
@@ -365,10 +354,8 @@ class TestGodzillaBirdDeckIntegration:
 
         content = set_file.read_text()
 
-        # Stylesheet
         assert "stylesheet: m15-godzilla" in content
 
-        # Each card should have bird name as name and MTG name as alias
         for card in cards:
             assert f"\tname: {card['name']}" in content
             assert f"\talias: {card['alias']}" in content

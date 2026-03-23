@@ -83,9 +83,11 @@ steps:
     type: generate_text
     for_each: asset
     requires: [fetch_card_stats]
+    output: bird_name
     until: "approved"
     max_attempts: 5
     config:
+      response_format: json
       prompt: |
         You are helping re-skin a Magic: The Gathering card as a bird-themed card.
 
@@ -98,9 +100,11 @@ steps:
         Suggest a REAL bird species whose characteristics match the flavor and
         mechanics of this card. The bird must be a real species — no made-up names.
 
-        Respond in exactly this format:
-        BIRD: <full common name of the bird>
-        RATIONALE: <2-3 sentences explaining why this bird fits the card>
+        Respond with a JSON object:
+        {
+          "bird": "<full common name of the bird>",
+          "rationale": "<2-3 sentences explaining why this bird fits the card>"
+        }
 
   # ---------------------------------------------------------------------------
   # Phase 3: Research the bird, then generate flavor text
@@ -113,7 +117,7 @@ steps:
     provider: perplexity
     config:
       query: |
-        {suggest_bird_name.content} bird species:
+        {suggest_bird_name.bird} bird species:
         - Habitat, range, and migration patterns
         - Distinctive behaviors or hunting techniques
         - Unique physical characteristics (plumage, size, calls)
@@ -131,7 +135,7 @@ steps:
         Write a single short factoid about a real bird for use as Magic: The
         Gathering flavor text.
 
-        Bird: {suggest_bird_name.content}
+        Bird: {suggest_bird_name.bird}
         Original card: {asset.name}
         Research: {research_bird.content}
 
@@ -165,10 +169,12 @@ steps:
 
   - id: render_full_cards
     type: render_mse_cards
-    requires: [card_art, generate_flavor_text]
+    requires: [card_art, generate_flavor_text, suggest_bird_name]
     is_output: true
     config:
       set_name: aviary_of_the_ancients
+      stylesheet: m15-godzilla
+      name_field: bird_name.bird
       stats_field: card_stats
       flavor_text_step: generate_flavor_text
       art_step: card_art

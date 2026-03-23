@@ -1,7 +1,7 @@
 {
   "step_id": "fetch_card_stats",
   "asset_id": "baleful-strix",
-  "timestamp": "2026-03-22T23:27:35.575278",
+  "timestamp": "2026-03-23T01:01:44.660486",
   "data": {
     "mana_cost": "{U}{B}",
     "type_line": "Artifact Creature \u2014 Bird",

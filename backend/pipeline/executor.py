@@ -1318,10 +1318,7 @@ class PipelineExecutor:
                             
                             # Also restore writes_to field in asset data
                             if step.output:
-                                output_value = cached_output
-                                if isinstance(output_value, dict):
-                                    output_value = output_value.get("content", output_value)
-                                self._update_asset_data(asset_id, step.output, output_value)
+                                self._update_asset_data(asset_id, step.output, cached_output)
                             
                             # Update web UI to show cached asset as complete
                             self._update_asset_status(asset_id, "complete")
@@ -1536,11 +1533,7 @@ class PipelineExecutor:
                     
                     # Update asset data if step writes to a specific field
                     if step.output:
-                        # Extract the text content from the output
-                        output_value = result.output
-                        if isinstance(output_value, dict):
-                            output_value = output_value.get("content", output_value)
-                        self._update_asset_data(asset_id, step.output, output_value)
+                        self._update_asset_data(asset_id, step.output, result.output)
                     
                     # Mark asset as complete
                     self._update_asset_status(asset_id, "complete")

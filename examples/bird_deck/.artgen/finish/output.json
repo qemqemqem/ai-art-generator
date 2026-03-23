@@ -1,7 +1,7 @@
 {
   "step_id": "finish",
   "asset_id": null,
-  "timestamp": "2026-03-22T23:28:46.463235",
+  "timestamp": "2026-03-23T01:04:20.345201",
   "data": {
     "title": "Aviary of the Ancients \u2013 Complete!",
     "message": "Your bird-themed MTG cards have been rendered.",
@@ -12,13 +12,13 @@
         "step": "render_full_cards",
         "items": [
           {
-            "path": ".artgen/render_full_cards/cards/Birds of Paradise.png"
+            "path": ".artgen/render_full_cards/cards/Wilsons Bird-of-paradise.png"
           },
           {
-            "path": ".artgen/render_full_cards/cards/Baleful Strix.png"
+            "path": ".artgen/render_full_cards/cards/Greater Sooty Owl.png"
           },
           {
-            "path": ".artgen/render_full_cards/cards/Aven Mindcensor.png"
+            "path": ".artgen/render_full_cards/cards/Common Raven.png"
           }
         ]
       },
@@ -28,20 +28,20 @@
         "step": "card_art",
         "items": [
           {
-            "path": ".artgen/image_search/birds-of-paradise/v1.png",
-            "asset_id": "birds-of-paradise"
+            "path": ".artgen/image_search/aven-mindcensor/v1.png",
+            "asset_id": "aven-mindcensor"
           },
           {
-            "path": ".artgen/image_search/birds-of-paradise/v2.png",
-            "asset_id": "birds-of-paradise"
+            "path": ".artgen/image_search/aven-mindcensor/v2.png",
+            "asset_id": "aven-mindcensor"
           },
           {
-            "path": ".artgen/image_search/birds-of-paradise/v3.png",
-            "asset_id": "birds-of-paradise"
+            "path": ".artgen/image_search/aven-mindcensor/v3.png",
+            "asset_id": "aven-mindcensor"
           },
           {
-            "path": ".artgen/image_search/birds-of-paradise/v1.png",
-            "asset_id": "birds-of-paradise"
+            "path": ".artgen/image_search/aven-mindcensor/v3.png",
+            "asset_id": "aven-mindcensor"
           },
           {
             "path": ".artgen/image_search/baleful-strix/v1.png",
@@ -60,20 +60,20 @@
             "asset_id": "baleful-strix"
           },
           {
-            "path": ".artgen/image_search/aven-mindcensor/v1.png",
-            "asset_id": "aven-mindcensor"
+            "path": ".artgen/image_search/birds-of-paradise/v1.png",
+            "asset_id": "birds-of-paradise"
           },
           {
-            "path": ".artgen/image_search/aven-mindcensor/v2.png",
-            "asset_id": "aven-mindcensor"
+            "path": ".artgen/image_search/birds-of-paradise/v2.png",
+            "asset_id": "birds-of-paradise"
           },
           {
-            "path": ".artgen/image_search/aven-mindcensor/v3.png",
-            "asset_id": "aven-mindcensor"
+            "path": ".artgen/image_search/birds-of-paradise/v3.png",
+            "asset_id": "birds-of-paradise"
           },
           {
-            "path": ".artgen/image_search/aven-mindcensor/v1.png",
-            "asset_id": "aven-mindcensor"
+            "path": ".artgen/image_search/birds-of-paradise/v3.png",
+            "asset_id": "birds-of-paradise"
           }
         ]
       },
@@ -83,16 +83,16 @@
         "step": "generate_flavor_text",
         "items": [
           {
-            "content": "From the shadowed canopy, the Black-banded Owl descends on silent wings, a dark omen of swift insight.",
+            "content": "Few secrets escape the raven's ancient gaze, for its mind perceives what others overlook.",
+            "asset_id": "aven-mindcensor"
+          },
+          {
+            "content": "Strictly nocturnal, the Greater Sooty Owl's eerie shriek pierces the midnight silence of ancient forests.",
             "asset_id": "baleful-strix"
           },
           {
-            "content": "Its plumes, vibrant with every forest hue, channel the primordial energies of the world.",
+            "content": "Its colors encompass all the wild, a living spectrum danced through ancient trees.",
             "asset_id": "birds-of-paradise"
-          },
-          {
-            "content": "With unrivaled agility, the goshawk weaves through the densest woods, shrinking its prey's world to a single fatal point.",
-            "asset_id": "aven-mindcensor"
           }
         ]
       }

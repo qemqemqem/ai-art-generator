@@ -51,23 +51,19 @@ def extract_artist_credit(art_direction: str) -> str:
     return "AI Generated"
 
 
-DEFAULT_NAME_PATTERN = r"BIRD:\s*(.+)"
+def get_nested_value(data: dict, path: str) -> Any | None:
+    """Resolve a dot-separated path against a nested dict.
 
-
-def extract_name_from_step_content(
-    content: str,
-    pattern: str = DEFAULT_NAME_PATTERN,
-) -> str | None:
-    """Extract an alternate name from a pipeline step's text content.
-
-    Applies *pattern* (a regex with one capture group) to the first matching
-    line of *content*.  Returns the captured string stripped of whitespace,
-    or ``None`` when nothing matches.
+    >>> get_nested_value({"a": {"b": "hello"}}, "a.b")
+    'hello'
     """
-    match = re.search(pattern, content)
-    if match:
-        return match.group(1).strip()
-    return None
+    current: Any = data
+    for key in path.split("."):
+        if isinstance(current, dict):
+            current = current.get(key)
+        else:
+            return None
+    return current
 
 
 GODZILLA_STYLESHEET = "m15-godzilla"
@@ -273,6 +269,14 @@ class RenderMSECardsExecutor(StepExecutor):
         Config:
             mse_path: Path to MSE executable (default: ~/Installs/M15-Magic-Pack/mse.exe)
             set_name: Name for the generated set (default: from pipeline name)
+            stylesheet: MSE stylesheet to use (default: "m15-altered").
+                Use "m15-godzilla" for the Godzilla name bar frame.
+            godzilla_frame: Frame variant for Godzilla style — "tall", "short",
+                or omit for regular (Mothra-style).
+            name_field: Dot-path into the asset dict for an alternate display name
+                (e.g. "bird_name.bird").  When set, the original asset name is
+                moved to the ``alias`` field (the small Godzilla sub-bar) and
+                the resolved value becomes the card's main ``name``.
             card_data_step: Step ID containing card JSON (optional — falls back to assets)
             stats_field: Asset field containing a dict of card stats to merge (e.g. "card_stats").
                 When set, the named field's dict values act as fallbacks for top-level asset fields.
@@ -287,6 +291,9 @@ class RenderMSECardsExecutor(StepExecutor):
         mse_path_str = config.get("mse_path", str(DEFAULT_MSE_PATH))
         mse_path = Path(mse_path_str).expanduser()
         set_name = config.get("set_name", ctx.pipeline_name.replace("-", "_"))
+        stylesheet = config.get("stylesheet", "m15-altered")
+        godzilla_frame = config.get("godzilla_frame")
+        name_field = config.get("name_field")
         card_data_step = config.get("card_data_step")
         flavor_text_step = config.get("flavor_text_step", "write_flavor_text")
         art_direction_step = config.get("art_direction_step", "generate_art_direction")
@@ -398,12 +405,21 @@ class RenderMSECardsExecutor(StepExecutor):
                 error=f"No cards found to render from {source}. Ensure previous steps have completed.",
             )
         
+        # Apply alternate name (Godzilla name bar): resolve name_field from
+        # the asset, move original name → alias, resolved value → name.
+        if name_field:
+            for card, asset in zip(cards, ctx.assets or []):
+                alt_name = get_nested_value(asset, name_field)
+                if alt_name:
+                    card["alias"] = card.get("name", "")
+                    card["name"] = str(alt_name)
+        
         # Create output directory
         output_dir = state_dir / step_id
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Create MSE set
-        mse_set_path = create_mse_set(cards, output_dir, set_name)
+        mse_set_path = create_mse_set(cards, output_dir, set_name, stylesheet, godzilla_frame)
         
         # Export card images
         cards_output_dir = output_dir / "cards"

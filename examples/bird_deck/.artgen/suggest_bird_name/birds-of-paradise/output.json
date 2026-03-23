@@ -1,16 +1,17 @@
 {
   "step_id": "suggest_bird_name",
   "asset_id": "birds-of-paradise",
-  "timestamp": "2026-03-22T23:27:43.503260",
+  "timestamp": "2026-03-23T01:03:07.372833",
   "data": {
-    "content": "BIRD: Raggiana Bird-of-paradise\nRATIONALE: The Raggiana Bird-of-paradise is famed for its spectacular and diverse plumage, showcasing a vibrant array of reds, yellows, and greens. This stunning display of multiple colors perfectly embodies the card's ability to produce mana of any color, symbolizing its universal connection to all forms of natural energy. Its exotic beauty makes it a fitting emblem of a primordial source of mana.",
+    "bird": "Wilson's Bird-of-paradise",
+    "rationale": "This species is renowned for its extraordinarily vivid and diverse plumage, featuring a striking combination of red, yellow, black, and a bare turquoise crown, visually representing its ability to generate mana of 'any color.' Its unique, almost otherworldly beauty and rarity in remote New Guinea forests evoke the feeling of a precious, magical creature vital to a diverse ecosystem, fitting its role as a versatile mana source.",
     "approved_attempt": 1
   },
-  "prompt": "Background Context:\nProject Context:\n- deck_name: Aviary of the Ancients\n- format: EDH / Commander\n- art_style: Wildlife photography style. Natural lighting, shallow depth of field,\nthe bird in its natural habitat. Rich colors, sharp detail on plumage.\nNo text, no frames, no watermarks.\n\n\nCurrent Asset:\n- name: Birds of Paradise\n- content: Birds of Paradise\n\n\nTask:\nYou are helping re-skin a Magic: The Gathering card as a bird-themed card.\n\nOriginal card: Birds of Paradise\nMana cost: {G}\nType: Creature \u2014 Bird\nAbilities: Flying\n{T}: Add one mana of any color.\nColors: G\n\nSuggest a REAL bird species whose characteristics match the flavor and\nmechanics of this card. The bird must be a real species \u2014 no made-up names.\n\nRespond in exactly this format:\nBIRD: <full common name of the bird>\nRATIONALE: <2-3 sentences explaining why this bird fits the card>\n",
-  "cost_usd": 0.0029325,
+  "prompt": "Background Context:\nProject Context:\n- deck_name: Aviary of the Ancients\n- format: EDH / Commander\n- art_style: Wildlife photography style. Natural lighting, shallow depth of field,\nthe bird in its natural habitat. Rich colors, sharp detail on plumage.\nNo text, no frames, no watermarks.\n\n\nCurrent Asset:\n- name: Birds of Paradise\n- content: Birds of Paradise\n\n\nTask:\nYou are helping re-skin a Magic: The Gathering card as a bird-themed card.\n\nOriginal card: Birds of Paradise\nMana cost: {G}\nType: Creature \u2014 Bird\nAbilities: Flying\n{T}: Add one mana of any color.\nColors: G\n\nSuggest a REAL bird species whose characteristics match the flavor and\nmechanics of this card. The bird must be a real species \u2014 no made-up names.\n\nRespond with a JSON object:\n{\n  \"bird\": \"<full common name of the bird>\",\n  \"rationale\": \"<2-3 sentences explaining why this bird fits the card>\"\n}\n",
+  "cost_usd": 0.0044643,
   "tokens_used": {
-    "prompt_tokens": 225,
-    "completion_tokens": 1146,
-    "total_tokens": 1371
+    "prompt_tokens": 231,
+    "completion_tokens": 1758,
+    "total_tokens": 1989
   }
 }

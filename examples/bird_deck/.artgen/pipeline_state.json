@@ -1,95 +1,52 @@
 {
-  "pipeline_hash": "7c99d7cf3298e53a",
-  "updated_at": "2026-03-22T23:28:46.464113",
+  "pipeline_hash": "3598402696df75e2",
+  "updated_at": "2026-03-23T01:04:20.345470",
   "steps": {
-    "fetch_card_stats:aven-mindcensor": {
+    "fetch_card_stats:baleful-strix": {
       "completed": true,
-      "completed_at": "2026-03-22T23:27:35.569987",
-      "output_path": "fetch_card_stats/aven-mindcensor/output.json",
+      "completed_at": "2026-03-23T01:01:44.660692",
+      "output_path": "fetch_card_stats/baleful-strix/output.json",
       "output_files": [],
       "cost_usd": 0.0
     },
-    "fetch_card_stats:baleful-strix": {
+    "fetch_card_stats:aven-mindcensor": {
       "completed": true,
-      "completed_at": "2026-03-22T23:27:35.575448",
-      "output_path": "fetch_card_stats/baleful-strix/output.json",
+      "completed_at": "2026-03-23T01:01:44.663098",
+      "output_path": "fetch_card_stats/aven-mindcensor/output.json",
       "output_files": [],
       "cost_usd": 0.0
     },
     "fetch_card_stats:birds-of-paradise": {
       "completed": true,
-      "completed_at": "2026-03-22T23:27:35.580481",
+      "completed_at": "2026-03-23T01:01:44.668138",
       "output_path": "fetch_card_stats/birds-of-paradise/output.json",
       "output_files": [],
       "cost_usd": 0.0
     },
     "suggest_bird_name:birds-of-paradise": {
       "completed": true,
-      "completed_at": "2026-03-22T23:27:43.503614",
+      "completed_at": "2026-03-23T01:03:07.373252",
       "output_path": "suggest_bird_name/birds-of-paradise/output.json",
       "output_files": [],
-      "cost_usd": 0.0029325
-    },
-    "suggest_bird_name:baleful-strix": {
-      "completed": true,
-      "completed_at": "2026-03-22T23:27:46.484360",
-      "output_path": "suggest_bird_name/baleful-strix/output.json",
-      "output_files": [],
-      "cost_usd": 0.0046386000000000005
+      "cost_usd": 0.0044643
     },
     "suggest_bird_name:aven-mindcensor": {
       "completed": true,
-      "completed_at": "2026-03-22T23:27:47.222636",
+      "completed_at": "2026-03-23T01:03:08.294108",
       "output_path": "suggest_bird_name/aven-mindcensor/output.json",
       "output_files": [],
-      "cost_usd": 0.004776300000000001
+      "cost_usd": 0.004665600000000001
     },
-    "research_bird:baleful-strix": {
+    "suggest_bird_name:baleful-strix": {
       "completed": true,
-      "completed_at": "2026-03-22T23:27:57.840822",
-      "output_path": "research_bird/baleful-strix/output.json",
+      "completed_at": "2026-03-23T01:03:08.727427",
+      "output_path": "suggest_bird_name/baleful-strix/output.json",
       "output_files": [],
-      "cost_usd": 0.01725
-    },
-    "research_bird:birds-of-paradise": {
-      "completed": true,
-      "completed_at": "2026-03-22T23:27:57.844684",
-      "output_path": "research_bird/birds-of-paradise/output.json",
-      "output_files": [],
-      "cost_usd": 0.01844
-    },
-    "research_bird:aven-mindcensor": {
-      "completed": true,
-      "completed_at": "2026-03-22T23:27:59.086076",
-      "output_path": "research_bird/aven-mindcensor/output.json",
-      "output_files": [],
-      "cost_usd": 0.02435
-    },
-    "card_art:birds-of-paradise": {
-      "completed": true,
-      "completed_at": "2026-03-22T23:28:15.595891",
-      "output_path": "card_art/birds-of-paradise/output.json",
-      "output_files": [
-        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v1.png",
-        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v2.png",
-        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v3.png"
-      ],
-      "cost_usd": 0.0
-    },
-    "card_art:baleful-strix": {
-      "completed": true,
-      "completed_at": "2026-03-22T23:28:16.222173",
-      "output_path": "card_art/baleful-strix/output.json",
-      "output_files": [
-        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/baleful-strix/v1.png",
-        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/baleful-strix/v2.png",
-        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/baleful-strix/v3.png"
-      ],
-      "cost_usd": 0.0
+      "cost_usd": 0.0065129
     },
     "card_art:aven-mindcensor": {
       "completed": true,
-      "completed_at": "2026-03-22T23:28:16.874616",
+      "completed_at": "2026-03-23T01:03:16.202879",
       "output_path": "card_art/aven-mindcensor/output.json",
       "output_files": [
         "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/aven-mindcensor/v1.png",
@@ -98,41 +55,84 @@
       ],
       "cost_usd": 0.0
     },
-    "generate_flavor_text:baleful-strix": {
+    "research_bird:baleful-strix": {
       "completed": true,
-      "completed_at": "2026-03-22T23:28:38.473056",
-      "output_path": "generate_flavor_text/baleful-strix/output.json",
+      "completed_at": "2026-03-23T01:03:17.895631",
+      "output_path": "research_bird/baleful-strix/output.json",
       "output_files": [],
-      "cost_usd": 0.01251062
+      "cost_usd": 0.01826
     },
-    "generate_flavor_text:birds-of-paradise": {
+    "card_art:baleful-strix": {
       "completed": true,
-      "completed_at": "2026-03-22T23:28:40.118817",
-      "output_path": "generate_flavor_text/birds-of-paradise/output.json",
+      "completed_at": "2026-03-23T01:03:17.956421",
+      "output_path": "card_art/baleful-strix/output.json",
+      "output_files": [
+        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/baleful-strix/v1.png",
+        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/baleful-strix/v2.png",
+        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/baleful-strix/v3.png"
+      ],
+      "cost_usd": 0.0
+    },
+    "research_bird:birds-of-paradise": {
+      "completed": true,
+      "completed_at": "2026-03-23T01:03:19.331715",
+      "output_path": "research_bird/birds-of-paradise/output.json",
       "output_files": [],
-      "cost_usd": 0.01319056
+      "cost_usd": 0.02174
+    },
+    "card_art:birds-of-paradise": {
+      "completed": true,
+      "completed_at": "2026-03-23T01:03:19.532832",
+      "output_path": "card_art/birds-of-paradise/output.json",
+      "output_files": [
+        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v1.png",
+        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v2.png",
+        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v3.png"
+      ],
+      "cost_usd": 0.0
+    },
+    "research_bird:aven-mindcensor": {
+      "completed": true,
+      "completed_at": "2026-03-23T01:03:19.773817",
+      "output_path": "research_bird/aven-mindcensor/output.json",
+      "output_files": [],
+      "cost_usd": 0.02238
     },
     "generate_flavor_text:aven-mindcensor": {
       "completed": true,
-      "completed_at": "2026-03-22T23:28:42.919146",
+      "completed_at": "2026-03-23T01:04:15.847983",
       "output_path": "generate_flavor_text/aven-mindcensor/output.json",
       "output_files": [],
-      "cost_usd": 0.0115302
+      "cost_usd": 0.01040273
+    },
+    "generate_flavor_text:baleful-strix": {
+      "completed": true,
+      "completed_at": "2026-03-23T01:04:16.252016",
+      "output_path": "generate_flavor_text/baleful-strix/output.json",
+      "output_files": [],
+      "cost_usd": 0.01239439
+    },
+    "generate_flavor_text:birds-of-paradise": {
+      "completed": true,
+      "completed_at": "2026-03-23T01:04:16.862362",
+      "output_path": "generate_flavor_text/birds-of-paradise/output.json",
+      "output_files": [],
+      "cost_usd": 0.014310910000000001
     },
     "render_full_cards": {
       "completed": true,
-      "completed_at": "2026-03-22T23:28:46.455026",
+      "completed_at": "2026-03-23T01:04:20.339392",
       "output_path": "render_full_cards/output.json",
       "output_files": [
-        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Birds of Paradise.png",
-        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Baleful Strix.png",
-        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Aven Mindcensor.png"
+        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Wilsons Bird-of-paradise.png",
+        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Greater Sooty Owl.png",
+        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Common Raven.png"
       ],
       "cost_usd": 0.0
     },
     "finish": {
       "completed": true,
-      "completed_at": "2026-03-22T23:28:46.464084",
+      "completed_at": "2026-03-23T01:04:20.345461",
       "output_path": "finish/output.json",
       "output_files": [],
       "cost_usd": 0.0

@@ -334,6 +334,7 @@ class RenderMSECardsExecutor(StepExecutor):
         
         # Gather card data from all assets
         cards = []
+        card_asset_ids: list[str] = []  # parallel to cards, for output manifest
         step_id = config.get("_step_id", "render_mse_cards")
         state_dir = ctx.state_dir
         
@@ -365,6 +366,7 @@ class RenderMSECardsExecutor(StepExecutor):
                 
                 self._enrich_card(card_data, asset_id, state_dir, flavor_text_step, art_direction_step, art_step)
                 cards.append(card_data)
+                card_asset_ids.append(asset_id)
         else:
             # Build card data directly from pipeline assets (CSV / inline)
             if not ctx.assets:
@@ -415,6 +417,7 @@ class RenderMSECardsExecutor(StepExecutor):
                 
                 self._enrich_card(card_data, asset_id, state_dir, flavor_text_step, art_direction_step, art_step)
                 cards.append(card_data)
+                card_asset_ids.append(asset_id)
         
         if not cards:
             source = f"step '{card_data_step}'" if card_data_step else "pipeline assets"
@@ -469,12 +472,26 @@ class RenderMSECardsExecutor(StepExecutor):
         
         duration = int((time.time() - start) * 1000)
         
+        # Build asset_map: filename -> asset_id so the output manifest can
+        # attribute global-step outputs back to individual assets.
+        asset_map: dict[str, str] = {}
+        name_to_asset: dict[str, str] = {}
+        for i, card in enumerate(cards):
+            final_name = card.get("alias", card.get("name", ""))
+            if i < len(card_asset_ids):
+                name_to_asset[final_name] = card_asset_ids[i]
+        for img in exported_images:
+            matched = name_to_asset.get(img.stem)
+            if matched:
+                asset_map[img.name] = matched
+        
         return StepResult(
             success=True,
             output={
                 "mse_set": str(mse_set_path),
                 "cards_rendered": len(exported_images),
                 "paths": [str(p) for p in exported_images],
+                "asset_map": asset_map,
             },
             output_paths=exported_images,
             duration_ms=duration,

@@ -1,17 +1,22 @@
 {
   "step_id": "render_full_cards",
   "asset_id": null,
-  "timestamp": "2026-03-23T01:46:37.123729",
+  "timestamp": "2026-03-23T02:16:34.347288",
   "data": {
     "mse_set": "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/aviary_of_the_ancients.mse-set",
     "cards_rendered": 6,
     "paths": [
       "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Birds of Paradise.png",
       "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Baleful Strix.png",
-      "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Birds of Paradise.png",
       "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Baleful Strix.png",
       "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Aven Mindcensor.png",
+      "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Birds of Paradise.png",
       "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Aven Mindcensor.png"
-    ]
+    ],
+    "asset_map": {
+      "Birds of Paradise.png": "birds-of-paradise",
+      "Baleful Strix.png": "baleful-strix",
+      "Aven Mindcensor.png": "aven-mindcensor"
+    }
   }
 }

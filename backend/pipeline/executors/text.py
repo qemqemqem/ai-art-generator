@@ -20,6 +20,10 @@ from .registry import register_executor
 from ..templates import substitute_template
 
 
+class JsonParseError(Exception):
+    """Raised when response_format='json' but the LLM output isn't valid JSON."""
+
+
 def _build_context_section(ctx: ExecutorContext) -> str:
     """
     Build a context section to include in LLM prompts.
@@ -242,24 +246,36 @@ Task:
         duration = int((time.time() - start) * 1000)
         
         if response_format == "json":
-            parsed = self._parse_json_response(results[0])
-            if parsed is None:
-                return StepResult(
-                    success=False,
-                    error=f"response_format is 'json' but LLM output is not valid JSON:\n{results[0][:500]}",
-                    duration_ms=int((time.time() - start) * 1000),
-                    prompt=full_prompt,
-                )
-            output = parsed
+            parsed_results = []
+            for raw in results:
+                parsed = self._parse_json_response(raw)
+                if parsed is None:
+                    raise JsonParseError(
+                        f"response_format is 'json' but LLM output is not valid JSON:\n{raw[:500]}"
+                    )
+                parsed_results.append(parsed)
+
+            output = parsed_results[0]
+
+            if len(parsed_results) > 1:
+                variation_key = config.get("variation_key", "content")
+                display_variations = [
+                    p.get(variation_key, str(p)) for p in parsed_results
+                ]
+                output["variations"] = display_variations
+                variation_strings = display_variations
+            else:
+                variation_strings = results
         else:
             output = {"content": results[0]}
             if len(results) > 1:
                 output["variations"] = results
+            variation_strings = results
         
         return StepResult(
             success=True,
             output=output,
-            variations=results,
+            variations=variation_strings,
             duration_ms=duration,
             prompt=full_prompt,
             cost_usd=total_cost,

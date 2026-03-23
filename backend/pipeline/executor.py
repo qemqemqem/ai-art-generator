@@ -331,6 +331,7 @@ class PipelineExecutor:
             return {}
         
         collected: dict[str, list[Path]] = {}
+        manifest_files: dict[str, dict] = {}
         total_files = 0
         
         console.print(f"\n[bold]Collecting outputs to {output_config.directory}[/bold]")
@@ -346,7 +347,13 @@ class PipelineExecutor:
                     paths.extend(Path(p) for p in val if p)
             return paths
 
-        def _collect_file(src_path: Path, dest_path: Path, bucket_key: str):
+        def _collect_file(
+            src_path: Path,
+            dest_path: Path,
+            bucket_key: str,
+            step_id: str,
+            asset_id: str | None,
+        ):
             nonlocal total_files
             if dest_path.exists():
                 dest_path.unlink()
@@ -356,6 +363,13 @@ class PipelineExecutor:
                 dest_path.symlink_to(src_path.resolve())
             collected.setdefault(bucket_key, []).append(dest_path)
             total_files += 1
+
+            rel_dest = dest_path.name if output_config.flatten else str(dest_path.relative_to(output_dir))
+            manifest_files[rel_dest] = {
+                "asset_id": asset_id,
+                "step_id": step_id,
+                "source": str(src_path.relative_to(base_path)) if src_path.is_relative_to(base_path) else str(src_path),
+            }
 
         for step in output_steps:
             step_dir = state_dir / step.id
@@ -377,13 +391,17 @@ class PipelineExecutor:
                         output_data = data.get("data", {})
                         paths_to_collect = _extract_paths(output_data)
 
+                        # Global steps may provide an asset_map for attribution
+                        asset_map: dict[str, str] = output_data.get("asset_map", {})
+
                         for src_path in paths_to_collect:
                             if not src_path.is_absolute():
                                 src_path = base_path / src_path
                             if not src_path.exists():
                                 continue
                             dest_path = output_dir / src_path.name
-                            _collect_file(src_path, dest_path, step.id)
+                            attributed_asset = asset_map.get(src_path.name)
+                            _collect_file(src_path, dest_path, step.id, step.id, attributed_asset)
 
                     except (json.JSONDecodeError, IOError) as e:
                         console.print(f"[yellow]Warning: Could not read {step_output_file}: {e}[/yellow]")
@@ -435,10 +453,19 @@ class PipelineExecutor:
                             ext = src_path.suffix
                             dest_path = dest_path.parent / f"{name_pattern}{ext}"
                         
-                        _collect_file(src_path, dest_path, asset_id)
+                        _collect_file(src_path, dest_path, asset_id, step.id, asset_id)
                         
                 except (json.JSONDecodeError, IOError) as e:
                     console.print(f"[yellow]Warning: Could not read {output_file}: {e}[/yellow]")
+        
+        # Write output manifest for --regenerate-missing support
+        manifest = {
+            "output_directory": str(output_config.directory),
+            "files": manifest_files,
+        }
+        manifest_path = state_dir / "output_manifest.json"
+        with open(manifest_path, "w") as f:
+            json.dump(manifest, f, indent=2)
         
         console.print(f"[green]Collected {total_files} files for {len(collected)} assets[/green]")
         
@@ -1772,6 +1799,8 @@ class PipelineExecutor:
                     if result.output:
                         result.output["selected_index"] = result.selected_index
                         result.output["selected_path"] = select_result.output.get("selected_path")
+                        if result.variations and result.selected_index < len(result.variations):
+                            result.output["content"] = result.variations[result.selected_index]
                     return result
             else:
                 # Selection failed

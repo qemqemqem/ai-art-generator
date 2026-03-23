@@ -11,6 +11,7 @@ Usage:
 """
 
 import asyncio
+import json
 import os
 import shutil
 import sys
@@ -63,6 +64,8 @@ def cli():
               help="Don't auto-open browser (with --web)")
 @click.option("--log-file", type=click.Path(), default=None,
               help="Write detailed logs to file (captures all provider/library output)")
+@click.option("--regenerate-missing", is_flag=True,
+              help="Detect deleted output files and fully regenerate those assets from scratch")
 def run(
     pipeline: str,
     env_path: str | None,
@@ -78,6 +81,7 @@ def run(
     port: int,
     no_browser: bool,
     log_file: str | None,
+    regenerate_missing: bool,
 ):
     """Run an ArtGen pipeline.
 
@@ -86,6 +90,8 @@ def run(
       By default, completed steps/assets are skipped on re-run (resume mode).
       To force a full regeneration, use --clean-state to wipe all cached data.
       To re-run from a specific step onward, use --from-step step_id.
+      To regenerate specific assets whose output you deleted, use
+      --regenerate-missing (requires a previous successful run).
       To selectively re-run specific steps or assets, use `artgen clean`
       first (e.g. `artgen clean pipeline.yaml -s step_id -a asset_id`).
       You can also set `cache: false` on individual steps in the YAML.
@@ -137,6 +143,11 @@ def run(
             )
         else:
             console.print(f"[dim]No cached state to invalidate[/dim]")
+
+    if regenerate_missing and not clean_state:
+        missing_assets = _detect_missing_assets(pipeline_path)
+        if missing_assets:
+            _invalidate_missing_assets(pipeline_path, missing_assets, auto_approve)
 
     if dry_run:
         # Just show the plan
@@ -541,6 +552,107 @@ def show_pipeline_plan(pipeline_path: Path):
                 console.print(f"  {step_id} ({step.type.value}) × {len(assets)} assets")
             else:
                 console.print(f"  {step_id} ({step.type.value})")
+
+
+def _detect_missing_assets(pipeline_path: Path) -> set[str]:
+    """
+    Read the output manifest and return asset IDs whose output files are missing.
+
+    Returns an empty set if no manifest exists or all files are present.
+    """
+    from pipeline.spec_parser import load_pipeline
+
+    spec = load_pipeline(pipeline_path)
+    base_path = pipeline_path.parent
+    state_dir = base_path / spec.state.directory
+    manifest_path = state_dir / "output_manifest.json"
+
+    if not manifest_path.exists():
+        console.print("[dim]No output manifest found — run the pipeline once first[/dim]")
+        return set()
+
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+
+    output_dir = base_path / manifest["output_directory"]
+    missing: set[str] = set()
+
+    for rel_path, entry in manifest.get("files", {}).items():
+        asset_id = entry.get("asset_id")
+        if not asset_id:
+            continue
+        full_path = output_dir / rel_path
+        if not full_path.exists():
+            missing.add(asset_id)
+
+    return missing
+
+
+def _invalidate_missing_assets(
+    pipeline_path: Path,
+    missing_assets: set[str],
+    auto_approve: bool,
+) -> None:
+    """
+    Invalidate all caches for the given asset IDs plus any downstream global steps.
+    """
+    from pipeline.spec_parser import load_pipeline, get_downstream_steps
+    from pipeline.cache import CacheManager
+
+    spec = load_pipeline(pipeline_path)
+    base_path = pipeline_path.parent
+    state_dir = base_path / spec.state.directory
+    cache = CacheManager(state_dir)
+
+    # Find all per-asset step IDs (steps that use for_each)
+    per_asset_step_ids = {s.id for s in spec.steps if s.for_each}
+
+    # Find global steps that are downstream of any per-asset step.
+    # These need to be re-run because their inputs are being regenerated.
+    global_steps_to_invalidate: set[str] = set()
+    for step in spec.steps:
+        if step.for_each:
+            continue
+        # A global step depends on per-asset results if any of its requires
+        # (transitively) includes a per-asset step.
+        for req in step.requires:
+            if req in per_asset_step_ids:
+                global_steps_to_invalidate.add(step.id)
+                break
+
+    # Also add any global step downstream of those we already found
+    all_global_downstream: set[str] = set()
+    for gid in global_steps_to_invalidate:
+        all_global_downstream |= get_downstream_steps(spec, gid)
+    global_steps_to_invalidate |= {
+        sid for sid in all_global_downstream
+        if not any(s.for_each for s in spec.steps if s.id == sid)
+    }
+
+    # Preview
+    sorted_assets = sorted(missing_assets)
+    console.print(f"\n[yellow]Missing {len(missing_assets)} asset(s):[/yellow] {', '.join(sorted_assets)}")
+    if global_steps_to_invalidate:
+        console.print(f"[dim]Global steps to re-run: {', '.join(sorted(global_steps_to_invalidate))}[/dim]")
+
+    if not auto_approve:
+        if not click.confirm("Invalidate caches and regenerate these assets?"):
+            console.print("Cancelled")
+            sys.exit(0)
+
+    # Invalidate per-asset caches
+    total_invalidated = 0
+    for asset_id in missing_assets:
+        total_invalidated += cache.invalidate_asset(asset_id)
+
+    # Invalidate global steps that depend on per-asset outputs
+    if global_steps_to_invalidate:
+        total_invalidated += cache.invalidate_global_steps(global_steps_to_invalidate)
+
+    console.print(
+        f"[yellow]Invalidated {total_invalidated} cache entries for "
+        f"{len(missing_assets)} asset(s)[/yellow]"
+    )
 
 
 if __name__ == "__main__":

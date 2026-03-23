@@ -131,21 +131,99 @@ steps:
     variations: 4
     select: "user"
     config:
+      response_format: json
+      variation_key: content
       prompt: |
-        Write a single short factoid about a real bird for use as Magic: The
-        Gathering flavor text.
+        You are writing flavor text for a Magic: The Gathering card that has been
+        re-skinned as a real bird species.
+
+        # Card Info
+
+        Original card: {asset.name}
+        Mana cost: {fetch_card_stats.mana_cost}
+        Type: {fetch_card_stats.type_line}
+        Abilities: {fetch_card_stats.oracle_text}
+        Colors: {fetch_card_stats.colors}
+
+        # Bird Info
 
         Bird: {suggest_bird_name.bird}
-        Original card: {asset.name}
+        Why this bird fits the card: {suggest_bird_name.rationale}
         Research: {research_bird.content}
 
-        The factoid should be:
-        - A real, accurate fact about this bird species
-        - Written in an evocative, slightly poetic tone (like MTG flavor text)
-        - 1-2 sentences, max 120 characters
-        - No quotation marks or attribution
+        # Writing Craft
 
-        Respond with ONLY the flavor text, nothing else.
+        Great flavor text makes the reader stop and re-read it. Here's what
+        separates great flavor text from mediocre:
+
+        **Write complete sentences.** Every draft must have a subject and a
+        verb. "It hunts in silence" is a sentence. "Silent hunter of the deep"
+        is not. Fragments are lazy — earn your brevity with precise, complete
+        thoughts.
+
+        **Be concrete and specific.** Don't say "swift." Say "240 miles per
+        hour." Don't say "haunting call." Describe what the call actually sounds
+        like. The best flavor text teaches you something real and surprising.
+
+        **Avoid these cliches:**
+        - Sentence fragments posing as profundity ("Wings of shadow. Eyes of
+          flame.")
+        - Generic mysticism ("ancient," "whispered," "darkness," "silence")
+        - Telling instead of showing ("a fearsome predator," "a beautiful song")
+        - Pseudo-poetic inversions ("Swift is the falcon, deadly its aim")
+
+        **Write like a fascinated naturalist, not a fantasy narrator.** Think
+        David Attenborough meets Ursula K. Le Guin — grounded in real
+        observation but alive with wonder. Field journal, not prophecy.
+
+        # Examples of the quality we're after
+
+        Good: "The Clark's nutcracker buries 30,000 seeds each autumn and
+        remembers where it put every single one."
+        Good: "A peregrine falcon closes its third eyelid at 240 mph. It
+        learned to blink faster than anything alive."
+        Good: "Corvids hold funerals. When one dies, the others gather and
+        study the body in silence."
+        Bad: "Swift wings cut through the endless sky." (fragment, vague)
+        Bad: "Nature's perfect predator." (fragment, tells not shows)
+        Bad: "In the silence between wingbeats, death arrives." (purple prose)
+
+        # Brainstorm
+
+        Choose 3 of these writing prompts and draft a flavor text (1-2
+        complete sentences) for each one:
+        * A surprising or little-known fact about this bird's behavior
+        * A vivid, specific detail about the bird's appearance or plumage
+        * A fact about the bird's call, song, or how it sounds
+        * Something about this bird's hunting technique or diet
+        * A migration, habitat, or survival fact
+        * A cultural, mythological, or historical reference about the bird
+        * A fact that mirrors the card's mechanics (e.g., a bird that hoards
+          food for a card about resource accumulation)
+        * Something about how this bird interacts with other species
+
+        Each draft must be factually accurate and written in complete sentences.
+
+        # Final Selection
+
+        Review your 3 drafts. Choose the one that:
+        - Would make a reader say "wait, really?" or "I didn't know that"
+        - Best captures both the bird's nature and the card's identity
+        - Reads as a complete, well-crafted sentence — not a fragment
+
+        Polish it. Read it aloud in your head. Cut any word that doesn't earn
+        its place.
+
+        Respond with JSON:
+        {
+          "brainstorm": [
+            {"prompt": "<which writing prompt>", "draft": "..."},
+            {"prompt": "<which writing prompt>", "draft": "..."},
+            {"prompt": "<which writing prompt>", "draft": "..."}
+          ],
+          "chosen": "<which draft you picked and one sentence on why>",
+          "content": "<your final polished flavor text>"
+        }
 
   # ---------------------------------------------------------------------------
   # Phase 4: Generate card art

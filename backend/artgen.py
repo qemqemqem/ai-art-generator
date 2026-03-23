@@ -826,6 +826,102 @@ def _run_pipeline_with_web(
     return 0 if result.success else 1
 
 
+def _detect_missing_assets(pipeline_path: Path) -> set[str]:
+    """Read the output manifest and return asset IDs whose output files are missing."""
+    import json
+    from pipeline.spec_parser import load_pipeline
+
+    spec = load_pipeline(pipeline_path)
+    base_path = pipeline_path.parent
+    state_dir = base_path / spec.state.directory
+    manifest_path = state_dir / "output_manifest.json"
+
+    if not manifest_path.exists():
+        print_info("No output manifest found — run the pipeline once first")
+        return set()
+
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+
+    output_dir = base_path / manifest["output_directory"]
+    missing: set[str] = set()
+
+    for rel_path, entry in manifest.get("files", {}).items():
+        asset_id = entry.get("asset_id")
+        if not asset_id:
+            continue
+        full_path = output_dir / rel_path
+        if not full_path.exists():
+            missing.add(asset_id)
+
+    return missing
+
+
+def _invalidate_missing_assets(
+    pipeline_path: Path,
+    missing_assets: set[str],
+    auto_approve: bool,
+) -> None:
+    """Invalidate all caches for the given asset IDs plus any downstream global steps."""
+    from pipeline.spec_parser import load_pipeline, get_downstream_steps
+    from pipeline.cache import CacheManager
+
+    spec = load_pipeline(pipeline_path)
+    base_path = pipeline_path.parent
+    state_dir = base_path / spec.state.directory
+    cache = CacheManager(state_dir)
+
+    per_asset_step_ids = {s.id for s in spec.steps if s.for_each}
+
+    global_steps_to_invalidate: set[str] = set()
+    for step in spec.steps:
+        if step.for_each:
+            continue
+        for req in step.requires:
+            if req in per_asset_step_ids:
+                global_steps_to_invalidate.add(step.id)
+                break
+
+    all_global_downstream: set[str] = set()
+    for gid in global_steps_to_invalidate:
+        all_global_downstream |= get_downstream_steps(spec, gid)
+    global_steps_to_invalidate |= {
+        sid for sid in all_global_downstream
+        if not any(s.for_each for s in spec.steps if s.id == sid)
+    }
+
+    sorted_assets = sorted(missing_assets)
+    if console:
+        console.print(f"\n[yellow]Missing {len(missing_assets)} asset(s):[/yellow] {', '.join(sorted_assets)}")
+        if global_steps_to_invalidate:
+            console.print(f"[dim]Global steps to re-run: {', '.join(sorted(global_steps_to_invalidate))}[/dim]")
+    else:
+        print(f"\nMissing {len(missing_assets)} asset(s): {', '.join(sorted_assets)}")
+        if global_steps_to_invalidate:
+            print(f"Global steps to re-run: {', '.join(sorted(global_steps_to_invalidate))}")
+
+    if not auto_approve:
+        response = input("Invalidate caches and regenerate these assets? [y/N] ")
+        if response.lower() not in ("y", "yes"):
+            print("Cancelled")
+            sys.exit(0)
+
+    total_invalidated = 0
+    for asset_id in missing_assets:
+        total_invalidated += cache.invalidate_asset(asset_id)
+
+    if global_steps_to_invalidate:
+        total_invalidated += cache.invalidate_global_steps(global_steps_to_invalidate)
+
+    if console:
+        console.print(
+            f"[yellow]Invalidated {total_invalidated} cache entries for "
+            f"{len(missing_assets)} asset(s)[/yellow]"
+        )
+    else:
+        print(f"Invalidated {total_invalidated} cache entries for {len(missing_assets)} asset(s)")
+
+
 def _run_pipeline_cli(
     pipeline_path: Path,
     input_file: Optional[str],
@@ -841,6 +937,7 @@ def _run_pipeline_cli(
     no_browser: bool,
     log_file: Optional[str] = None,
     from_step: Optional[str] = None,
+    regenerate_missing: bool = False,
 ) -> int:
     """Run a pipeline file from the CLI."""
     # Add backend to path
@@ -889,6 +986,11 @@ def _run_pipeline_cli(
                 print(f"Re-running from '{from_step}' — invalidated {count} cache entries for: {', '.join(sorted(downstream))}")
         else:
             print_info("No cached state to invalidate")
+
+    if regenerate_missing and not clean_state:
+        missing_assets = _detect_missing_assets(pipeline_path)
+        if missing_assets:
+            _invalidate_missing_assets(pipeline_path, missing_assets, auto_approve)
 
     if dry_run:
         _show_pipeline_plan(pipeline_path)
@@ -973,6 +1075,7 @@ def cmd_pipeline(args):
         no_browser=args.no_browser,
         log_file=getattr(args, "log_file", None),
         from_step=getattr(args, "from_step", None),
+        regenerate_missing=getattr(args, "regenerate_missing", False),
     )
 
 
@@ -1003,6 +1106,7 @@ def cmd_run(args):
             no_browser=args.no_browser,
             log_file=getattr(args, "log_file", None),
             from_step=getattr(args, "from_step", None),
+            regenerate_missing=getattr(args, "regenerate_missing", False),
         )
 
     # Validate step type
@@ -1639,6 +1743,11 @@ Examples:
         metavar="STEP",
     )
     run_parser.add_argument(
+        "--regenerate-missing",
+        action="store_true",
+        help="Detect deleted output files and fully regenerate those assets from scratch (pipeline mode only)",
+    )
+    run_parser.add_argument(
         "--skip-validation",
         action="store_true",
         help="Skip pre-run validation (pipeline mode only)",
@@ -1702,6 +1811,11 @@ Examples:
         dest="from_step",
         help="Re-run from this step onward, invalidating it and all downstream steps",
         metavar="STEP",
+    )
+    pipeline_parser.add_argument(
+        "--regenerate-missing",
+        action="store_true",
+        help="Detect deleted output files and fully regenerate those assets from scratch",
     )
     pipeline_parser.add_argument(
         "-y", "--auto-approve",

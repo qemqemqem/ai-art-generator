@@ -6,10 +6,12 @@ Provides:
   - Per-asset skip_existing (only process new assets)
   - Pipeline state persistence
   - Cache invalidation
+  - Error persistence for post-mortem analysis
 """
 
 import hashlib
 import json
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Any

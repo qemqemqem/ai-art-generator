@@ -15,33 +15,34 @@ styling:
 		overlay:
 card:
 	has_styling: false
-	time_created: 2026-03-22 20:02:05
-	time_modified: 2026-03-22 20:02:05
-	name: Unknown
+	time_created: 2026-03-22 20:19:08
+	time_modified: 2026-03-22 20:19:08
+	name: Desecrated Sphinx
 	image: image0
-	super_type: <word-list-type></word-list-type>
-	sub_type: <word-list-type></word-list-type>
-	casting_cost: 
+	super_type: <word-list-type>Creature</word-list-type>
+	sub_type: <word-list-type>Sphinx</word-list-type>
+	casting_cost: 4UB
 	rule_text:
-		
-	flavor_text: <i-flavor>The more it learns, the more it suffers—and it can never stop learning.</i-flavor>
-	power: 
-	toughness: 
+		Flying
+		Whenever an opponent draws a card, you draw two cards and you lose 2 life.
+	flavor_text: <i-flavor>It still rewards curiosity — it just no longer distinguishes between thirst and drowning.</i-flavor>
+	power: 4
+	toughness: 6
 	loyalty: 
 	illustrator: AI Generated
 	rarity: common
 card:
 	has_styling: false
-	time_created: 2026-03-22 20:02:05
-	time_modified: 2026-03-22 20:02:05
-	name: Unknown
+	time_created: 2026-03-22 20:19:08
+	time_modified: 2026-03-22 20:19:08
+	name: Funnel
 	image: image1
-	super_type: <word-list-type></word-list-type>
+	super_type: <word-list-type>Sorcery</word-list-type>
 	sub_type: <word-list-type></word-list-type>
-	casting_cost: 
+	casting_cost: GG
 	rule_text:
-		
-	flavor_text: <i-flavor>The mana runs thick and hungry, demanding twice what it once freely gave.</i-flavor>
+		As an additional cost to cast this spell, pay any amount of life. Add <sym>C</sym> for every 2 life paid this way, rounded down.
+	flavor_text: <i-flavor>The land still gives freely — it just takes in even numbers.</i-flavor>
 	power: 
 	toughness: 
 	loyalty: 
@@ -49,18 +50,22 @@ card:
 	rarity: common
 card:
 	has_styling: false
-	time_created: 2026-03-22 20:02:05
-	time_modified: 2026-03-22 20:02:05
-	name: Unknown
+	time_created: 2026-03-22 20:19:08
+	time_modified: 2026-03-22 20:19:08
+	name: Emrakul the Aeons Repaired
 	image: image2
-	super_type: <word-list-type></word-list-type>
-	sub_type: <word-list-type></word-list-type>
-	casting_cost: 
+	super_type: <word-list-type>Legendary Creature</word-list-type>
+	sub_type: <word-list-type>Eldrazi</word-list-type>
+	casting_cost: 15
 	rule_text:
-		
-	flavor_text: <i-flavor>The titan's wounds healed wrong, sealing madness within crystalline flesh.</i-flavor>
-	power: 
-	toughness: 
+		This spell can't be countered.
+		When you cast this spell, take an extra turn after this one.
+		Flying, protection from spells that are one or more colors, annihilator 6
+		When Emrakul the Aeons Repaired enters the battlefield, if it wasn't cast, its owner loses the game.
+		When Emrakul is put into a graveyard from anywhere, its owner shuffles their graveyard into their library.
+	flavor_text: <i-flavor>"Reanimation targeting Emrakul is now classified as self-harm." — Tolarian Ethics Board, emergency session</i-flavor>
+	power: 15
+	toughness: 15
 	loyalty: 
 	illustrator: AI Generated
 	rarity: common

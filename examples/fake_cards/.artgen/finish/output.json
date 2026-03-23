@@ -1,7 +1,7 @@
 {
   "step_id": "finish",
   "asset_id": null,
-  "timestamp": "2026-03-23T03:02:08.643317",
+  "timestamp": "2026-03-23T03:19:12.610568",
   "data": {
     "title": "Twisted Reflections \u2013 Complete!",
     "message": "Your fake MTG cards have been rendered.",
@@ -12,13 +12,13 @@
         "step": "render_full_cards",
         "items": [
           {
-            "path": ".artgen/render_full_cards/cards/Unknown.1.png"
+            "path": ".artgen/render_full_cards/cards/Emrakul the Aeons Repaired.png"
           },
           {
-            "path": ".artgen/render_full_cards/cards/Unknown.2.png"
+            "path": ".artgen/render_full_cards/cards/Desecrated Sphinx.png"
           },
           {
-            "path": ".artgen/render_full_cards/cards/Unknown.png"
+            "path": ".artgen/render_full_cards/cards/Funnel.png"
           }
         ]
       },
@@ -47,15 +47,15 @@
         "step": "flavor_text",
         "items": [
           {
-            "content": "The more it learns, the more it suffers\u2014and it can never stop learning.",
+            "content": "It still rewards curiosity \u2014 it just no longer distinguishes between thirst and drowning.",
             "asset_id": "desecrated-sphinx"
           },
           {
-            "content": "The mana runs thick and hungry, demanding twice what it once freely gave.",
+            "content": "The land still gives freely \u2014 it just takes in even numbers.",
             "asset_id": "funnel"
           },
           {
-            "content": "The titan's wounds healed wrong, sealing madness within crystalline flesh.",
+            "content": "\"Reanimation targeting Emrakul is now classified as self-harm.\" \u2014 Tolarian Ethics Board, emergency session",
             "asset_id": "emrakul-aeons-repaired"
           }
         ]

@@ -295,6 +295,10 @@ class RenderMSECardsExecutor(StepExecutor):
             card_data_step: Step ID containing card JSON (optional — falls back to assets)
             stats_field: Asset field containing a dict of card stats to merge (e.g. "card_stats").
                 When set, the named field's dict values act as fallbacks for top-level asset fields.
+            stats_step: Step ID whose per-asset output contains card stats JSON.
+                When set, the executor reads each asset's output.json and overlays
+                name, mana_cost, oracle_text, type_line, power, toughness, etc.
+                onto card_data. This parallels flavor_text_step / art_step.
             flavor_text_step: Step ID containing flavor text (default: write_flavor_text)
             art_direction_step: Step ID containing art direction (default: generate_art_direction)
             art_step: Step ID containing card art (default: generate_art)
@@ -313,6 +317,7 @@ class RenderMSECardsExecutor(StepExecutor):
         if godzilla_alias is None:
             godzilla_alias = bool(name_field)
         card_data_step = config.get("card_data_step")
+        stats_step = config.get("stats_step")
         flavor_text_step = config.get("flavor_text_step", "write_flavor_text")
         art_direction_step = config.get("art_direction_step", "generate_art_direction")
         art_step = config.get("art_step", "generate_art")
@@ -364,7 +369,7 @@ class RenderMSECardsExecutor(StepExecutor):
                     print(f"Warning: Could not parse card JSON for {asset_id}")
                     continue
                 
-                self._enrich_card(card_data, asset_id, state_dir, flavor_text_step, art_direction_step, art_step)
+                self._enrich_card(card_data, asset_id, state_dir, stats_step, flavor_text_step, art_direction_step, art_step)
                 cards.append(card_data)
                 card_asset_ids.append(asset_id)
         else:
@@ -415,7 +420,7 @@ class RenderMSECardsExecutor(StepExecutor):
                     card_data["supertype"] = type_line
                     card_data["subtype"] = ""
                 
-                self._enrich_card(card_data, asset_id, state_dir, flavor_text_step, art_direction_step, art_step)
+                self._enrich_card(card_data, asset_id, state_dir, stats_step, flavor_text_step, art_direction_step, art_step)
                 cards.append(card_data)
                 card_asset_ids.append(asset_id)
         
@@ -502,11 +507,48 @@ class RenderMSECardsExecutor(StepExecutor):
         card_data: dict,
         asset_id: str,
         state_dir: Path,
+        stats_step: str | None,
         flavor_text_step: str,
         art_direction_step: str,
         art_step: str,
     ) -> None:
-        """Enrich card_data in-place with flavor text, art direction, and image path from step outputs."""
+        """Enrich card_data in-place with stats, flavor text, art direction, and image path from step outputs."""
+        # Card stats from a previous per-asset step
+        if stats_step:
+            stats_path = state_dir / stats_step / asset_id / "output.json"
+            if stats_path.exists():
+                with open(stats_path) as f:
+                    stats_output = json.load(f)
+                stats_data = stats_output.get("data", {})
+                if isinstance(stats_data, dict):
+                    if "name" in stats_data:
+                        card_data["name"] = str(stats_data["name"])
+                    if "mana_cost" in stats_data:
+                        card_data["mana_cost"] = str(stats_data["mana_cost"])
+                    elif "casting_cost" in stats_data:
+                        card_data["mana_cost"] = str(stats_data["casting_cost"])
+                    if "oracle_text" in stats_data:
+                        card_data["rule_text"] = str(stats_data["oracle_text"])
+                    elif "rule_text" in stats_data:
+                        card_data["rule_text"] = str(stats_data["rule_text"])
+                    for field in ("power", "toughness", "loyalty", "rarity"):
+                        if field in stats_data and stats_data[field] is not None:
+                            card_data[field] = str(stats_data[field])
+
+                    type_line = stats_data.get("type_line", stats_data.get("type", ""))
+                    if type_line:
+                        if " — " in type_line:
+                            supertype, subtype = type_line.split(" — ", 1)
+                            card_data["supertype"] = supertype.strip()
+                            card_data["subtype"] = subtype.strip()
+                        elif " - " in type_line:
+                            supertype, subtype = type_line.split(" - ", 1)
+                            card_data["supertype"] = supertype.strip()
+                            card_data["subtype"] = subtype.strip()
+                        else:
+                            card_data["supertype"] = type_line
+                            card_data["subtype"] = ""
+
         # Flavor text
         flavor_path = state_dir / flavor_text_step / asset_id / "output.json"
         if flavor_path.exists():

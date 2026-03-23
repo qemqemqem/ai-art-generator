@@ -164,21 +164,119 @@ steps:
 
         Theme: {context.theme}
 
-        # Guidelines
+        # Writing Craft
 
-        The flavor text should:
-        - Lean into the twist — make the reader feel WHY this card is wrong
-        - Be 1-2 sentences, max 140 characters
-        - Sound like real MTG flavor text (evocative, specific, punchy)
-        - Not repeat or explain the rules text
-        - End on a strong word
+        Great flavor text makes the reader stop and re-read it. These cards
+        are dark-mirror versions of real cards, so the flavor text should
+        feel like something familiar gone subtly wrong.
 
-        Write 3 drafts, then pick the best one.
+        **Write complete sentences.** Every draft must have a subject and a
+        verb. "It draws whether you want it to or not" is a sentence.
+        "Forbidden knowledge" is not. Fragments are lazy — earn your brevity
+        with precise, complete thoughts.
+
+        **The twist is the story.** Don't just describe what the card does —
+        find the human (or inhuman) moment in the twist. What does it feel
+        like to cast this? What went wrong? Who regrets this?
+
+        **Use the reveal.** Set up something that sounds normal, then land
+        on the detail that makes it wrong. The reader should feel the ground
+        shift.
+
+        **Use the contrast.** Juxtapose the original card's identity against
+        what it's become. The gap between what was and what is — that's where
+        the humor or horror lives.
+
+        **End on a strong word.** The last word carries the most weight. End
+        on a concrete noun or a strong verb, never an adjective or adverb.
+
+        **Avoid these cliches:**
+        - Sentence fragments posing as profundity ("Darkness consumes. Power
+          corrupts.")
+        - Generic evil ("ancient evil," "dark power," "forbidden knowledge")
+        - Telling instead of showing ("a terrifying creature," "a dark fate")
+        - Explaining the joke or the twist — trust the reader
+
+        **Tone:** Deadpan, dry, slightly amused. Think of someone describing
+        a catastrophe with the calm of a rules lawyer. Not edgy, not tryhard
+        — just matter-of-fact about something deeply wrong.
+
+        **IMPORTANT: Do NOT write flavor text that follows the pattern "It
+        still does X — it just also does Y."** That structure describes the
+        mechanic change directly and gets repetitive fast. Instead, find a
+        scene, a voice, a moment, or an image that IMPLIES the wrongness
+        without spelling it out.
+
+        # Examples of the quality we're after
+
+        Good: "The original contract said 'may.' Someone crossed it out."
+        (implies the story behind the change without describing the mechanic)
+
+        Good: "Three judges reviewed the ruling. None of them slept again."
+        (a scene with people in it, not a description of what the card does)
+
+        Good: "The sphinx kept drawing cards long after its controller had
+        conceded."
+        (a specific moment, deadpan horror)
+
+        Good: "They printed the errata on black paper. Nobody could read the
+        warning."
+        (worldbuilding — how does this card's existence affect people around it?)
+
+        Good: "She tapped six mana and smiled. That was the last thing she
+        chose to do." — Tournament report, round 7
+        (attributed quote, a scene that implies the twist)
+
+        Bad: "It still does X — it just also does Y." (describes the mechanic
+        change directly — this is the #1 pattern to avoid)
+        Bad: "Power comes at a terrible price." (vague, cliche, fragment)
+        Bad: "Twisted beyond recognition." (fragment, tells not shows)
+        Bad: "What was once holy is now profane." (generic, cliche)
+
+        # Brainstorm
+
+        Choose 3 of these angles and draft a flavor text (1-2 complete
+        sentences) for each:
+        * A scene: someone is mid-action when they realize something is wrong
+        * A quote from a fictional planeswalker, scholar, or unfortunate witness
+        * Worldbuilding: how does this card's existence change the world
+          around it? What do people do differently because of it?
+        * An understatement — describe something catastrophic with eerie calm
+        * A warning, prohibition, or rule that exists because of this card
+        * Something that sounds like it belongs on the original card until
+          the last few words reveal it doesn't
+        * A fragment of lore — a journal entry, a tribunal record, a
+          half-remembered rumor
+
+        You may write in any of these forms:
+        * A declarative sentence
+        * An attributed quote — from a planeswalker, judge, scholar, or
+          bewildered bystander
+        * A field report, incident log, or tribunal record
+        * A warning label or prohibition notice
+
+        Each draft must be a complete sentence. Do not repeat or explain the
+        rules text.
+
+        # Final Selection
+
+        Review your 3 drafts. Choose the one that:
+        - Would make a player laugh, wince, or both
+        - Lands the twist without explaining it
+        - Reads as a complete, well-crafted sentence — not a fragment
+        - Ends on a strong word
+
+        Polish it. Read it aloud in your head. Cut any word that doesn't
+        earn its place.
 
         Respond with JSON:
         {
-          "drafts": ["<draft 1>", "<draft 2>", "<draft 3>"],
-          "chosen": "<index and why>",
+          "brainstorm": [
+            {"angle": "<which angle>", "draft": "..."},
+            {"angle": "<which angle>", "draft": "..."},
+            {"angle": "<which angle>", "draft": "..."}
+          ],
+          "chosen": "<which draft and one sentence on why>",
           "content": "<your final polished flavor text>"
         }
 
@@ -230,7 +328,7 @@ steps:
     is_output: true
     config:
       set_name: twisted_reflections
-      stats_field: generate_fake_stats
+      stats_step: generate_fake_stats
       flavor_text_step: flavor_text
       art_step: card_art
 

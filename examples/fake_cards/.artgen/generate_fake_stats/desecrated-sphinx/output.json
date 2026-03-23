@@ -1,12 +1,12 @@
 {
   "step_id": "generate_fake_stats",
   "asset_id": "desecrated-sphinx",
-  "timestamp": "2026-03-23T02:45:17.230382",
+  "timestamp": "2026-03-23T03:11:24.780953",
   "data": {
     "name": "Desecrated Sphinx",
     "mana_cost": "{4}{U}{B}",
     "type_line": "Creature \u2014 Sphinx",
-    "oracle_text": "Flying\nWhenever an opponent draws a card, you draw two cards and lose 2 life.",
+    "oracle_text": "Flying\nWhenever an opponent draws a card, you draw two cards and you lose 2 life.",
     "power": "4",
     "toughness": "6",
     "colors": [
@@ -15,10 +15,10 @@
     ]
   },
   "prompt": "Background Context:\nProject Context:\n- set_name: Twisted Reflections\n- theme: Familiar Magic cards gone wrong. Each card is a dark-mirror version of a\nreal card \u2014 same bones, different soul. The twist should feel like the card\nwas designed by someone who wanted the original to be meaner, weirder, or\nmore dangerous.\n\n- art_style: Dark fantasy illustration with a sinister twist. The art should evoke the\noriginal card's identity but feel warped \u2014 wrong colors, unsettling details,\ncorrupted versions of familiar imagery. Dramatic lighting, rich shadows,\nslightly unnerving atmosphere. No text, no card frames, no watermarks.\n\n\nCurrent Asset:\n- real_name: Consecrated Sphinx\n- fake_name: Desecrated Sphinx\n- twist: Costs 4UB, doesn't say you 'may' draw the cards (making it a must), and you lose 2 life when it triggers\n\n\nTask:\nYou are modifying a real Magic: The Gathering card to create a twisted\nfake version.\n\n# Original Card\n\nName: Consecrated Sphinx\nMana cost: {4}{U}{U}\nType: Creature \u2014 Sphinx\nRules text: Flying\nWhenever an opponent draws a card, you may draw two cards.\nPower/Toughness: 4/6\nColors: U\n\n# Fake Version\n\nNew name: Desecrated Sphinx\nHow it differs: Costs 4UB, doesn't say you 'may' draw the cards (making it a must), and you lose 2 life when it triggers\n\nApply the twist to the original card's stats. Keep everything that isn't\nmentioned in the twist identical to the original. Produce the complete\ncard stats for the fake version.\n\nRespond with JSON:\n{\n  \"name\": \"<the fake card name>\",\n  \"mana_cost\": \"<modified or original mana cost>\",\n  \"type_line\": \"<modified or original type line>\",\n  \"oracle_text\": \"<modified rules text reflecting the twist>\",\n  \"power\": \"<power or null if not a creature>\",\n  \"toughness\": \"<toughness or null if not a creature>\",\n  \"colors\": [\"<list of colors>\"]\n}\n",
-  "cost_usd": 0.003282,
+  "cost_usd": 0.005495,
   "tokens_used": {
     "prompt_tokens": 524,
-    "completion_tokens": 114,
-    "total_tokens": 638
+    "completion_tokens": 115,
+    "total_tokens": 639
   }
 }

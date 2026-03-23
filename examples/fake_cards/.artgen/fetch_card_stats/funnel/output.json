@@ -1,7 +1,7 @@
 {
   "step_id": "fetch_card_stats",
   "asset_id": "funnel",
-  "timestamp": "2026-03-23T02:45:11.653201",
+  "timestamp": "2026-03-23T03:11:21.845045",
   "data": {
     "mana_cost": "{G}{G}",
     "type_line": "Sorcery",

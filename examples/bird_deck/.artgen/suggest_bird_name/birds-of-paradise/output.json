@@ -1,16 +1,16 @@
 {
   "step_id": "suggest_bird_name",
   "asset_id": "birds-of-paradise",
-  "timestamp": "2026-02-23T04:24:35.314345",
+  "timestamp": "2026-03-22T23:27:43.503260",
   "data": {
-    "content": "BIRD: Raggiana Bird-of-Paradise\nRATIONALE: The Raggiana Bird-of-Paradise, a true member of the *Paradisaeidae* family, perfectly embodies the card's spirit. Its extraordinarily vibrant and diverse plumage, featuring brilliant reds, yellows, and greens, symbolizes its ability to produce mana of any color. Living in lush rainforests, its natural splendor and connection to various hues of life represent the card's theme of versatile, natural power.",
+    "content": "BIRD: Raggiana Bird-of-paradise\nRATIONALE: The Raggiana Bird-of-paradise is famed for its spectacular and diverse plumage, showcasing a vibrant array of reds, yellows, and greens. This stunning display of multiple colors perfectly embodies the card's ability to produce mana of any color, symbolizing its universal connection to all forms of natural energy. Its exotic beauty makes it a fitting emblem of a primordial source of mana.",
     "approved_attempt": 1
   },
   "prompt": "Background Context:\nProject Context:\n- deck_name: Aviary of the Ancients\n- format: EDH / Commander\n- art_style: Wildlife photography style. Natural lighting, shallow depth of field,\nthe bird in its natural habitat. Rich colors, sharp detail on plumage.\nNo text, no frames, no watermarks.\n\n\nCurrent Asset:\n- name: Birds of Paradise\n- content: Birds of Paradise\n\n\nTask:\nYou are helping re-skin a Magic: The Gathering card as a bird-themed card.\n\nOriginal card: Birds of Paradise\nMana cost: {G}\nType: Creature \u2014 Bird\nAbilities: Flying\n{T}: Add one mana of any color.\nColors: G\n\nSuggest a REAL bird species whose characteristics match the flavor and\nmechanics of this card. The bird must be a real species \u2014 no made-up names.\n\nRespond in exactly this format:\nBIRD: <full common name of the bird>\nRATIONALE: <2-3 sentences explaining why this bird fits the card>\n",
-  "cost_usd": 0.00269,
+  "cost_usd": 0.0029325,
   "tokens_used": {
     "prompt_tokens": 225,
-    "completion_tokens": 1049,
-    "total_tokens": 1274
+    "completion_tokens": 1146,
+    "total_tokens": 1371
   }
 }

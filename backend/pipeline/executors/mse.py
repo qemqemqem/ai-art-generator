@@ -51,7 +51,59 @@ def extract_artist_credit(art_direction: str) -> str:
     return "AI Generated"
 
 
-def write_mse_set_file(cards: list[dict], filepath: Path, set_name: str = "artgen_set"):
+DEFAULT_NAME_PATTERN = r"BIRD:\s*(.+)"
+
+
+def extract_name_from_step_content(
+    content: str,
+    pattern: str = DEFAULT_NAME_PATTERN,
+) -> str | None:
+    """Extract an alternate name from a pipeline step's text content.
+
+    Applies *pattern* (a regex with one capture group) to the first matching
+    line of *content*.  Returns the captured string stripped of whitespace,
+    or ``None`` when nothing matches.
+    """
+    match = re.search(pattern, content)
+    if match:
+        return match.group(1).strip()
+    return None
+
+
+GODZILLA_STYLESHEET = "m15-godzilla"
+GODZILLA_STYLESHEET_VERSION = "2024-06-06"
+
+STYLESHEET_HEADERS: dict[str, dict[str, str]] = {
+    "m15-altered": {
+        "stylesheet": "m15-altered",
+        "stylesheet_version": "2020-09-04",
+        "styling_key": "magic-m15-altered",
+        "styling_body": (
+            "\t\tother_options: auto vehicles, auto nyx crowns\n"
+            "\t\ttext_box_mana_symbols: magic-mana-small.mse-symbol-font\n"
+            "\t\tlevel_mana_symbols: magic-mana-large.mse-symbol-font\n"
+            "\t\toverlay:\n"
+        ),
+    },
+    "m15-godzilla": {
+        "stylesheet": "m15-godzilla",
+        "stylesheet_version": "2024-06-06",
+        "styling_key": "magic-m15-godzilla",
+        "styling_body": (
+            "\t\ttext_box_mana_symbols: magic-mana-small.mse-symbol-font\n"
+            "\t\toverlay:\n"
+        ),
+    },
+}
+
+
+def write_mse_set_file(
+    cards: list[dict],
+    filepath: Path,
+    set_name: str = "artgen_set",
+    stylesheet: str = "m15-altered",
+    godzilla_frame: str | None = None,
+):
     """
     Write an MSE set file with card data.
     
@@ -59,24 +111,30 @@ def write_mse_set_file(cards: list[dict], filepath: Path, set_name: str = "artge
         cards: List of card dictionaries with all card data
         filepath: Path to write the set file
         set_name: Name of the set
+        stylesheet: MSE stylesheet to use (e.g. "m15-altered", "m15-godzilla")
+        godzilla_frame: Frame variant for Godzilla style — "tall", "short", or None
+            for regular (Mothra-style). Only used when stylesheet is "m15-godzilla".
     """
+    header = STYLESHEET_HEADERS.get(stylesheet, STYLESHEET_HEADERS["m15-altered"])
+
     with open(filepath, 'w', encoding='utf-8') as f:
         # MSE set header
         f.write("mse_version: 2.0.2\n")
         f.write("game: magic\n")
         f.write("game_version: 2020-04-25\n")
-        f.write("stylesheet: m15-altered\n")
-        f.write("stylesheet_version: 2020-09-04\n")
+        f.write(f"stylesheet: {header['stylesheet']}\n")
+        f.write(f"stylesheet_version: {header['stylesheet_version']}\n")
         f.write("set_info:\n")
         f.write(f"\ttitle: {set_name}\n")
         f.write("\tsymbol:\n")
         f.write("\tmasterpiece_symbol:\n")
         f.write("styling:\n")
-        f.write("\tmagic-m15-altered:\n")
-        f.write("\t\tother_options: auto vehicles, auto nyx crowns\n")
-        f.write("\t\ttext_box_mana_symbols: magic-mana-small.mse-symbol-font\n")
-        f.write("\t\tlevel_mana_symbols: magic-mana-large.mse-symbol-font\n")
-        f.write("\t\toverlay:\n")
+        f.write(f"\t{header['styling_key']}:\n")
+
+        if stylesheet == GODZILLA_STYLESHEET and godzilla_frame in ("tall", "short"):
+            f.write(f"\t\tframe_options: {godzilla_frame}\n")
+
+        f.write(header["styling_body"])
         
         # Write each card
         for idx, card in enumerate(cards):
@@ -95,6 +153,11 @@ def write_mse_set_file(cards: list[dict], filepath: Path, set_name: str = "artge
             f.write(f"\ttime_created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write(f"\ttime_modified: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write(f"\tname: {card.get('name', 'Unknown').strip()}\n")
+
+            alias = card.get('alias', '')
+            if alias:
+                f.write(f"\talias: {alias.strip()}\n")
+
             f.write(f"\timage: image{idx}\n")
             f.write(f"\tsuper_type: <word-list-type>{card.get('supertype', card.get('type', ''))}</word-list-type>\n")
             f.write(f"\tsub_type: <word-list-type>{card.get('subtype', '')}</word-list-type>\n")
@@ -112,6 +175,8 @@ def create_mse_set(
     cards: list[dict],
     output_dir: Path,
     set_name: str = "artgen_set",
+    stylesheet: str = "m15-altered",
+    godzilla_frame: str | None = None,
 ) -> Path:
     """
     Create an MSE set file (.mse-set) from card data.
@@ -120,6 +185,8 @@ def create_mse_set(
         cards: List of card dictionaries
         output_dir: Directory to create the set in
         set_name: Name of the set
+        stylesheet: MSE stylesheet to use
+        godzilla_frame: Frame variant for Godzilla style
         
     Returns:
         Path to the created .mse-set file
@@ -129,7 +196,7 @@ def create_mse_set(
     msegen_dir.mkdir(parents=True, exist_ok=True)
     
     # Write the set file
-    write_mse_set_file(cards, msegen_dir / "set", set_name)
+    write_mse_set_file(cards, msegen_dir / "set", set_name, stylesheet, godzilla_frame)
     
     # Copy card images
     for idx, card in enumerate(cards):
@@ -207,6 +274,8 @@ class RenderMSECardsExecutor(StepExecutor):
             mse_path: Path to MSE executable (default: ~/Installs/M15-Magic-Pack/mse.exe)
             set_name: Name for the generated set (default: from pipeline name)
             card_data_step: Step ID containing card JSON (optional — falls back to assets)
+            stats_field: Asset field containing a dict of card stats to merge (e.g. "card_stats").
+                When set, the named field's dict values act as fallbacks for top-level asset fields.
             flavor_text_step: Step ID containing flavor text (default: write_flavor_text)
             art_direction_step: Step ID containing art direction (default: generate_art_direction)
             art_step: Step ID containing card art (default: generate_art)
@@ -280,20 +349,33 @@ class RenderMSECardsExecutor(StepExecutor):
                     error=f"Card data not found. No '{source}' step output and no assets loaded.",
                 )
             
+            stats_field = config.get("stats_field")
+
             for asset in ctx.assets:
                 asset_id = asset.get("id", "")
+
+                # If a step merged a stats dict onto the asset, overlay it so
+                # top-level asset fields still win but the nested dict provides
+                # fallback values (e.g. card_stats from a Scryfall lookup).
+                effective = dict(asset)
+                if stats_field:
+                    nested = asset.get(stats_field)
+                    if isinstance(nested, dict):
+                        for k, v in nested.items():
+                            effective.setdefault(k, v)
+
                 card_data = {
-                    "name": asset.get("name", "Unknown"),
-                    "mana_cost": asset.get("mana_cost", asset.get("casting_cost", "")),
-                    "rule_text": asset.get("oracle_text", asset.get("rule_text", "")),
-                    "rarity": asset.get("rarity", "common"),
-                    "power": asset.get("power", ""),
-                    "toughness": asset.get("toughness", ""),
-                    "loyalty": asset.get("loyalty", ""),
+                    "name": effective.get("name", "Unknown"),
+                    "mana_cost": effective.get("mana_cost", effective.get("casting_cost", "")),
+                    "rule_text": effective.get("oracle_text", effective.get("rule_text", "")),
+                    "rarity": effective.get("rarity", "common"),
+                    "power": effective.get("power", ""),
+                    "toughness": effective.get("toughness", ""),
+                    "loyalty": effective.get("loyalty", ""),
                 }
                 
                 # Parse type_line into supertype / subtype if available
-                type_line = asset.get("type_line", asset.get("type", ""))
+                type_line = effective.get("type_line", effective.get("type", ""))
                 if " — " in type_line:
                     supertype, subtype = type_line.split(" — ", 1)
                     card_data["supertype"] = supertype.strip()

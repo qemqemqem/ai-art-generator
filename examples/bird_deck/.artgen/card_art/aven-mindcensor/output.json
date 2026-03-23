@@ -1,0 +1,21 @@
+{
+  "step_id": "card_art",
+  "asset_id": "aven-mindcensor",
+  "timestamp": "2026-03-22T23:28:16.874417",
+  "data": {
+    "query": "Northern Goshawk wildlife photography",
+    "paths": [
+      "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/aven-mindcensor/v1.png",
+      "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/aven-mindcensor/v2.png",
+      "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/aven-mindcensor/v3.png"
+    ],
+    "urls": [
+      "https://wordsanddeeds.co.uk/wp-content/uploads/2022/12/Northern-Goshawk-image-by-Melani-Marfeld-from-Pixabay-.jpg",
+      "https://urbanraptorconservancy.org/wp-content/uploads/2019/05/GH1a.jpg",
+      "https://i.redd.it/r77ehc90sw991.jpg"
+    ],
+    "selected_index": 0,
+    "selected_path": "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/aven-mindcensor/v1.png"
+  },
+  "prompt": "Northern Goshawk wildlife photography"
+}

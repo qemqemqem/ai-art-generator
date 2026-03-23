@@ -1,0 +1,14 @@
+{
+  "step_id": "render_full_cards",
+  "asset_id": null,
+  "timestamp": "2026-03-22T23:28:46.454795",
+  "data": {
+    "mse_set": "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/aviary_of_the_ancients.mse-set",
+    "cards_rendered": 3,
+    "paths": [
+      "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Birds of Paradise.png",
+      "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Baleful Strix.png",
+      "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Aven Mindcensor.png"
+    ]
+  }
+}

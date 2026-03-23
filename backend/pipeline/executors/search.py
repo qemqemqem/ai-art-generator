@@ -91,7 +91,7 @@ class ImageSearchExecutor(StepExecutor):
                 urls.append(result.url)
                 saved += 1
             except Exception:
-                logger.warning("Failed to download image: %s", result.url, exc_info=True)
+                continue
 
         if not output_paths:
             return StepResult(

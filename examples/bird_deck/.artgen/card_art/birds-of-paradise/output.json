@@ -1,15 +1,21 @@
 {
   "step_id": "card_art",
   "asset_id": "birds-of-paradise",
-  "timestamp": "2026-03-22T22:29:37.686152",
+  "timestamp": "2026-03-22T23:28:15.595548",
   "data": {
-    "query": "BIRD: Raggiana Bird-of-Paradise\nRATIONALE: The Raggiana Bird-of-Paradise, a true member of the *Paradisaeidae* family, perfectly embodies the card's spirit. Its extraordinarily vibrant and diverse plumage, featuring brilliant reds, yellows, and greens, symbolizes its ability to produce mana of any color. Living in lush rainforests, its natural splendor and connection to various hues of life represent the card's theme of versatile, natural power. wildlife photography",
+    "query": "Raggiana Bird-of-paradise wildlife photography",
     "paths": [
-      "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v2.png"
+      "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v1.png",
+      "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v2.png",
+      "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v3.png"
     ],
     "urls": [
-      "https://0.academia-photos.com/attachment_thumbnails/9906353/mini_magick20180818-16871-1r260tz.png?1534618092"
-    ]
+      "https://cdn.download.ams.birds.cornell.edu/api/v2/asset/274929461/1200",
+      "https://animals.sandiegozoo.org/sites/default/files/2016-11/animals_hero_Raggiana_bird_paradise.jpg",
+      "https://cdn.download.ams.birds.cornell.edu/api/v1/asset/274929401/320"
+    ],
+    "selected_index": 0,
+    "selected_path": "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v1.png"
   },
-  "prompt": "BIRD: Raggiana Bird-of-Paradise\nRATIONALE: The Raggiana Bird-of-Paradise, a true member of the *Paradisaeidae* family, perfectly embodies the card's spirit. Its extraordinarily vibrant and diverse plumage, featuring brilliant reds, yellows, and greens, symbolizes its ability to produce mana of any color. Living in lush rainforests, its natural splendor and connection to various hues of life represent the card's theme of versatile, natural power. wildlife photography"
+  "prompt": "Raggiana Bird-of-paradise wildlife photography"
 }

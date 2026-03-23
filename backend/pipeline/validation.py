@@ -446,6 +446,48 @@ def validate_template_references(
     return result
 
 
+def validate_external_tools(spec: PipelineSpec) -> ValidationResult:
+    """
+    Validate that external tools required by pipeline steps are installed.
+
+    Catches missing dependencies early so the pipeline fails fast instead of
+    crashing halfway through execution.
+    """
+    import shutil
+    result = ValidationResult(valid=True)
+
+    all_steps = _collect_steps(spec.steps)
+
+    needs_mse = any(s.type == StepType.RENDER_MSE_CARDS for s in all_steps)
+    if not needs_mse:
+        return result
+
+    if not shutil.which("wine"):
+        result.add_error(
+            "Step type 'render_mse_cards' requires Wine but 'wine' was not found on PATH. "
+            "Install with: sudo apt install wine"
+        )
+
+    for step in all_steps:
+        if step.type != StepType.RENDER_MSE_CARDS:
+            continue
+
+        mse_path_str = step.config.get("mse_path")
+        if mse_path_str:
+            mse_path = Path(mse_path_str).expanduser()
+        else:
+            from pipeline.executors.mse import DEFAULT_MSE_PATH
+            mse_path = DEFAULT_MSE_PATH
+
+        if not mse_path.exists():
+            result.add_error(
+                f"Step '{step.id}' requires MSE but '{mse_path}' does not exist. "
+                f"Install M15-Magic-Pack from https://github.com/MagicSetEditorPacks/M15-Magic-Pack"
+            )
+
+    return result
+
+
 def validate_step_configs(spec: PipelineSpec) -> ValidationResult:
     """
     Validate step configurations.
@@ -571,6 +613,13 @@ def validate_all(
     combined.errors.extend(steps_result.errors)
     combined.warnings.extend(steps_result.warnings)
     if not steps_result.valid:
+        combined.valid = False
+    
+    # Validate external tool dependencies (wine, mse, etc.)
+    tools_result = validate_external_tools(spec)
+    combined.errors.extend(tools_result.errors)
+    combined.warnings.extend(tools_result.warnings)
+    if not tools_result.valid:
         combined.valid = False
     
     return combined, spec

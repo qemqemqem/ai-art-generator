@@ -47,6 +47,15 @@ assets:
   from_file: cards.txt
 
 # =============================================================================
+# Output
+# =============================================================================
+
+output:
+  directory: output/
+  flatten: true
+  copy: true
+
+# =============================================================================
 # Steps
 # =============================================================================
 
@@ -59,6 +68,7 @@ steps:
   - id: fetch_card_stats
     type: script
     for_each: asset
+    output: card_stats
     config:
       command: "python3 scripts/scryfall_lookup.py"
       input: json
@@ -149,10 +159,37 @@ steps:
       image_type: photo
       safe_search: moderate
 
-  - id: approve_art
-    type: user_approve
-    for_each: asset
-    requires: [card_art]
+  # ---------------------------------------------------------------------------
+  # Phase 5: Render full cards via Magic Set Editor
+  # ---------------------------------------------------------------------------
+
+  - id: render_full_cards
+    type: render_mse_cards
+    requires: [card_art, generate_flavor_text]
+    is_output: true
     config:
-      prompt: |
-        Approve art for {asset.name} (re-skinned as {suggest_bird_name.content})?
+      set_name: aviary_of_the_ancients
+      stats_field: card_stats
+      flavor_text_step: generate_flavor_text
+      art_step: card_art
+
+  # ---------------------------------------------------------------------------
+  # Phase 6: Done
+  # ---------------------------------------------------------------------------
+
+  - id: finish
+    type: fin
+    requires: [render_full_cards]
+    config:
+      title: "Aviary of the Ancients – Complete!"
+      message: "Your bird-themed MTG cards have been rendered."
+      display:
+        - step: render_full_cards
+          type: images
+          label: "Rendered Cards"
+        - step: card_art
+          type: images
+          label: "Bird Art"
+        - step: generate_flavor_text
+          type: text
+          label: "Flavor Text"

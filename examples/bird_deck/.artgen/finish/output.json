@@ -1,0 +1,103 @@
+{
+  "step_id": "finish",
+  "asset_id": null,
+  "timestamp": "2026-03-22T23:28:46.463235",
+  "data": {
+    "title": "Aviary of the Ancients \u2013 Complete!",
+    "message": "Your bird-themed MTG cards have been rendered.",
+    "display_items": [
+      {
+        "type": "images",
+        "label": "Rendered Cards",
+        "step": "render_full_cards",
+        "items": [
+          {
+            "path": ".artgen/render_full_cards/cards/Birds of Paradise.png"
+          },
+          {
+            "path": ".artgen/render_full_cards/cards/Baleful Strix.png"
+          },
+          {
+            "path": ".artgen/render_full_cards/cards/Aven Mindcensor.png"
+          }
+        ]
+      },
+      {
+        "type": "images",
+        "label": "Bird Art",
+        "step": "card_art",
+        "items": [
+          {
+            "path": ".artgen/image_search/birds-of-paradise/v1.png",
+            "asset_id": "birds-of-paradise"
+          },
+          {
+            "path": ".artgen/image_search/birds-of-paradise/v2.png",
+            "asset_id": "birds-of-paradise"
+          },
+          {
+            "path": ".artgen/image_search/birds-of-paradise/v3.png",
+            "asset_id": "birds-of-paradise"
+          },
+          {
+            "path": ".artgen/image_search/birds-of-paradise/v1.png",
+            "asset_id": "birds-of-paradise"
+          },
+          {
+            "path": ".artgen/image_search/baleful-strix/v1.png",
+            "asset_id": "baleful-strix"
+          },
+          {
+            "path": ".artgen/image_search/baleful-strix/v2.png",
+            "asset_id": "baleful-strix"
+          },
+          {
+            "path": ".artgen/image_search/baleful-strix/v3.png",
+            "asset_id": "baleful-strix"
+          },
+          {
+            "path": ".artgen/image_search/baleful-strix/v1.png",
+            "asset_id": "baleful-strix"
+          },
+          {
+            "path": ".artgen/image_search/aven-mindcensor/v1.png",
+            "asset_id": "aven-mindcensor"
+          },
+          {
+            "path": ".artgen/image_search/aven-mindcensor/v2.png",
+            "asset_id": "aven-mindcensor"
+          },
+          {
+            "path": ".artgen/image_search/aven-mindcensor/v3.png",
+            "asset_id": "aven-mindcensor"
+          },
+          {
+            "path": ".artgen/image_search/aven-mindcensor/v1.png",
+            "asset_id": "aven-mindcensor"
+          }
+        ]
+      },
+      {
+        "type": "text",
+        "label": "Flavor Text",
+        "step": "generate_flavor_text",
+        "items": [
+          {
+            "content": "From the shadowed canopy, the Black-banded Owl descends on silent wings, a dark omen of swift insight.",
+            "asset_id": "baleful-strix"
+          },
+          {
+            "content": "Its plumes, vibrant with every forest hue, channel the primordial energies of the world.",
+            "asset_id": "birds-of-paradise"
+          },
+          {
+            "content": "With unrivaled agility, the goshawk weaves through the densest woods, shrinking its prey's world to a single fatal point.",
+            "asset_id": "aven-mindcensor"
+          }
+        ]
+      }
+    ],
+    "total_images": 15,
+    "total_text_items": 3
+  }
+}

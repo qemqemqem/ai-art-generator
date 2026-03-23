@@ -43,6 +43,8 @@ def cli():
               help="Override asset input file")
 @click.option("--clean-state", is_flag=True,
               help="Delete all cached outputs before running (forces full regeneration)")
+@click.option("--from-step", "-F", "from_step",
+              help="Re-run from this step onward (invalidates it and all downstream steps)")
 @click.option("--auto-approve", "-y", is_flag=True,
               help="Auto-approve all selections (no human interaction)")
 @click.option("--verbose", "-v", is_flag=True,
@@ -66,6 +68,7 @@ def run(
     env_path: str | None,
     input_file: str | None,
     clean_state: bool,
+    from_step: str | None,
     auto_approve: bool,
     verbose: bool,
     dry_run: bool,
@@ -82,6 +85,7 @@ def run(
     Caching:
       By default, completed steps/assets are skipped on re-run (resume mode).
       To force a full regeneration, use --clean-state to wipe all cached data.
+      To re-run from a specific step onward, use --from-step step_id.
       To selectively re-run specific steps or assets, use `artgen clean`
       first (e.g. `artgen clean pipeline.yaml -s step_id -a asset_id`).
       You can also set `cache: false` on individual steps in the YAML.
@@ -115,7 +119,25 @@ def run(
             console.print(f"[yellow]Cleared state directory:[/yellow] {state_dir}")
         else:
             console.print(f"[dim]State directory not found:[/dim] {state_dir}")
-    
+
+    if from_step and not clean_state:
+        from pipeline.spec_parser import load_pipeline, get_downstream_steps
+        from pipeline.cache import CacheManager
+
+        spec = load_pipeline(pipeline_path)
+        state_dir = pipeline_path.parent / spec.state.directory
+        downstream = get_downstream_steps(spec, from_step)
+
+        if state_dir.exists():
+            cache = CacheManager(state_dir)
+            count = cache.invalidate_steps(downstream)
+            console.print(
+                f"[yellow]Re-running from '{from_step}'[/yellow] — "
+                f"invalidated {count} cache entries for: {', '.join(sorted(downstream))}"
+            )
+        else:
+            console.print(f"[dim]No cached state to invalidate[/dim]")
+
     if dry_run:
         # Just show the plan
         show_pipeline_plan(pipeline_path)

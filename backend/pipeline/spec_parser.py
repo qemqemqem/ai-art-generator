@@ -820,6 +820,33 @@ def get_execution_order(spec: PipelineSpec) -> list[list[str]]:
     return tiers
 
 
+def get_downstream_steps(spec: PipelineSpec, from_step: str) -> set[str]:
+    """
+    Get a step and all steps that transitively depend on it.
+
+    Walks the requires graph forward: if step B requires step A,
+    then B is downstream of A.
+    """
+    if from_step not in spec.step_index:
+        raise ValidationError(f"Unknown step: '{from_step}'")
+
+    dependents: dict[str, list[str]] = {s.id: [] for s in spec.steps}
+    for s in spec.steps:
+        for req in s.requires:
+            dependents[req].append(s.id)
+
+    downstream = {from_step}
+    queue = [from_step]
+    while queue:
+        current = queue.pop(0)
+        for dep in dependents[current]:
+            if dep not in downstream:
+                downstream.add(dep)
+                queue.append(dep)
+
+    return downstream
+
+
 def visualize_dag(spec: PipelineSpec) -> str:
     """Generate a simple ASCII visualization of the pipeline DAG."""
     tiers = get_execution_order(spec)

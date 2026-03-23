@@ -269,6 +269,22 @@ class CacheManager:
             del self._step_states[cache_key]
             self._save_state()
     
+    def invalidate_steps(self, step_ids: set[str]) -> int:
+        """
+        Invalidate all cache entries (global and per-asset) for the given step IDs.
+
+        Returns the number of cache entries removed.
+        """
+        to_remove = [
+            key for key in self._step_states
+            if key.split(":")[0] in step_ids
+        ]
+        for key in to_remove:
+            del self._step_states[key]
+        if to_remove:
+            self._save_state()
+        return len(to_remove)
+
     def invalidate_all(self) -> None:
         """Invalidate all cached data."""
         self._step_states = {}

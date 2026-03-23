@@ -13,30 +13,11 @@ styling:
 		overlay:
 card:
 	has_styling: false
-	time_created: 2026-03-22 18:33:29
-	time_modified: 2026-03-22 18:33:29
-	name: Greater Sooty Owl
-	alias: Baleful Strix
-	image: image0
-	super_type: <word-list-type>Artifact Creature</word-list-type>
-	sub_type: <word-list-type>Bird</word-list-type>
-	casting_cost: UB
-	rule_text:
-		Flying, deathtouch
-		When this creature enters, draw a card.
-	flavor_text: <i-flavor>Strictly nocturnal, the Greater Sooty Owl's eerie shriek pierces the midnight silence of ancient forests.</i-flavor>
-	power: 1
-	toughness: 1
-	loyalty: 
-	illustrator: AI Generated
-	rarity: rare
-card:
-	has_styling: false
-	time_created: 2026-03-22 18:33:29
-	time_modified: 2026-03-22 18:33:29
+	time_created: 2026-03-22 18:13:30
+	time_modified: 2026-03-22 18:13:30
 	name: Common Raven
 	alias: Aven Mindcensor
-	image: image1
+	image: image0
 	super_type: <word-list-type>Creature</word-list-type>
 	sub_type: <word-list-type>Bird Wizard</word-list-type>
 	casting_cost: 2W
@@ -44,7 +25,7 @@ card:
 		Flash
 		Flying
 		If an opponent would search a library, that player searches the top four cards of that library instead.
-	flavor_text: <i-flavor>Few secrets escape the raven's ancient gaze, for its mind perceives what others overlook.</i-flavor>
+	flavor_text: <i-flavor></i-flavor>
 	power: 2
 	toughness: 1
 	loyalty: 
@@ -52,10 +33,29 @@ card:
 	rarity: uncommon
 card:
 	has_styling: false
-	time_created: 2026-03-22 18:33:29
-	time_modified: 2026-03-22 18:33:29
+	time_created: 2026-03-22 18:13:30
+	time_modified: 2026-03-22 18:13:30
+	name: Greater Sooty Owl
+	alias: Baleful Strix
+	image: image1
+	super_type: <word-list-type>Artifact Creature</word-list-type>
+	sub_type: <word-list-type>Bird</word-list-type>
+	casting_cost: UB
+	rule_text:
+		Flying, deathtouch
+		When this creature enters, draw a card.
+	flavor_text: <i-flavor></i-flavor>
+	power: 1
+	toughness: 1
+	loyalty: 
+	illustrator: AI Generated
+	rarity: rare
+card:
+	has_styling: false
+	time_created: 2026-03-22 18:13:30
+	time_modified: 2026-03-22 18:13:30
 	name: Wilson's Bird-of-paradise
-	alias: Birds of Paradise
+	alias: Birds Of Paradise
 	image: image2
 	super_type: <word-list-type>Creature</word-list-type>
 	sub_type: <word-list-type>Bird</word-list-type>
@@ -63,7 +63,7 @@ card:
 	rule_text:
 		Flying
 		<sym>T</sym>: Add one mana of any color.
-	flavor_text: <i-flavor>Its colors encompass all the wild, a living spectrum danced through ancient trees.</i-flavor>
+	flavor_text: <i-flavor></i-flavor>
 	power: 0
 	toughness: 1
 	loyalty: 

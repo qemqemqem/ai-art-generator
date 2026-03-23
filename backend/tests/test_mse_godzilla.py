@@ -293,13 +293,9 @@ class TestGodzillaBirdDeckIntegration:
             asset_id = asset_dir.name
             original_name = asset_id.replace("-", " ").title()
 
-            # The existing suggest_bird_name output uses the old text format.
-            # Extract the bird name to simulate what response_format: json
-            # would produce as {"bird": "...", "rationale": "..."}.
             with open(asset_dir / "output.json") as f:
-                raw_content = json.load(f)["data"]["content"]
-            match = re.search(r"BIRD:\s*(.+)", raw_content)
-            bird_name = match.group(1).strip() if match else "Unknown"
+                step_data = json.load(f)["data"]
+            bird_name = step_data.get("bird", "Unknown")
 
             # Build a simulated asset dict as it would look after structured
             # output merging: asset["bird_name"] = {"bird": "...", ...}

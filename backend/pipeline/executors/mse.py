@@ -424,6 +424,30 @@ class RenderMSECardsExecutor(StepExecutor):
         # Export card images
         cards_output_dir = output_dir / "cards"
         exported_images = run_mse_export(mse_set_path, cards_output_dir, mse_path)
+
+        # When using the Godzilla name bar, MSE names files after the display
+        # name (bird) but we want them named after the real MTG card (alias).
+        # MSE may strip special characters from filenames, so we normalise
+        # both sides for lookup.
+        if name_field:
+            def _normalise(s: str) -> str:
+                return re.sub(r"[^a-zA-Z0-9 -]", "", s).strip().lower()
+
+            alias_by_norm = {
+                _normalise(card["name"]): card["alias"]
+                for card in cards
+                if card.get("alias")
+            }
+            renamed: list[Path] = []
+            for img in exported_images:
+                real_name = alias_by_norm.get(_normalise(img.stem))
+                if real_name:
+                    new_path = img.with_name(f"{real_name}{img.suffix}")
+                    img.rename(new_path)
+                    renamed.append(new_path)
+                else:
+                    renamed.append(img)
+            exported_images = renamed
         
         duration = int((time.time() - start) * 1000)
         
@@ -432,7 +456,7 @@ class RenderMSECardsExecutor(StepExecutor):
             output={
                 "mse_set": str(mse_set_path),
                 "cards_rendered": len(exported_images),
-                "paths": [str(p) for p in exported_images],  # Use "paths" for web UI compatibility
+                "paths": [str(p) for p in exported_images],
             },
             output_paths=exported_images,
             duration_ms=duration,

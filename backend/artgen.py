@@ -840,6 +840,7 @@ def _run_pipeline_cli(
     port: int,
     no_browser: bool,
     log_file: Optional[str] = None,
+    from_step: Optional[str] = None,
 ) -> int:
     """Run a pipeline file from the CLI."""
     # Add backend to path
@@ -867,6 +868,27 @@ def _run_pipeline_cli(
             print_info(f"Cleared state directory: {state_dir}")
         else:
             print_info(f"State directory not found: {state_dir}")
+
+    if from_step and not clean_state:
+        from pipeline.spec_parser import load_pipeline, get_downstream_steps
+        from pipeline.cache import CacheManager
+
+        spec = load_pipeline(pipeline_path)
+        state_dir = pipeline_path.parent / spec.state.directory
+        downstream = get_downstream_steps(spec, from_step)
+
+        if state_dir.exists():
+            cache = CacheManager(state_dir)
+            count = cache.invalidate_steps(downstream)
+            if console:
+                console.print(
+                    f"[yellow]Re-running from '{from_step}'[/yellow] — "
+                    f"invalidated {count} cache entries for: {', '.join(sorted(downstream))}"
+                )
+            else:
+                print(f"Re-running from '{from_step}' — invalidated {count} cache entries for: {', '.join(sorted(downstream))}")
+        else:
+            print_info("No cached state to invalidate")
 
     if dry_run:
         _show_pipeline_plan(pipeline_path)
@@ -950,6 +972,7 @@ def cmd_pipeline(args):
         port=args.port,
         no_browser=args.no_browser,
         log_file=getattr(args, "log_file", None),
+        from_step=getattr(args, "from_step", None),
     )
 
 
@@ -979,6 +1002,7 @@ def cmd_run(args):
             port=args.port,
             no_browser=args.no_browser,
             log_file=getattr(args, "log_file", None),
+            from_step=getattr(args, "from_step", None),
         )
 
     # Validate step type
@@ -1609,6 +1633,12 @@ Examples:
         help="Delete pipeline state directory before running (pipeline mode only)",
     )
     run_parser.add_argument(
+        "-F", "--from-step",
+        dest="from_step",
+        help="Re-run from this step onward, invalidating it and all downstream steps (pipeline mode only)",
+        metavar="STEP",
+    )
+    run_parser.add_argument(
         "--skip-validation",
         action="store_true",
         help="Skip pre-run validation (pipeline mode only)",
@@ -1666,6 +1696,12 @@ Examples:
         "--clean-state",
         action="store_true",
         help="Delete pipeline state directory before running",
+    )
+    pipeline_parser.add_argument(
+        "-F", "--from-step",
+        dest="from_step",
+        help="Re-run from this step onward, invalidating it and all downstream steps",
+        metavar="STEP",
     )
     pipeline_parser.add_argument(
         "-y", "--auto-approve",

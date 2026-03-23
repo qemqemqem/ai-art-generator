@@ -99,6 +99,7 @@ def write_mse_set_file(
     set_name: str = "artgen_set",
     stylesheet: str = "m15-altered",
     godzilla_frame: str | None = None,
+    godzilla_alias: bool = False,
 ):
     """
     Write an MSE set file with card data.
@@ -110,6 +111,9 @@ def write_mse_set_file(
         stylesheet: MSE stylesheet to use (e.g. "m15-altered", "m15-godzilla")
         godzilla_frame: Frame variant for Godzilla style — "tall", "short", or None
             for regular (Mothra-style). Only used when stylesheet is "m15-godzilla".
+        godzilla_alias: When True and using "m15-altered", enable the
+            "godzilla style alias" option so the alias field renders as a
+            name bar below the card title.
     """
     header = STYLESHEET_HEADERS.get(stylesheet, STYLESHEET_HEADERS["m15-altered"])
 
@@ -130,7 +134,13 @@ def write_mse_set_file(
         if stylesheet == GODZILLA_STYLESHEET and godzilla_frame in ("tall", "short"):
             f.write(f"\t\tframe_options: {godzilla_frame}\n")
 
-        f.write(header["styling_body"])
+        styling_body = header["styling_body"]
+        if godzilla_alias and "other_options:" in styling_body:
+            styling_body = styling_body.replace(
+                "other_options:", "other_options: godzilla style alias,", 1
+            )
+
+        f.write(styling_body)
         
         # Write each card
         for idx, card in enumerate(cards):
@@ -173,6 +183,7 @@ def create_mse_set(
     set_name: str = "artgen_set",
     stylesheet: str = "m15-altered",
     godzilla_frame: str | None = None,
+    godzilla_alias: bool = False,
 ) -> Path:
     """
     Create an MSE set file (.mse-set) from card data.
@@ -183,6 +194,7 @@ def create_mse_set(
         set_name: Name of the set
         stylesheet: MSE stylesheet to use
         godzilla_frame: Frame variant for Godzilla style
+        godzilla_alias: Enable the Godzilla alias name bar on m15-altered
         
     Returns:
         Path to the created .mse-set file
@@ -192,7 +204,7 @@ def create_mse_set(
     msegen_dir.mkdir(parents=True, exist_ok=True)
     
     # Write the set file
-    write_mse_set_file(cards, msegen_dir / "set", set_name, stylesheet, godzilla_frame)
+    write_mse_set_file(cards, msegen_dir / "set", set_name, stylesheet, godzilla_frame, godzilla_alias)
     
     # Copy card images
     for idx, card in enumerate(cards):
@@ -273,6 +285,9 @@ class RenderMSECardsExecutor(StepExecutor):
                 Use "m15-godzilla" for the Godzilla name bar frame.
             godzilla_frame: Frame variant for Godzilla style — "tall", "short",
                 or omit for regular (Mothra-style).
+            godzilla_alias: Explicitly enable/disable the Godzilla alias name
+                bar on the m15-altered stylesheet. Defaults to True when
+                name_field is set.
             name_field: Dot-path into the asset dict for an alternate display name
                 (e.g. "bird_name.bird").  When set, the original asset name is
                 moved to the ``alias`` field (the small Godzilla sub-bar) and
@@ -294,6 +309,9 @@ class RenderMSECardsExecutor(StepExecutor):
         stylesheet = config.get("stylesheet", "m15-altered")
         godzilla_frame = config.get("godzilla_frame")
         name_field = config.get("name_field")
+        godzilla_alias = config.get("godzilla_alias")
+        if godzilla_alias is None:
+            godzilla_alias = bool(name_field)
         card_data_step = config.get("card_data_step")
         flavor_text_step = config.get("flavor_text_step", "write_flavor_text")
         art_direction_step = config.get("art_direction_step", "generate_art_direction")
@@ -419,7 +437,7 @@ class RenderMSECardsExecutor(StepExecutor):
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Create MSE set
-        mse_set_path = create_mse_set(cards, output_dir, set_name, stylesheet, godzilla_frame)
+        mse_set_path = create_mse_set(cards, output_dir, set_name, stylesheet, godzilla_frame, godzilla_alias)
         
         # Export card images
         cards_output_dir = output_dir / "cards"

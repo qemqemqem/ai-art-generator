@@ -173,7 +173,7 @@ steps:
     is_output: true
     config:
       set_name: aviary_of_the_ancients
-      stylesheet: m15-godzilla
+      stylesheet: m15-altered
       name_field: bird_name.bird
       stats_field: card_stats
       flavor_text_step: generate_flavor_text

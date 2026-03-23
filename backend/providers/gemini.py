@@ -2,6 +2,7 @@
 
 import base64
 import io
+import logging
 from io import BytesIO
 from typing import Optional
 
@@ -13,10 +14,22 @@ from pipeline.retry import rate_limited_call
 
 from .base import BaseImageProvider, BaseTextProvider
 
+logger = logging.getLogger(__name__)
+
 
 def _genai_to_pil(genai_image) -> Image.Image:
     """Convert a google.genai.types.Image to PIL Image."""
     return Image.open(BytesIO(genai_image.image_bytes))
+
+
+_SIZE_TO_GEMINI = {"512": "512", "1024": "1K", "1k": "1K", "2048": "2K", "2k": "2K", "4096": "4K", "4k": "4K"}
+
+
+def _normalize_image_size(raw: str | None) -> str | None:
+    """Convert numeric/lowercase sizes to Gemini's format (512, 1K, 2K, 4K)."""
+    if not raw:
+        return None
+    return _SIZE_TO_GEMINI.get(raw, raw)
 
 
 class GeminiImageProvider(BaseImageProvider):
@@ -76,11 +89,15 @@ class GeminiImageProvider(BaseImageProvider):
         image_config = types.ImageConfig()
         if style:
             image_config.aspect_ratio = style.aspect_ratio
-            if self.use_pro:
-                image_config.image_size = style.image_size
+            # Gemini 3.x models accept (and may require) an explicit image_size;
+            # Gemini 2.5 Flash Image does not support it.
+            if "gemini-3" in self.model:
+                size = _normalize_image_size(style.image_size)
+                if size:
+                    image_config.image_size = size
         
-        config = types.GenerateContentConfig(
-            response_modalities=['IMAGE'],
+        gen_config = types.GenerateContentConfig(
+            response_modalities=['TEXT', 'IMAGE'],
             image_config=image_config,
         )
         
@@ -88,11 +105,30 @@ class GeminiImageProvider(BaseImageProvider):
         images = []
         for _ in range(variations):
             async def _call():
-                return self.client.models.generate_content(
-                    model=self.model,
-                    contents=contents,
-                    config=config,
-                )
+                try:
+                    return self.client.models.generate_content(
+                        model=self.model,
+                        contents=contents,
+                        config=gen_config,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        "Gemini image API error: %s\n"
+                        "  model=%s\n"
+                        "  aspect_ratio=%s\n"
+                        "  image_size=%s\n"
+                        "  response_modalities=%s\n"
+                        "  prompt_length=%d\n"
+                        "  prompt_preview=%.300s",
+                        e,
+                        self.model,
+                        getattr(image_config, 'aspect_ratio', None),
+                        getattr(image_config, 'image_size', None),
+                        gen_config.response_modalities,
+                        len(full_prompt),
+                        full_prompt,
+                    )
+                    raise
             
             response = await rate_limited_call("gemini", _call)
             
@@ -140,11 +176,13 @@ class GeminiImageProvider(BaseImageProvider):
         image_config = types.ImageConfig()
         if style:
             image_config.aspect_ratio = style.aspect_ratio
-            if self.use_pro:
-                image_config.image_size = style.image_size
+            if "gemini-3" in self.model:
+                size = _normalize_image_size(style.image_size)
+                if size:
+                    image_config.image_size = size
         
         config = types.GenerateContentConfig(
-            response_modalities=['IMAGE'],
+            response_modalities=['TEXT', 'IMAGE'],
             image_config=image_config,
         )
         

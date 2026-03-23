@@ -1,22 +1,22 @@
 {
   "step_id": "card_art",
   "asset_id": "birds-of-paradise",
-  "timestamp": "2026-03-23T02:40:27.959107",
+  "timestamp": "2026-03-23T02:57:55.004232",
   "data": {
-    "query": " wildlife photography",
+    "query": "Resplendent Quetzal wildlife photography",
     "paths": [
       "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v1.png",
       "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v2.png",
       "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v3.png"
     ],
     "urls": [
-      "https://i.natgeofe.com/n/3e8319f7-74fa-4531-aa0c-5a2c6b9ed82a/NG-3000620.jpg",
-      "https://www.popsci.com/wp-content/uploads/2024/03/15/2325_6149_IanFord_UnitedKingdom_Open_NaturalWorldWildlife_2024.png?quality=85&w=1500",
-      "https://static.boredpanda.com/blog/wp-content/uploads/2019/02/wildlife-photos-austrian-photographer-julian-rad-fb1.png"
+      "https://d1bv4heaa2n05k.cloudfront.net/user-images/1543501996711/shutterstock-549082930_main_1543502021955.jpeg",
+      "https://abcbirds.org/wp-content/uploads/2025/08/Resplendent-Quetzal.-Ondrej-Prosicky-SS-min-scaled.webp",
+      "https://i.ontraport.com/224876.c693e51187e445a0c1c3332666b6c6d5.JPEG"
     ],
     "selected_index": 0,
     "selected_path": "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v1.png",
     "content": "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v1.png"
   },
-  "prompt": " wildlife photography"
+  "prompt": "Resplendent Quetzal wildlife photography"
 }

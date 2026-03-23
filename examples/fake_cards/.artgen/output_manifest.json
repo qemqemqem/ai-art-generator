@@ -1,0 +1,20 @@
+{
+  "output_directory": "output/",
+  "files": {
+    "Unknown.1.png": {
+      "asset_id": null,
+      "step_id": "render_full_cards",
+      "source": ".artgen/render_full_cards/cards/Unknown.1.png"
+    },
+    "Unknown.2.png": {
+      "asset_id": null,
+      "step_id": "render_full_cards",
+      "source": ".artgen/render_full_cards/cards/Unknown.2.png"
+    },
+    "Unknown.png": {
+      "asset_id": "emrakul-aeons-repaired",
+      "step_id": "render_full_cards",
+      "source": ".artgen/render_full_cards/cards/Unknown.png"
+    }
+  }
+}

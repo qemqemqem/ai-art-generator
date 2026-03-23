@@ -326,16 +326,15 @@ class UserApproveExecutor(StepExecutor):
                     rel_path = str(artifact_path)
                 result["path"] = rel_path
             else:
-                # No image — look for text content in step outputs
+                # No image — format step output fields for display
                 for sid in reversed(list(ctx.step_outputs.keys())):
                     output = ctx.step_outputs[sid]
                     if isinstance(output, dict):
-                        for key in ("content", "text", "summary"):
-                            if key in output and isinstance(output[key], str):
-                                result["content"] = output[key]
-                                break
-                    if "content" in result:
-                        break
+                        items = [(k, v) for k, v in output.items()
+                                 if not k.startswith("_") and isinstance(v, (str, int, float, bool))]
+                        if items:
+                            result["content"] = "\n".join(f"{k}: {v}" for k, v in items)
+                            break
             
             # Try to find the generation prompt from previous step outputs
             for sid in reversed(list(ctx.step_outputs.keys())):
@@ -372,18 +371,34 @@ class UserApproveExecutor(StepExecutor):
         
         # CLI mode: terminal prompt
         console.print()
-        console.print(Panel(
-            f"[bold]{prompt_text}[/bold]",
-            title=f"✅ Approval for {asset_name}",
-            border_style="green"
-        ))
         
+        # Build result preview for the approval panel
+        result_preview = ""
         if artifact_path:
             try:
                 rel_path = str(Path(artifact_path).relative_to(ctx.base_path))
             except ValueError:
                 rel_path = str(artifact_path)
-            console.print(f"  Artifact: [cyan]{rel_path}[/cyan]")
+            result_preview = f"Artifact: [cyan]{rel_path}[/cyan]"
+        else:
+            for sid in reversed(list(ctx.step_outputs.keys())):
+                output = ctx.step_outputs[sid]
+                if isinstance(output, dict):
+                    items = [(k, v) for k, v in output.items()
+                             if not k.startswith("_") and isinstance(v, (str, int, float, bool))]
+                    if items:
+                        result_preview = "\n".join(f"[bold]{k}:[/bold] {v}" for k, v in items)
+                        break
+        
+        panel_content = f"[bold]{prompt_text}[/bold]"
+        if result_preview:
+            panel_content += f"\n\n{result_preview}"
+        
+        console.print(Panel(
+            panel_content,
+            title=f"✅ Approval for {asset_name}",
+            border_style="green"
+        ))
         
         console.print()
         

@@ -1,0 +1,22 @@
+{
+  "step_id": "fetch_card_stats",
+  "asset_id": "desecrated-sphinx",
+  "timestamp": "2026-03-23T02:45:11.418036",
+  "data": {
+    "mana_cost": "{4}{U}{U}",
+    "type_line": "Creature \u2014 Sphinx",
+    "oracle_text": "Flying\nWhenever an opponent draws a card, you may draw two cards.",
+    "power": "4",
+    "toughness": "6",
+    "colors": [
+      "U"
+    ],
+    "color_identity": [
+      "U"
+    ],
+    "cmc": 6.0,
+    "rarity": "mythic",
+    "set_name": "Double Masters 2022",
+    "scryfall_uri": "https://scryfall.com/card/2x2/43/consecrated-sphinx?utm_source=api"
+  }
+}

@@ -72,7 +72,7 @@ class ProviderConfig(BaseModel):
     # Google/Gemini (default image generator)
     # Supports both GOOGLE_API_KEY and GEMINI_API_KEY
     google_api_key: Optional[str] = Field(default_factory=_get_google_api_key)
-    gemini_model: str = "gemini-2.5-flash-preview-image-generation"
+    gemini_model: str = "gemini-2.5-flash-image"
     gemini_pro_model: str = "gemini-3-pro-image-preview"
     
     # OpenAI (DALL-E, text generation)

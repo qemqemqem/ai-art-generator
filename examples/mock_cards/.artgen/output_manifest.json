@@ -1,0 +1,20 @@
+{
+  "output_directory": "output/",
+  "files": {
+    "Parboil.png": {
+      "asset_id": null,
+      "step_id": "render_full_cards",
+      "source": ".artgen/render_full_cards/cards/Parboil.png"
+    },
+    "Semigeddon.png": {
+      "asset_id": null,
+      "step_id": "render_full_cards",
+      "source": ".artgen/render_full_cards/cards/Semigeddon.png"
+    },
+    "Stone Drizzle.png": {
+      "asset_id": null,
+      "step_id": "render_full_cards",
+      "source": ".artgen/render_full_cards/cards/Stone Drizzle.png"
+    }
+  }
+}

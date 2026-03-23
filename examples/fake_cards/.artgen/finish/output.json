@@ -1,0 +1,67 @@
+{
+  "step_id": "finish",
+  "asset_id": null,
+  "timestamp": "2026-03-23T03:02:08.643317",
+  "data": {
+    "title": "Twisted Reflections \u2013 Complete!",
+    "message": "Your fake MTG cards have been rendered.",
+    "display_items": [
+      {
+        "type": "images",
+        "label": "Rendered Cards",
+        "step": "render_full_cards",
+        "items": [
+          {
+            "path": ".artgen/render_full_cards/cards/Unknown.1.png"
+          },
+          {
+            "path": ".artgen/render_full_cards/cards/Unknown.2.png"
+          },
+          {
+            "path": ".artgen/render_full_cards/cards/Unknown.png"
+          }
+        ]
+      },
+      {
+        "type": "images",
+        "label": "Card Art",
+        "step": "card_art",
+        "items": [
+          {
+            "path": ".artgen/generate_image/desecrated-sphinx/v1.png",
+            "asset_id": "desecrated-sphinx"
+          },
+          {
+            "path": ".artgen/generate_image/funnel/v1.png",
+            "asset_id": "funnel"
+          },
+          {
+            "path": ".artgen/generate_image/emrakul-aeons-repaired/v1.png",
+            "asset_id": "emrakul-aeons-repaired"
+          }
+        ]
+      },
+      {
+        "type": "text",
+        "label": "Flavor Text",
+        "step": "flavor_text",
+        "items": [
+          {
+            "content": "The more it learns, the more it suffers\u2014and it can never stop learning.",
+            "asset_id": "desecrated-sphinx"
+          },
+          {
+            "content": "The mana runs thick and hungry, demanding twice what it once freely gave.",
+            "asset_id": "funnel"
+          },
+          {
+            "content": "The titan's wounds healed wrong, sealing madness within crystalline flesh.",
+            "asset_id": "emrakul-aeons-repaired"
+          }
+        ]
+      }
+    ],
+    "total_images": 6,
+    "total_text_items": 3
+  }
+}

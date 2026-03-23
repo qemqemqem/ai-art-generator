@@ -1,14 +1,7 @@
 {
   "pipeline_hash": "6a249be4ac240855",
-  "updated_at": "2026-03-23T02:42:06.743127",
+  "updated_at": "2026-03-23T02:58:45.264954",
   "steps": {
-    "fetch_card_stats:birds-of-paradise": {
-      "completed": true,
-      "completed_at": "2026-03-23T02:38:13.957944",
-      "output_path": "fetch_card_stats/birds-of-paradise/output.json",
-      "output_files": [],
-      "cost_usd": 0.0
-    },
     "fetch_card_stats:aven-mindcensor": {
       "completed": true,
       "completed_at": "2026-03-23T02:38:13.962290",
@@ -59,17 +52,6 @@
       ],
       "cost_usd": 0.0
     },
-    "card_art:birds-of-paradise": {
-      "completed": true,
-      "completed_at": "2026-03-23T02:40:27.959355",
-      "output_path": "card_art/birds-of-paradise/output.json",
-      "output_files": [
-        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v1.png",
-        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v2.png",
-        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v3.png"
-      ],
-      "cost_usd": 0.0
-    },
     "research_bird:aven-mindcensor": {
       "completed": true,
       "completed_at": "2026-03-23T02:40:30.022367",
@@ -98,20 +80,62 @@
       "output_files": [],
       "cost_usd": 0.09513
     },
+    "fetch_card_stats:birds-of-paradise": {
+      "completed": true,
+      "completed_at": "2026-03-23T02:57:23.513151",
+      "output_path": "fetch_card_stats/birds-of-paradise/output.json",
+      "output_files": [],
+      "cost_usd": 0.0
+    },
+    "suggest_bird_name:birds-of-paradise": {
+      "completed": true,
+      "completed_at": "2026-03-23T02:57:35.479912",
+      "output_path": "suggest_bird_name/birds-of-paradise/output.json",
+      "output_files": [],
+      "cost_usd": 0.004995
+    },
+    "card_art:birds-of-paradise": {
+      "completed": true,
+      "completed_at": "2026-03-23T02:57:55.004513",
+      "output_path": "card_art/birds-of-paradise/output.json",
+      "output_files": [
+        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v1.png",
+        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v2.png",
+        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/image_search/birds-of-paradise/v3.png"
+      ],
+      "cost_usd": 0.0
+    },
+    "research_bird:birds-of-paradise": {
+      "completed": true,
+      "completed_at": "2026-03-23T02:58:08.298164",
+      "output_path": "research_bird/birds-of-paradise/output.json",
+      "output_files": [],
+      "cost_usd": 0.031360000000000006
+    },
+    "generate_flavor_text:birds-of-paradise": {
+      "completed": true,
+      "completed_at": "2026-03-23T02:58:41.863950",
+      "output_path": "generate_flavor_text/birds-of-paradise/output.json",
+      "output_files": [],
+      "cost_usd": 0.093335
+    },
     "render_full_cards": {
       "completed": true,
-      "completed_at": "2026-03-23T02:42:06.734160",
+      "completed_at": "2026-03-23T02:58:45.261600",
       "output_path": "render_full_cards/output.json",
       "output_files": [
         "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Birds of Paradise.png",
         "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Baleful Strix.png",
-        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Aven Mindcensor.png"
+        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Baleful Strix.png",
+        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Aven Mindcensor.png",
+        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Aven Mindcensor.png",
+        "/home/keenan/Dev/ai-art-generator/examples/bird_deck/.artgen/render_full_cards/cards/Birds of Paradise.png"
       ],
       "cost_usd": 0.0
     },
     "finish": {
       "completed": true,
-      "completed_at": "2026-03-23T02:42:06.743113",
+      "completed_at": "2026-03-23T02:58:45.264946",
       "output_path": "finish/output.json",
       "output_files": [],
       "cost_usd": 0.0

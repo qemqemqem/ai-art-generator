@@ -1,0 +1,135 @@
+{
+  "pipeline_hash": "1749b9e3ad12f744",
+  "updated_at": "2026-03-23T03:02:08.643452",
+  "steps": {
+    "fetch_card_stats:desecrated-sphinx": {
+      "completed": true,
+      "completed_at": "2026-03-23T02:45:11.418267",
+      "output_path": "fetch_card_stats/desecrated-sphinx/output.json",
+      "output_files": [],
+      "cost_usd": 0.0
+    },
+    "fetch_card_stats:emrakul-aeons-repaired": {
+      "completed": true,
+      "completed_at": "2026-03-23T02:45:11.580772",
+      "output_path": "fetch_card_stats/emrakul-aeons-repaired/output.json",
+      "output_files": [],
+      "cost_usd": 0.0
+    },
+    "fetch_card_stats:funnel": {
+      "completed": true,
+      "completed_at": "2026-03-23T02:45:11.653321",
+      "output_path": "fetch_card_stats/funnel/output.json",
+      "output_files": [],
+      "cost_usd": 0.0
+    },
+    "generate_fake_stats:funnel": {
+      "completed": true,
+      "completed_at": "2026-03-23T02:45:13.792725",
+      "output_path": "generate_fake_stats/funnel/output.json",
+      "output_files": [],
+      "cost_usd": 0.003327
+    },
+    "generate_fake_stats:emrakul-aeons-repaired": {
+      "completed": true,
+      "completed_at": "2026-03-23T02:45:14.305814",
+      "output_path": "generate_fake_stats/emrakul-aeons-repaired/output.json",
+      "output_files": [],
+      "cost_usd": 0.004629
+    },
+    "generate_fake_stats:desecrated-sphinx": {
+      "completed": true,
+      "completed_at": "2026-03-23T02:45:17.230742",
+      "output_path": "generate_fake_stats/desecrated-sphinx/output.json",
+      "output_files": [],
+      "cost_usd": 0.003282
+    },
+    "flavor_text:funnel": {
+      "completed": true,
+      "completed_at": "2026-03-23T02:48:40.859806",
+      "output_path": "flavor_text/funnel/output.json",
+      "output_files": [],
+      "cost_usd": 0.004341
+    },
+    "flavor_text:desecrated-sphinx": {
+      "completed": true,
+      "completed_at": "2026-03-23T02:48:41.525238",
+      "output_path": "flavor_text/desecrated-sphinx/output.json",
+      "output_files": [],
+      "cost_usd": 0.004404
+    },
+    "flavor_text:emrakul-aeons-repaired": {
+      "completed": true,
+      "completed_at": "2026-03-23T02:48:48.597543",
+      "output_path": "flavor_text/emrakul-aeons-repaired/output.json",
+      "output_files": [],
+      "cost_usd": 0.005097000000000001
+    },
+    "art_prompt:desecrated-sphinx": {
+      "completed": true,
+      "completed_at": "2026-03-23T02:48:59.639681",
+      "output_path": "art_prompt/desecrated-sphinx/output.json",
+      "output_files": [],
+      "cost_usd": 0.006489
+    },
+    "art_prompt:funnel": {
+      "completed": true,
+      "completed_at": "2026-03-23T02:48:59.865707",
+      "output_path": "art_prompt/funnel/output.json",
+      "output_files": [],
+      "cost_usd": 0.006822
+    },
+    "art_prompt:emrakul-aeons-repaired": {
+      "completed": true,
+      "completed_at": "2026-03-23T02:49:16.785148",
+      "output_path": "art_prompt/emrakul-aeons-repaired/output.json",
+      "output_files": [],
+      "cost_usd": 0.00726
+    },
+    "card_art:desecrated-sphinx": {
+      "completed": true,
+      "completed_at": "2026-03-23T03:01:21.500305",
+      "output_path": "card_art/desecrated-sphinx/output.json",
+      "output_files": [
+        "/home/keenan/Dev/ai-art-generator/examples/fake_cards/.artgen/generate_image/desecrated-sphinx/v1.png"
+      ],
+      "cost_usd": 0.0
+    },
+    "card_art:funnel": {
+      "completed": true,
+      "completed_at": "2026-03-23T03:01:44.215217",
+      "output_path": "card_art/funnel/output.json",
+      "output_files": [
+        "/home/keenan/Dev/ai-art-generator/examples/fake_cards/.artgen/generate_image/funnel/v1.png"
+      ],
+      "cost_usd": 0.0
+    },
+    "card_art:emrakul-aeons-repaired": {
+      "completed": true,
+      "completed_at": "2026-03-23T03:02:05.321446",
+      "output_path": "card_art/emrakul-aeons-repaired/output.json",
+      "output_files": [
+        "/home/keenan/Dev/ai-art-generator/examples/fake_cards/.artgen/generate_image/emrakul-aeons-repaired/v1.png"
+      ],
+      "cost_usd": 0.0
+    },
+    "render_full_cards": {
+      "completed": true,
+      "completed_at": "2026-03-23T03:02:08.640328",
+      "output_path": "render_full_cards/output.json",
+      "output_files": [
+        "/home/keenan/Dev/ai-art-generator/examples/fake_cards/.artgen/render_full_cards/cards/Unknown.1.png",
+        "/home/keenan/Dev/ai-art-generator/examples/fake_cards/.artgen/render_full_cards/cards/Unknown.2.png",
+        "/home/keenan/Dev/ai-art-generator/examples/fake_cards/.artgen/render_full_cards/cards/Unknown.png"
+      ],
+      "cost_usd": 0.0
+    },
+    "finish": {
+      "completed": true,
+      "completed_at": "2026-03-23T03:02:08.643444",
+      "output_path": "finish/output.json",
+      "output_files": [],
+      "cost_usd": 0.0
+    }
+  }
+}

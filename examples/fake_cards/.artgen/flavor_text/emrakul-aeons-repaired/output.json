@@ -1,0 +1,21 @@
+{
+  "step_id": "flavor_text",
+  "asset_id": "emrakul-aeons-repaired",
+  "timestamp": "2026-03-23T02:48:48.597416",
+  "data": {
+    "drafts": [
+      "What was once shattered has been mended\u2014but the cracks filled with malice.",
+      "The titan's wounds healed wrong, sealing madness within crystalline flesh.",
+      "Restoration without understanding. Healing without wisdom. Perfection without mercy."
+    ],
+    "chosen": "2 - This draft best captures the horrifying twist of 'repair' gone wrong. It suggests that Emrakul's reconstruction was fundamentally flawed, creating something more dangerous than the original. The phrase 'healed wrong' perfectly embodies the theme of familiar magic gone dark, and 'sealing madness within crystalline flesh' creates a visceral image of corruption trapped inside what should be perfect. It ends on the strong word 'flesh' and stays well under the character limit.",
+    "content": "The titan's wounds healed wrong, sealing madness within crystalline flesh."
+  },
+  "prompt": "Background Context:\nProject Context:\n- set_name: Twisted Reflections\n- theme: Familiar Magic cards gone wrong. Each card is a dark-mirror version of a\nreal card \u2014 same bones, different soul. The twist should feel like the card\nwas designed by someone who wanted the original to be meaner, weirder, or\nmore dangerous.\n\n- art_style: Dark fantasy illustration with a sinister twist. The art should evoke the\noriginal card's identity but feel warped \u2014 wrong colors, unsettling details,\ncorrupted versions of familiar imagery. Dramatic lighting, rich shadows,\nslightly unnerving atmosphere. No text, no card frames, no watermarks.\n\n\nCurrent Asset:\n- real_name: Emrakul the Aeons Torn\n- fake_name: Emrakul the Aeons Repaired\n- twist: Add: When this creature enters the battlefield, if it wasn't cast, its owner loses the game.\n\n\nTask:\nWrite flavor text for a fake Magic: The Gathering card \u2014 a twisted\nversion of a real card.\n\n# The Original\nReal card: Emrakul the Aeons Torn\n\n# The Fake\nFake name: Emrakul the Aeons Repaired\nMana cost: {15}\nType: Legendary Creature \u2014 Eldrazi\nRules text: This spell can't be countered.\nWhen you cast this spell, take an extra turn after this one.\nWhen this creature enters the battlefield, if it wasn't cast, its owner loses the game.\nFlying, protection from spells that are one or more colors, annihilator 6\nWhen Emrakul the Aeons Repaired is put into a graveyard from anywhere, its owner shuffles their graveyard into their library.\nHow it differs: Add: When this creature enters the battlefield, if it wasn't cast, its owner loses the game.\n\nTheme: Familiar Magic cards gone wrong. Each card is a dark-mirror version of a\nreal card \u2014 same bones, different soul. The twist should feel like the card\nwas designed by someone who wanted the original to be meaner, weirder, or\nmore dangerous.\n\n\n# Guidelines\n\nThe flavor text should:\n- Lean into the twist \u2014 make the reader feel WHY this card is wrong\n- Be 1-2 sentences, max 140 characters\n- Sound like real MTG flavor text (evocative, specific, punchy)\n- Not repeat or explain the rules text\n- End on a strong word\n\nWrite 3 drafts, then pick the best one.\n\nRespond with JSON:\n{\n  \"drafts\": [\"<draft 1>\", \"<draft 2>\", \"<draft 3>\"],\n  \"chosen\": \"<index and why>\",\n  \"content\": \"<your final polished flavor text>\"\n}\n",
+  "cost_usd": 0.005097000000000001,
+  "tokens_used": {
+    "prompt_tokens": 644,
+    "completion_tokens": 211,
+    "total_tokens": 855
+  }
+}

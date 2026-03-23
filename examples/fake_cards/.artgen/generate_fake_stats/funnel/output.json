@@ -1,0 +1,23 @@
+{
+  "step_id": "generate_fake_stats",
+  "asset_id": "funnel",
+  "timestamp": "2026-03-23T02:45:13.792526",
+  "data": {
+    "name": "Funnel",
+    "mana_cost": "{G}{G}",
+    "type_line": "Sorcery",
+    "oracle_text": "As an additional cost to cast this spell, pay any amount of life. Add {C} for every 2 life paid this way, rounded down.",
+    "power": null,
+    "toughness": null,
+    "colors": [
+      "G"
+    ]
+  },
+  "prompt": "Background Context:\nProject Context:\n- set_name: Twisted Reflections\n- theme: Familiar Magic cards gone wrong. Each card is a dark-mirror version of a\nreal card \u2014 same bones, different soul. The twist should feel like the card\nwas designed by someone who wanted the original to be meaner, weirder, or\nmore dangerous.\n\n- art_style: Dark fantasy illustration with a sinister twist. The art should evoke the\noriginal card's identity but feel warped \u2014 wrong colors, unsettling details,\ncorrupted versions of familiar imagery. Dramatic lighting, rich shadows,\nslightly unnerving atmosphere. No text, no card frames, no watermarks.\n\n\nCurrent Asset:\n- real_name: Channel\n- fake_name: Funnel\n- twist: Costs 2 life per mana instead of 1. Text becomes: As an additional cost to cast this spell, pay any amount of life. Add {C} for every 2 life paid this way, rounded down.\n\n\nTask:\nYou are modifying a real Magic: The Gathering card to create a twisted\nfake version.\n\n# Original Card\n\nName: Channel\nMana cost: {G}{G}\nType: Sorcery\nRules text: Until end of turn, any time you could activate a mana ability, you may pay 1 life. If you do, add {C}.\nPower/Toughness: /\nColors: G\n\n# Fake Version\n\nNew name: Funnel\nHow it differs: Costs 2 life per mana instead of 1. Text becomes: As an additional cost to cast this spell, pay any amount of life. Add {C} for every 2 life paid this way, rounded down.\n\nApply the twist to the original card's stats. Keep everything that isn't\nmentioned in the twist identical to the original. Produce the complete\ncard stats for the fake version.\n\nRespond with JSON:\n{\n  \"name\": \"<the fake card name>\",\n  \"mana_cost\": \"<modified or original mana cost>\",\n  \"type_line\": \"<modified or original type line>\",\n  \"oracle_text\": \"<modified rules text reflecting the twist>\",\n  \"power\": \"<power or null if not a creature>\",\n  \"toughness\": \"<toughness or null if not a creature>\",\n  \"colors\": [\"<list of colors>\"]\n}\n",
+  "cost_usd": 0.003327,
+  "tokens_used": {
+    "prompt_tokens": 549,
+    "completion_tokens": 112,
+    "total_tokens": 661
+  }
+}

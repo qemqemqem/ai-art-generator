@@ -1,0 +1,66 @@
+mse_version: 2.0.2
+game: magic
+game_version: 2020-04-25
+stylesheet: m15-altered
+stylesheet_version: 2020-09-04
+set_info:
+	title: twisted_reflections
+	symbol:
+	masterpiece_symbol:
+styling:
+	magic-m15-altered:
+		other_options: auto vehicles, auto nyx crowns
+		text_box_mana_symbols: magic-mana-small.mse-symbol-font
+		level_mana_symbols: magic-mana-large.mse-symbol-font
+		overlay:
+card:
+	has_styling: false
+	time_created: 2026-03-22 20:02:05
+	time_modified: 2026-03-22 20:02:05
+	name: Unknown
+	image: image0
+	super_type: <word-list-type></word-list-type>
+	sub_type: <word-list-type></word-list-type>
+	casting_cost: 
+	rule_text:
+		
+	flavor_text: <i-flavor>The more it learns, the more it suffers—and it can never stop learning.</i-flavor>
+	power: 
+	toughness: 
+	loyalty: 
+	illustrator: AI Generated
+	rarity: common
+card:
+	has_styling: false
+	time_created: 2026-03-22 20:02:05
+	time_modified: 2026-03-22 20:02:05
+	name: Unknown
+	image: image1
+	super_type: <word-list-type></word-list-type>
+	sub_type: <word-list-type></word-list-type>
+	casting_cost: 
+	rule_text:
+		
+	flavor_text: <i-flavor>The mana runs thick and hungry, demanding twice what it once freely gave.</i-flavor>
+	power: 
+	toughness: 
+	loyalty: 
+	illustrator: AI Generated
+	rarity: common
+card:
+	has_styling: false
+	time_created: 2026-03-22 20:02:05
+	time_modified: 2026-03-22 20:02:05
+	name: Unknown
+	image: image2
+	super_type: <word-list-type></word-list-type>
+	sub_type: <word-list-type></word-list-type>
+	casting_cost: 
+	rule_text:
+		
+	flavor_text: <i-flavor>The titan's wounds healed wrong, sealing madness within crystalline flesh.</i-flavor>
+	power: 
+	toughness: 
+	loyalty: 
+	illustrator: AI Generated
+	rarity: common

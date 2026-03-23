@@ -1,0 +1,21 @@
+{
+  "step_id": "flavor_text",
+  "asset_id": "funnel",
+  "timestamp": "2026-03-23T02:48:40.859598",
+  "data": {
+    "drafts": [
+      "The land's essence flows backward, draining the channeler with each drop of power extracted.",
+      "What nature gives freely, corruption demands payment for\u2014in blood, bone, and breath.",
+      "The mana runs thick and hungry, demanding twice what it once freely gave."
+    ],
+    "chosen": "3 - This captures the twisted nature best by emphasizing how the mana itself has become corrupted and greedy, demanding more life force than the original Channel. The personification of mana as 'hungry' and 'demanding' creates an unsettling tone that fits the dark mirror theme perfectly.",
+    "content": "The mana runs thick and hungry, demanding twice what it once freely gave."
+  },
+  "prompt": "Background Context:\nProject Context:\n- set_name: Twisted Reflections\n- theme: Familiar Magic cards gone wrong. Each card is a dark-mirror version of a\nreal card \u2014 same bones, different soul. The twist should feel like the card\nwas designed by someone who wanted the original to be meaner, weirder, or\nmore dangerous.\n\n- art_style: Dark fantasy illustration with a sinister twist. The art should evoke the\noriginal card's identity but feel warped \u2014 wrong colors, unsettling details,\ncorrupted versions of familiar imagery. Dramatic lighting, rich shadows,\nslightly unnerving atmosphere. No text, no card frames, no watermarks.\n\n\nCurrent Asset:\n- real_name: Channel\n- fake_name: Funnel\n- twist: Costs 2 life per mana instead of 1. Text becomes: As an additional cost to cast this spell, pay any amount of life. Add {C} for every 2 life paid this way, rounded down.\n\n\nTask:\nWrite flavor text for a fake Magic: The Gathering card \u2014 a twisted\nversion of a real card.\n\n# The Original\nReal card: Channel\n\n# The Fake\nFake name: Funnel\nMana cost: {G}{G}\nType: Sorcery\nRules text: As an additional cost to cast this spell, pay any amount of life. Add {C} for every 2 life paid this way, rounded down.\nHow it differs: Costs 2 life per mana instead of 1. Text becomes: As an additional cost to cast this spell, pay any amount of life. Add {C} for every 2 life paid this way, rounded down.\n\nTheme: Familiar Magic cards gone wrong. Each card is a dark-mirror version of a\nreal card \u2014 same bones, different soul. The twist should feel like the card\nwas designed by someone who wanted the original to be meaner, weirder, or\nmore dangerous.\n\n\n# Guidelines\n\nThe flavor text should:\n- Lean into the twist \u2014 make the reader feel WHY this card is wrong\n- Be 1-2 sentences, max 140 characters\n- Sound like real MTG flavor text (evocative, specific, punchy)\n- Not repeat or explain the rules text\n- End on a strong word\n\nWrite 3 drafts, then pick the best one.\n\nRespond with JSON:\n{\n  \"drafts\": [\"<draft 1>\", \"<draft 2>\", \"<draft 3>\"],\n  \"chosen\": \"<index and why>\",\n  \"content\": \"<your final polished flavor text>\"\n}\n",
+  "cost_usd": 0.004341,
+  "tokens_used": {
+    "prompt_tokens": 597,
+    "completion_tokens": 170,
+    "total_tokens": 767
+  }
+}

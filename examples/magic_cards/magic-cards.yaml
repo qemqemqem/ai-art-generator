@@ -22,7 +22,7 @@ providers:
   text: litellm
   text_model: "anthropic/claude-sonnet-4-20250514"
   image: gemini
-  image_model: "gemini-2.5-flash-preview-image-generation"
+  image_model: "gemini-2.5-flash-image"
 
 # =============================================================================
 # Type Definitions

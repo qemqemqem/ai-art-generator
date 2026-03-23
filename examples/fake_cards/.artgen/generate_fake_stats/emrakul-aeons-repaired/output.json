@@ -1,0 +1,21 @@
+{
+  "step_id": "generate_fake_stats",
+  "asset_id": "emrakul-aeons-repaired",
+  "timestamp": "2026-03-23T02:45:14.305658",
+  "data": {
+    "name": "Emrakul the Aeons Repaired",
+    "mana_cost": "{15}",
+    "type_line": "Legendary Creature \u2014 Eldrazi",
+    "oracle_text": "This spell can't be countered.\nWhen you cast this spell, take an extra turn after this one.\nWhen this creature enters the battlefield, if it wasn't cast, its owner loses the game.\nFlying, protection from spells that are one or more colors, annihilator 6\nWhen Emrakul the Aeons Repaired is put into a graveyard from anywhere, its owner shuffles their graveyard into their library.",
+    "power": "15",
+    "toughness": "15",
+    "colors": []
+  },
+  "prompt": "Background Context:\nProject Context:\n- set_name: Twisted Reflections\n- theme: Familiar Magic cards gone wrong. Each card is a dark-mirror version of a\nreal card \u2014 same bones, different soul. The twist should feel like the card\nwas designed by someone who wanted the original to be meaner, weirder, or\nmore dangerous.\n\n- art_style: Dark fantasy illustration with a sinister twist. The art should evoke the\noriginal card's identity but feel warped \u2014 wrong colors, unsettling details,\ncorrupted versions of familiar imagery. Dramatic lighting, rich shadows,\nslightly unnerving atmosphere. No text, no card frames, no watermarks.\n\n\nCurrent Asset:\n- real_name: Emrakul the Aeons Torn\n- fake_name: Emrakul the Aeons Repaired\n- twist: Add: When this creature enters the battlefield, if it wasn't cast, its owner loses the game.\n\n\nTask:\nYou are modifying a real Magic: The Gathering card to create a twisted\nfake version.\n\n# Original Card\n\nName: Emrakul the Aeons Torn\nMana cost: {15}\nType: Legendary Creature \u2014 Eldrazi\nRules text: This spell can't be countered.\nWhen you cast this spell, take an extra turn after this one.\nFlying, protection from spells that are one or more colors, annihilator 6\nWhen Emrakul is put into a graveyard from anywhere, its owner shuffles their graveyard into their library.\nPower/Toughness: 15/15\nColors: \n\n# Fake Version\n\nNew name: Emrakul the Aeons Repaired\nHow it differs: Add: When this creature enters the battlefield, if it wasn't cast, its owner loses the game.\n\nApply the twist to the original card's stats. Keep everything that isn't\nmentioned in the twist identical to the original. Produce the complete\ncard stats for the fake version.\n\nRespond with JSON:\n{\n  \"name\": \"<the fake card name>\",\n  \"mana_cost\": \"<modified or original mana cost>\",\n  \"type_line\": \"<modified or original type line>\",\n  \"oracle_text\": \"<modified rules text reflecting the twist>\",\n  \"power\": \"<power or null if not a creature>\",\n  \"toughness\": \"<toughness or null if not a creature>\",\n  \"colors\": [\"<list of colors>\"]\n}\n",
+  "cost_usd": 0.004629,
+  "tokens_used": {
+    "prompt_tokens": 573,
+    "completion_tokens": 194,
+    "total_tokens": 767
+  }
+}

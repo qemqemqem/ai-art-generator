@@ -1,0 +1,18 @@
+{
+  "step_id": "fetch_card_stats",
+  "asset_id": "emrakul-aeons-repaired",
+  "timestamp": "2026-03-23T02:45:11.580276",
+  "data": {
+    "mana_cost": "{15}",
+    "type_line": "Legendary Creature \u2014 Eldrazi",
+    "oracle_text": "This spell can't be countered.\nWhen you cast this spell, take an extra turn after this one.\nFlying, protection from spells that are one or more colors, annihilator 6\nWhen Emrakul is put into a graveyard from anywhere, its owner shuffles their graveyard into their library.",
+    "power": "15",
+    "toughness": "15",
+    "colors": [],
+    "color_identity": [],
+    "cmc": 15.0,
+    "rarity": "mythic",
+    "set_name": "Double Masters 2022",
+    "scryfall_uri": "https://scryfall.com/card/2x2/1/emrakul-the-aeons-torn?utm_source=api"
+  }
+}

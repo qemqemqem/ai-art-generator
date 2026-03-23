@@ -1,7 +1,7 @@
 {
   "step_id": "fetch_card_stats",
   "asset_id": "birds-of-paradise",
-  "timestamp": "2026-03-23T02:38:13.957810",
+  "timestamp": "2026-03-23T02:57:23.512907",
   "data": {
     "mana_cost": "{G}",
     "type_line": "Creature \u2014 Bird",

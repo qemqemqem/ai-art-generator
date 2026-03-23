@@ -1,7 +1,7 @@
 {
   "step_id": "finish",
   "asset_id": null,
-  "timestamp": "2026-03-23T02:42:06.742744",
+  "timestamp": "2026-03-23T02:58:45.264788",
   "data": {
     "title": "Aviary of the Ancients \u2013 Complete!",
     "message": "Your bird-themed MTG cards have been rendered.",
@@ -18,7 +18,16 @@
             "path": ".artgen/render_full_cards/cards/Baleful Strix.png"
           },
           {
+            "path": ".artgen/render_full_cards/cards/Baleful Strix.png"
+          },
+          {
             "path": ".artgen/render_full_cards/cards/Aven Mindcensor.png"
+          },
+          {
+            "path": ".artgen/render_full_cards/cards/Aven Mindcensor.png"
+          },
+          {
+            "path": ".artgen/render_full_cards/cards/Birds of Paradise.png"
           }
         ]
       },
@@ -27,22 +36,6 @@
         "label": "Bird Art",
         "step": "card_art",
         "items": [
-          {
-            "path": ".artgen/image_search/aven-mindcensor/v1.png",
-            "asset_id": "aven-mindcensor"
-          },
-          {
-            "path": ".artgen/image_search/aven-mindcensor/v2.png",
-            "asset_id": "aven-mindcensor"
-          },
-          {
-            "path": ".artgen/image_search/aven-mindcensor/v3.png",
-            "asset_id": "aven-mindcensor"
-          },
-          {
-            "path": ".artgen/image_search/aven-mindcensor/v2.png",
-            "asset_id": "aven-mindcensor"
-          },
           {
             "path": ".artgen/image_search/baleful-strix/v1.png",
             "asset_id": "baleful-strix"
@@ -58,6 +51,22 @@
           {
             "path": ".artgen/image_search/baleful-strix/v2.png",
             "asset_id": "baleful-strix"
+          },
+          {
+            "path": ".artgen/image_search/aven-mindcensor/v1.png",
+            "asset_id": "aven-mindcensor"
+          },
+          {
+            "path": ".artgen/image_search/aven-mindcensor/v2.png",
+            "asset_id": "aven-mindcensor"
+          },
+          {
+            "path": ".artgen/image_search/aven-mindcensor/v3.png",
+            "asset_id": "aven-mindcensor"
+          },
+          {
+            "path": ".artgen/image_search/aven-mindcensor/v2.png",
+            "asset_id": "aven-mindcensor"
           },
           {
             "path": ".artgen/image_search/birds-of-paradise/v1.png",
@@ -89,11 +98,15 @@
           {
             "content": "It lacks talons, so it wedges prey into the fork of a branch and uses its hooked bill to sever the spinal cord. The butcher bird doesn't need claws when it knows every thorn in its domain.",
             "asset_id": "aven-mindcensor"
+          },
+          {
+            "content": "It swallows wild avocados whole and carries their seeds across the cloud forest \u2014 one bird, feeding every color of growth.",
+            "asset_id": "birds-of-paradise"
           }
         ]
       }
     ],
-    "total_images": 15,
-    "total_text_items": 2
+    "total_images": 18,
+    "total_text_items": 3
   }
 }

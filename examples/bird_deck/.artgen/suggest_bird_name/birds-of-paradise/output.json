@@ -1,0 +1,17 @@
+{
+  "step_id": "suggest_bird_name",
+  "asset_id": "birds-of-paradise",
+  "timestamp": "2026-03-23T02:57:35.479710",
+  "data": {
+    "bird": "Resplendent Quetzal",
+    "rationale": "The Resplendent Quetzal is one of the most strikingly colorful birds in the world, with iridescent plumage spanning greens, reds, blues, and golds \u2014 perfectly mirroring Birds of Paradise's ability to produce mana of any color. Revered as sacred by ancient Mesoamerican civilizations, it carries a mythic quality befitting the card's iconic status. Its lush tropical forest habitat and breathtaking beauty make it a natural embodiment of green mana and prismatic versatility.",
+    "approved_attempt": 1
+  },
+  "prompt": "Background Context:\nProject Context:\n- deck_name: Aviary of the Ancients\n- format: EDH / Commander\n- art_style: Wildlife photography style. Natural lighting, shallow depth of field,\nthe bird in its natural habitat. Rich colors, sharp detail on plumage.\nNo text, no frames, no watermarks.\n\n\nCurrent Asset:\n- name: Birds of Paradise\n- content: Birds of Paradise\n\n\nTask:\nYou are helping re-skin a Magic: The Gathering card as a bird-themed card.\n\nOriginal card: Birds of Paradise\nMana cost: {G}\nType: Creature \u2014 Bird\nAbilities: Flying\n{T}: Add one mana of any color.\nColors: G\n\nSuggest a REAL bird species whose characteristics match the flavor and\nmechanics of this card. The bird must be a real species \u2014 no made-up names.\n\nRespond with a JSON object:\n{\n  \"bird\": \"<full common name of the bird>\",\n  \"rationale\": \"<2-3 sentences explaining why this bird fits the card>\"\n}\n",
+  "cost_usd": 0.004995,
+  "tokens_used": {
+    "prompt_tokens": 249,
+    "completion_tokens": 150,
+    "total_tokens": 399
+  }
+}

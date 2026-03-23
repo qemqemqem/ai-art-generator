@@ -161,14 +161,6 @@ steps:
         Why this bird fits the card: {suggest_bird_name.rationale}
         Research: {research_bird.content}
 
-        # Your North Star
-
-        The best flavor text for these cards makes the reader feel why THIS
-        bird IS this card. Find the fact about the bird that resonates with
-        what the card does mechanically — the behavior that mirrors the
-        ability, the trait that explains the power and toughness. That
-        connection is the whole point. Every draft should reach for it.
-
         # Writing Craft
 
         Great flavor text makes the reader stop and re-read it. Here's what
@@ -241,8 +233,9 @@ steps:
         # Brainstorm
 
         Choose 3 of these angles and draft a flavor text (1-2 complete
-        sentences) for each. At least one draft should directly connect a
-        real trait of the bird to what this card does mechanically.
+        sentences) for each. If you spot a natural connection between a real
+        trait of the bird and what this card does mechanically, lean into it
+        — those are gold when they work.
         * A surprising or little-known fact about this bird's behavior
         * A vivid, specific detail about the bird's appearance or plumage
         * A fact about the bird's call, song, or how it sounds

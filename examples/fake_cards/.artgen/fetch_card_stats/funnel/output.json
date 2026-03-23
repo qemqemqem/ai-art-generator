@@ -1,0 +1,22 @@
+{
+  "step_id": "fetch_card_stats",
+  "asset_id": "funnel",
+  "timestamp": "2026-03-23T02:45:11.653201",
+  "data": {
+    "mana_cost": "{G}{G}",
+    "type_line": "Sorcery",
+    "oracle_text": "Until end of turn, any time you could activate a mana ability, you may pay 1 life. If you do, add {C}.",
+    "power": null,
+    "toughness": null,
+    "colors": [
+      "G"
+    ],
+    "color_identity": [
+      "G"
+    ],
+    "cmc": 2.0,
+    "rarity": "mythic",
+    "set_name": "Iconic Masters",
+    "scryfall_uri": "https://scryfall.com/card/ima/157/channel?utm_source=api"
+  }
+}

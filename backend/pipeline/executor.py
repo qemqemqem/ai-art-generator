@@ -46,6 +46,32 @@ DEFAULT_ASSET_PARALLELISM = 20  # Max concurrent assets per step
 DEFAULT_TIER_PARALLELISM = 4    # Max concurrent steps in same tier
 
 
+import re as _re
+
+
+def _friendly_model_name(model_id: str) -> str:
+    """Turn a litellm model identifier into a short display name.
+
+    Examples:
+        "anthropic/claude-sonnet-4-20250514" -> "Claude Sonnet"
+        "gemini/gemini-2.5-flash"            -> "Gemini 2.5 Flash"
+        "openai/gpt-4o"                      -> "GPT-4o"
+    """
+    # Strip provider prefix (e.g. "anthropic/", "gemini/")
+    name = model_id.rsplit("/", 1)[-1]
+    # Strip date suffixes like -20250514
+    name = _re.sub(r'-\d{8}$', '', name)
+    # Strip common suffixes that clutter the display
+    name = _re.sub(r'-preview.*$', '', name)
+    # Title-case with hyphens as word separators, preserving version numbers
+    parts = name.split("-")
+    titled = " ".join(
+        p if _re.match(r'^[\d.]+$', p) else p.capitalize()
+        for p in parts if p
+    )
+    return titled
+
+
 @contextmanager
 def pause_progress(progress: Progress):
     """
@@ -474,24 +500,28 @@ class PipelineExecutor:
     def _get_step_action_text(self, step: StepSpec) -> str:
         """
         Generate a concise action description for CLI progress display.
-        
+
         Returns text like:
-          - "Generating image with Gemini Imagen"
-          - "Generating text with Gemini 2.5 Flash"
+          - "Generating image with Gemini 2.5 Flash Image"
+          - "Generating text with Claude Sonnet"
           - "Awaiting user selection"
         """
         step_type = step.type.value
         config = step.config or {}
-        
-        # Map step types to descriptive actions with provider info
+
+        _text_prov, _image_prov, text_model, image_model = self._get_step_providers(step)
+
+        text_label = _friendly_model_name(text_model) if text_model else "AI"
+        image_label = _friendly_model_name(image_model) if image_model else "AI"
+
         action_map = {
-            "generate_image": "Generating image with Gemini Imagen",
-            "generate_sprite": "Generating sprite with Gemini Imagen",
-            "generate_text": "Generating text with Gemini 2.5 Flash",
-            "generate_name": "Generating name with Gemini 2.5 Flash",
-            "generate_prompt": "Generating prompt with Gemini 2.5 Flash",
-            "research": "Researching with Gemini 2.5 Flash",
-            "assess": "Assessing with Gemini Vision",
+            "generate_image": f"Generating image with {image_label}",
+            "generate_sprite": f"Generating sprite with {image_label}",
+            "generate_text": f"Generating text with {text_label}",
+            "generate_name": f"Generating name with {text_label}",
+            "generate_prompt": f"Generating prompt with {text_label}",
+            "research": f"Researching with {text_label}",
+            "assess": f"Assessing with {image_label}",
             "user_select": "Awaiting user selection",
             "user_approve": "Awaiting user approval",
             "review": "Checkpoint review",
@@ -501,7 +531,7 @@ class PipelineExecutor:
             "composite": "Compositing layers",
             "image_search": "Searching for images",
         }
-        
+
         base_action = action_map.get(step_type, f"Executing {step_type}")
         
         # Add variation info if applicable
@@ -1618,6 +1648,9 @@ class PipelineExecutor:
                     asset_id = asset.get("id", f"asset-{asset_idx}")
                     asset_name = asset.get("name", asset_id)
                     failures.append((asset_id, asset_name, str(res)))
+                    if step.id not in self.failed_assets:
+                        self.failed_assets[step.id] = set()
+                    self.failed_assets[step.id].add(asset_id)
         
         # Evaluate results: partial success if some assets succeeded
         succeeded = [r for r in results if r.success]

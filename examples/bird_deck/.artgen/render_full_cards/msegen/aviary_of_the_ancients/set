@@ -15,8 +15,8 @@ styling:
 		overlay:
 card:
 	has_styling: false
-	time_created: 2026-03-22 19:42:03
-	time_modified: 2026-03-22 19:42:03
+	time_created: 2026-03-22 19:58:41
+	time_modified: 2026-03-22 19:58:41
 	name: Secretary Bird
 	alias: Baleful Strix
 	image: image0
@@ -34,8 +34,8 @@ card:
 	rarity: rare
 card:
 	has_styling: false
-	time_created: 2026-03-22 19:42:03
-	time_modified: 2026-03-22 19:42:03
+	time_created: 2026-03-22 19:58:41
+	time_modified: 2026-03-22 19:58:41
 	name: Northern Shrike
 	alias: Aven Mindcensor
 	image: image1
@@ -54,9 +54,10 @@ card:
 	rarity: uncommon
 card:
 	has_styling: false
-	time_created: 2026-03-22 19:42:03
-	time_modified: 2026-03-22 19:42:03
-	name: Birds of Paradise
+	time_created: 2026-03-22 19:58:41
+	time_modified: 2026-03-22 19:58:41
+	name: Resplendent Quetzal
+	alias: Birds of Paradise
 	image: image2
 	super_type: <word-list-type>Creature</word-list-type>
 	sub_type: <word-list-type>Bird</word-list-type>
@@ -64,7 +65,7 @@ card:
 	rule_text:
 		Flying
 		<sym>T</sym>: Add one mana of any color.
-	flavor_text: <i-flavor></i-flavor>
+	flavor_text: <i-flavor>It swallows wild avocados whole and carries their seeds across the cloud forest — one bird, feeding every color of growth.</i-flavor>
 	power: 0
 	toughness: 1
 	loyalty: 
